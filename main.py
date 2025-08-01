@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from tools.tools import *
+from tools.numeric_methods import *
 
 app = FastAPI()
 
@@ -16,7 +18,15 @@ templates = Jinja2Templates(directory="templates")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 @app.get("/calculations", response_class=HTMLResponse)
 async def calculations(request: Request):
-    return templates.TemplateResponse("calculations.html", {"request": request})
+    function_names = get_function_names("tools/numeric_methods.py")
+    return templates.TemplateResponse(
+        "calculations.html",
+        {"request": request, "function_names": function_names}
+    )
+
+@app.get("/calculations/<function_names>", response_class=HTMLResponse)
+async def calculations(request: Request,function_names: str):
+
+    return templates.TemplateResponse("calculations_method.html", {"request": request})

@@ -1,1 +1,10 @@
-<h1>EY perras</h1>
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Available Functions</h1>
+<ul>
+    {% for name in function_names %}
+        <li><a href="calculation_detail/{{ name }}">{{ name }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

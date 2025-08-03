@@ -18,15 +18,19 @@ templates = Jinja2Templates(directory="templates")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/calculations", response_class=HTMLResponse)
+@app.get("/options", response_class=HTMLResponse)
+async def options(request: Request):
+    function_names = get_function_names("tools/numeric_methods.py")
+    return templates.TemplateResponse("options.html", {"request": request,"function_names": function_names})
+
+@app.get("/calculations/<function_names>", response_class=HTMLResponse)
+async def calculations(request: Request,function_names: str):
+    return templates.TemplateResponse("calculations_method.html", {"request": request})
+
+@app.get("/calculations-chat", response_class=HTMLResponse)
 async def calculations(request: Request):
     function_names = get_function_names("tools/numeric_methods.py")
     return templates.TemplateResponse(
         "calculations.html",
         {"request": request, "function_names": function_names}
     )
-
-@app.get("/calculations/<function_names>", response_class=HTMLResponse)
-async def calculations(request: Request,function_names: str):
-
-    return templates.TemplateResponse("calculations_method.html", {"request": request})

@@ -1,5 +1,6 @@
 let calculatorImg;
 let pressedKeys = [];
+let calculators = [];
 const keyPositions = [
     { x: 30, y: 110, w: 40, h: 30, key: '7' },
     { x: 80, y: 110, w: 40, h: 30, key: '8' },
@@ -33,12 +34,24 @@ function setup() {
         calculators.push(new Calculator());
     }
     
-    // Set up button interaction
-    document.getElementById('calculation-btn').addEventListener('click', () => {
-        // Create a visual effect when button is pressed
-        createButtonEffect();
-        // Intensify animations temporarily
-        intensifyAnimations();
+    // Optional: Try to set up button interaction if button exists
+    // This won't break if the button doesn't exist
+    const button = document.getElementById('calculation-btn');
+    if (button) {
+        button.addEventListener('click', () => {
+            createButtonEffect();
+            intensifyAnimations();
+        });
+    }
+    
+    // Alternative: Add mouse click interaction for creating effects
+    // This works regardless of button presence
+    document.addEventListener('click', (e) => {
+        // Only trigger if clicking on the canvas area, not on buttons
+        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+            createButtonEffect();
+            intensifyAnimations();
+        }
     });
 }
 
@@ -90,6 +103,10 @@ class Calculator {
         // Bounce off edges
         if (this.x < 0 || this.x > width) this.angle = PI - this.angle;
         if (this.y < 0 || this.y > height) this.angle = -this.angle;
+        
+        // Keep calculators within bounds
+        this.x = constrain(this.x, 0, width);
+        this.y = constrain(this.y, 0, height);
         
         // Random key presses
         if (millis() - this.lastPress > random(200, 1000)) {
@@ -206,9 +223,15 @@ function intensifyAnimations() {
     });
 }
 
-let calculators = [];
-
 // Handle window resize
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+}
+
+// Optional: Add keyboard interaction for extra effects
+function keyPressed() {
+    if (key === ' ') { // Spacebar
+        createButtonEffect();
+        intensifyAnimations();
+    }
 }

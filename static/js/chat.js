@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.content) {
                     responseText += data.content;
                     streamingContainer.textContent = responseText;
-                    
+                    console.log(data);
                     // Scroll to the bottom of the chat
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }

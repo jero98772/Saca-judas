@@ -3,10 +3,10 @@ from fastapi.responses import HTMLResponse ,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from openai import OpenAI
-
 from tools.tools import *
 from tools.numeric_methods import *
+
+import json
 
 app = FastAPI()
 
@@ -15,9 +15,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Set up templates directory
 templates = Jinja2Templates(directory="templates")
-
-#from typing import List, Dict, Optional
-#chat_history: Dict[str, List[Dict[str, str]]] = {}
 
 chat_history=dict()
 
@@ -79,33 +76,18 @@ async def stream_response(session_id: str, model: str = "openai"):
 
 async def generate_stream(session_id, messages, model="openai"):
     # Get streaming response from LLM based on model choice
-    try:
-        full_response = ""
-        
-        if model == "gemini":
-            # Use Gemini model
-            async for text in chat_answer_gemini(messages):
-                if text:
-                    full_response += text
-                    yield f"data: {json.dumps({'content': text})}\n\n"
-        else:
-            # Use OpenAI/LM Studio model
-            completion_stream = chat_answer(messages)
-            for chunk in completion_stream:
-                if hasattr(chunk.choices[0].delta, "content"):
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        full_response += content
-                        yield f"data: {json.dumps({'content': content})}\n\n"
-        
-        # Store the complete response in history
-        chat_history[session_id].append({"role": "assistant", "content": full_response})
-        
-        # Signal completion
-        yield f"data: {json.dumps({'status': 'complete'})}\n\n"
+    full_response = ""
+    completion_stream = chat_answer(messages)
+    for chunk in completion_stream:
+        if hasattr(chunk.choices[0].delta, "content"):
+            content = chunk.choices[0].delta.content
+            if content:
+                full_response += content
+                yield f"data: {json.dumps({'content': content})}\n\n"
     
-    except Exception as e:
-        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    # Store the complete response in history
+    chat_history[session_id].append({"role": "assistant", "content": full_response})
+    
+    # Signal completion
+    yield f"data: {json.dumps({'status': 'complete'})}\n\n"
 
-async def stream_error(error_message):
-    yield f"data: {json.dumps({'error': error_message})}\n\n"

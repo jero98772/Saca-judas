@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse ,StreamingResponse
+from fastapi.responses import HTMLResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from tools.tools import get_function_names
+from tools.tools import get_function_names 
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
@@ -16,8 +16,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Set up templates directory
 templates = Jinja2Templates(directory="templates")
-
-chat_history=dict()
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -44,15 +42,6 @@ async def chat_recive(request: Request):
 @app.post("/chat")
 async def chat(request: Request):
     data = await request.json()
-    message = data.get("message")
-    
-    messages = [{"role": "user", "content": message}]
-    
-    # Get full response without streaming
-    completion_stream = chat_answer(messages)
-    full_response = ""
-    
-    for chunk in completion_stream:
-        full_response += chunk
-    
+    messages = data.get("messages", [])
+    full_response = await client.process_query(messages)
     return {"response": full_response}

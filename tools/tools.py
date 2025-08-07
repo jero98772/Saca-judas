@@ -17,6 +17,7 @@ def chat_answer(messages):
         messages=messages,
         temperature=1.1,
         max_tokens=140,
+        #tools=available_tools,
         stream=True,  # Enable streaming
     )
     return completion

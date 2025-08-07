@@ -582,17 +582,237 @@ def lagrange(x, y, t):
     
     return result
 
-def lineal_tracers():
-    """Placeholder for lineal_tracers Method implementation."""
-    pass
+import numpy as np
 
-def cuadratic_tracers():
-    """Placeholder for cuadratic_tracers Method implementation."""
-    pass
+def lineal_tracers(x, y):
+    """
+    Computes linear spline interpolation between given data points.
+    
+    Parameters:
+    x : array_like
+        x-coordinates of data points (must be strictly increasing)
+    y : array_like
+        y-coordinates of data points (same length as x)
+        
+    Returns:
+    function
+        A piecewise linear function that can be evaluated at any point
+        
+    Raises:
+    ValueError: If x and y have different lengths
+    ValueError: If x is not strictly increasing
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    
+    if len(x) != len(y):
+        return "Not valid Input x and y must have the same length"
+    if not np.all(np.diff(x) > 0):
+        return "Not valid Input x must be strictly increasing"
+    
+    n = len(x) - 1
+    slopes = np.zeros(n)
+    intercepts = np.zeros(n)
+    
+    # Calculate slopes and intercepts for each segment
+    for i in range(n):
+        slopes[i] = (y[i+1] - y[i]) / (x[i+1] - x[i])
+        intercepts[i] = y[i] - slopes[i] * x[i]
+    
+    # Create piecewise function
+    def spline_evaluator(t):
+        t = np.asarray(t)
+        result = np.zeros_like(t)
+        
+        # Handle points below first x
+        mask = t < x[0]
+        result[mask] = y[0]
+        
+        # Handle points between segments
+        for i in range(n):
+            mask = (t >= x[i]) & (t <= x[i+1])
+            result[mask] = slopes[i] * t[mask] + intercepts[i]
+        
+        # Handle points above last x
+        mask = t > x[-1]
+        result[mask] = y[-1]
+        
+        return result
+    
+    return spline_evaluator
 
-def cubic_tracers():
-    """Placeholder for cubic_tracers Method implementation."""
-    pass
+def cuadratic_tracers(x, y):
+    """
+    Computes quadratic spline interpolation with continuous first derivatives.
+    
+    Parameters:
+    x : array_like
+        x-coordinates of data points (must be strictly increasing)
+    y : array_like
+        y-coordinates of data points (same length as x)
+        
+    Returns:
+    function
+        A piecewise quadratic function that can be evaluated at any point
+        
+    Raises:
+    ValueError: If x and y have different lengths
+    ValueError: If x is not strictly increasing
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    
+    if len(x) != len(y):
+        return "Not valid Input x and y must have the same length"
+    if not np.all(np.diff(x) > 0):
+        return "Not valid Input x must be strictly increasing"
+    
+    n = len(x) - 1
+    # Coefficients: a_i, b_i, c_i for each segment i
+    a = np.zeros(n)
+    b = np.zeros(n)
+    c = np.zeros(n)  # c = y
+    
+    # Set first derivative at left endpoint to zero (arbitrary choice)
+    b[0] = 0
+    
+    # Calculate coefficients for each segment
+    for i in range(n):
+        c[i] = y[i]
+        if i > 0:
+            # Continuity of first derivative at knot i
+            b[i] = 2 * (y[i] - c[i-1]) / (x[i] - x[i-1]) - b[i-1]
+        
+        # Quadratic coefficient
+        a[i] = (y[i+1] - c[i] - b[i] * (x[i+1] - x[i])) / ((x[i+1] - x[i]) ** 2)
+    
+    # Create piecewise function
+    def spline_evaluator(t):
+        t = np.asarray(t)
+        result = np.zeros_like(t)
+        
+        # Handle points below first x
+        mask = t < x[0]
+        result[mask] = y[0]
+        
+        # Handle points between segments
+        for i in range(n):
+            mask = (t >= x[i]) & (t <= x[i+1])
+            dx = t[mask] - x[i]
+            result[mask] = a[i] * dx**2 + b[i] * dx + c[i]
+        
+        # Handle points above last x
+        mask = t > x[-1]
+        result[mask] = y[-1]
+        
+        return result
+    
+    return spline_evaluator
+
+def cubic_tracers(x, y, bc_type='natural'):
+    """
+    Computes cubic spline interpolation with continuous first and second derivatives.
+    
+    Parameters:
+    x : array_like
+        x-coordinates of data points (must be strictly increasing)
+    y : array_like
+        y-coordinates of data points (same length as x)
+    bc_type : str, optional
+        Boundary condition type: 'natural' (default), 'clamped', or 'not-a-knot'
+        
+    Returns:
+    function
+        A piecewise cubic function that can be evaluated at any point
+        
+    Raises:
+    ValueError: If x and y have different lengths
+    ValueError: If x is not strictly increasing
+    ValueError: For invalid bc_type
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    
+    if len(x) != len(y):
+        return "Not valid Input x and y must have the same length"
+    if not np.all(np.diff(x) > 0):
+        return "Not valid Input x must be strictly increasing"
+    
+    n = len(x) - 1
+    h = np.diff(x)
+    
+    # Set up tridiagonal system for second derivatives
+    A = np.zeros((n+1, n+1))
+    B = np.zeros(n+1)
+    
+    # Internal points
+    for i in range(1, n):
+        A[i, i-1] = h[i-1]
+        A[i, i] = 2 * (h[i-1] + h[i])
+        A[i, i+1] = h[i]
+        B[i] = 3 * ((y[i+1] - y[i]) / h[i] - (y[i] - y[i-1]) / h[i-1])
+    
+    # Boundary conditions
+    if bc_type == 'natural':
+        A[0, 0] = 1
+        A[n, n] = 1
+    elif bc_type == 'clamped':
+        # Assuming derivative zero at endpoints (can be parameterized later)
+        A[0, 0] = 2 * h[0]
+        A[0, 1] = h[0]
+        B[0] = 3 * ((y[1] - y[0]) / h[0])
+        
+        A[n, n-1] = h[-1]
+        A[n, n] = 2 * h[-1]
+        B[n] = 3 * ((y[-1] - y[-2]) / h[-1])
+    elif bc_type == 'not-a-knot':
+        A[0, 0] = -h[1]
+        A[0, 1] = h[0] + h[1]
+        A[0, 2] = -h[0]
+        
+        A[n, n-2] = -h[-1]
+        A[n, n-1] = h[-2] + h[-1]
+        A[n, n] = -h[-2]
+    else:
+        return "Not valid Input Invalid bc_type. Choose 'natural', 'clamped', or 'not-a-knot'"
+    
+    # Solve for second derivatives
+    c2 = np.linalg.solve(A, B)
+    
+    # Calculate other coefficients
+    a = np.zeros(n)
+    b = np.zeros(n)
+    c = np.zeros(n)
+    d = np.zeros(n)
+    
+    for i in range(n):
+        d[i] = y[i]
+        c[i] = (y[i+1] - y[i]) / h[i] - h[i] * (2*c2[i] + c2[i+1]) / 3
+        b[i] = c2[i]
+        a[i] = (c2[i+1] - c2[i]) / (3 * h[i])
+    
+    # Create piecewise function
+    def spline_evaluator(t):
+        t = np.asarray(t)
+        result = np.zeros_like(t)
+        
+        # Handle points below first x
+        mask = t < x[0]
+        result[mask] = y[0]
+        
+        # Handle points between segments
+        for i in range(n):
+            mask = (t >= x[i]) & (t <= x[i+1])
+            dx = t[mask] - x[i]
+            result[mask] = a[i]*dx**3 + b[i]*dx**2 + c[i]*dx + d[i]
+        
+        # Handle points above last x
+        mask = t > x[-1]
+        result[mask] = y[-1]
+        
+        return result
+    
+    return spline_evaluator
 
 def incremental_search():
     """Placeholder for incremental_search Method implementation."""

@@ -113,4 +113,35 @@ def cubic_tracers():
     """Placeholder for cubic_tracers Method implementation."""
     pass
 
+def incremental_search():
+    """Placeholder for incremental_search Method implementation."""
+    pass
+
+def biseccion():
+    """Placeholder for biseccion Method implementation."""
+    pass
+
+def fixed_point():
+    """Placeholder for fixed_point Method implementation."""
+    pass
+
+def secante():
+    """Placeholder for secante Method implementation."""
+    pass
+
+def multiples_roots():
+    """Placeholder for multiples_roots Method implementation."""
+    pass
+
+def gaussian_elimination_simple():
+    """Placeholder for gaussian_elimination_simple Method implementation."""
+    pass
+
+def gaussian_elimination_with_pivot_partial():
+    """Placeholder for gaussian_elimination_with_pivot_partial Method implementation."""
+    pass
+
+def gaussian_elimination_with_pivot_total():
+    """Placeholder for gaussian_elimination_with_pivot_total Method implementation."""
+    pass
 

@@ -241,7 +241,7 @@ def crout(A):
     """
     n = A.shape[0]
     if n != A.shape[1]:
-        raise ValueError("Matrix must be square")
+        return "Not valid Input"
     
     L = np.zeros((n, n))
     U = np.eye(n)  # Diagonal will be 1s
@@ -254,7 +254,7 @@ def crout(A):
         
         # Check for zero pivot
         if abs(L[j, j]) < 1e-10:
-            raise ValueError("Zero pivot encountered at position {}".format(j))
+            return "Not valid Input Zero pivot encountered at position {}".format(j)
         
         # Calculate elements in U above diagonal
         for i in range(j+1, n):
@@ -290,9 +290,9 @@ def cholesky(A):
     """
     n = A.shape[0]
     if n != A.shape[1]:
-        raise ValueError("Matrix must be square")
+        return "Not valid Input Matrix must be square"
     if not np.allclose(A, A.T):
-        raise ValueError("Matrix must be symmetric")
+        return "Not valid Input Matrix must be symmetric"
     
     L = np.zeros((n, n))
     
@@ -304,7 +304,7 @@ def cholesky(A):
                 # Check for positive definiteness
                 diag_val = A[i, i] - s
                 if diag_val <= 1e-10:
-                    raise ValueError("Matrix not positive definite")
+                    return "Not valid Input Matrix not positive definite"
                 L[i, j] = np.sqrt(diag_val)
             else:  # Off-diagonal elements
                 L[i, j] = (A[i, j] - s) / L[j, j]
@@ -339,7 +339,7 @@ def doolittle(A):
     """
     n = A.shape[0]
     if n != A.shape[1]:
-        raise ValueError("Matrix must be square")
+        return "Not valid Input Matrix must be square"
     
     L = np.eye(n)  # Diagonal will be 1s
     U = np.zeros((n, n))
@@ -352,7 +352,7 @@ def doolittle(A):
         
         # Check for zero pivot
         if abs(U[i, i]) < 1e-10:
-            raise ValueError("Zero pivot encountered at position {}".format(i))
+            return "Not valid Input Zero pivot encountered at position {}".format(i)
         
         # Calculate elements in L for column i
         for j in range(i+1, n):
@@ -360,26 +360,227 @@ def doolittle(A):
             L[j, i] = (A[j, i] - s) / U[i, i]
     
     return L, U
+
+import numpy as np
+
+def jacobi(A, b, x0, tol=1e-6, max_iter=1000):
+    """
+    Solves a system of linear equations Ax = b using the Jacobi iterative method.
     
-def jacobi():
-    """Placeholder for jacobi Method implementation."""
-    pass
+    Parameters:
+    A : numpy.ndarray
+        Coefficient matrix (n x n)
+    b : numpy.ndarray
+        Right-hand side vector (n,)
+    x0 : numpy.ndarray
+        Initial guess for solution (n,)
+    tol : float, optional
+        Tolerance for stopping criterion (default 1e-6)
+    max_iter : int, optional
+        Maximum number of iterations (default 1000)
+        
+    Returns:
+    x : numpy.ndarray
+        Approximate solution vector
+    converged : bool
+        True if method converged within tolerance, False otherwise
+    k : int
+        Number of iterations performed
+    """
+    n = A.shape[0]
+    x = x0.copy()
+    x_new = np.zeros_like(x)
+    
+    # Extract diagonal and off-diagonal components
+    D = np.diag(A)
+    R = A - np.diagflat(D)
+    
+    for k in range(max_iter):
+        x_new = (b - np.dot(R, x)) / D
+        
+        # Compute residual and check convergence
+        residual = np.linalg.norm(A @ x_new - b)
+        if residual < tol:
+            return x_new, True, k+1
+        
+        x = x_new.copy()
+    
+    # If max iterations reached
+    return x_new, False, max_iter
 
-def gauss_seidel():
-    """Placeholder for gauss-seidel Method implementation."""
-    pass
+def gauss_seidel(A, b, x0, tol=1e-6, max_iter=1000):
+    """
+    Solves a system of linear equations Ax = b using the Gauss-Seidel iterative method.
+    
+    Parameters:
+    A : numpy.ndarray
+        Coefficient matrix (n x n)
+    b : numpy.ndarray
+        Right-hand side vector (n,)
+    x0 : numpy.ndarray
+        Initial guess for solution (n,)
+    tol : float, optional
+        Tolerance for stopping criterion (default 1e-6)
+    max_iter : int, optional
+        Maximum number of iterations (default 1000)
+        
+    Returns:
+    x : numpy.ndarray
+        Approximate solution vector
+    converged : bool
+        True if method converged within tolerance, False otherwise
+    k : int
+        Number of iterations performed
+    """
+    n = A.shape[0]
+    x = x0.copy()
+    
+    for k in range(max_iter):
+        x_old = x.copy()
+        for i in range(n):
+            # Sum of elements before i (using updated values)
+            s1 = np.dot(A[i, :i], x[:i])
+            # Sum of elements after i (using old values)
+            s2 = np.dot(A[i, i+1:], x_old[i+1:])
+            x[i] = (b[i] - s1 - s2) / A[i, i]
+        
+        # Compute residual and check convergence
+        residual = np.linalg.norm(A @ x - b)
+        if residual < tol:
+            return x, True, k+1
+    
+    # If max iterations reached
+    return x, False, max_iter
 
-def SOR():
-    """Placeholder for SOR Method implementation."""
-    pass
+def SOR(A, b, x0, omega, tol=1e-6, max_iter=1000):
+    """
+    Solves a system of linear equations Ax = b using Successive Over-Relaxation (SOR).
+    
+    Parameters:
+    A : numpy.ndarray
+        Coefficient matrix (n x n)
+    b : numpy.ndarray
+        Right-hand side vector (n,)
+    x0 : numpy.ndarray
+        Initial guess for solution (n,)
+    omega : float
+        Relaxation factor (typically 0 < omega < 2)
+    tol : float, optional
+        Tolerance for stopping criterion (default 1e-6)
+    max_iter : int, optional
+        Maximum number of iterations (default 1000)
+        
+    Returns:
+    x : numpy.ndarray
+        Approximate solution vector
+    converged : bool
+        True if method converged within tolerance, False otherwise
+    k : int
+        Number of iterations performed
+    """
+    n = A.shape[0]
+    x = x0.copy()
+    
+    for k in range(max_iter):
+        x_old = x.copy()
+        for i in range(n):
+            # Sum of elements before i (using updated values)
+            s1 = np.dot(A[i, :i], x[:i])
+            # Sum of elements after i (using old values)
+            s2 = np.dot(A[i, i+1:], x_old[i+1:])
+            # Gauss-Seidel update
+            x_gs = (b[i] - s1 - s2) / A[i, i]
+            # SOR update
+            x[i] = (1 - omega) * x_old[i] + omega * x_gs
+        
+        # Compute residual and check convergence
+        residual = np.linalg.norm(A @ x - b)
+        if residual < tol:
+            return x, True, k+1
+    
+    # If max iterations reached
+    return x, False, max_iter
 
-def vandermonde():
-    """Placeholder for doolittle Method implementation."""
-    pass
+import numpy as np
 
-def lagrange():
-    """Placeholder for jacobi lagrange implementation."""
-    pass
+def vandermonde(x, y, degree=None):
+    """
+    Computes polynomial interpolation using the Vandermonde matrix method.
+    
+    Parameters:
+    x : array_like
+        x-coordinates of data points (1D array)
+    y : array_like
+        y-coordinates of data points (1D array, same length as x)
+    degree : int, optional
+        Degree of the interpolating polynomial. Default is len(x)-1
+        
+    Returns:
+    coeffs : ndarray
+        Coefficients of the interpolating polynomial in descending order
+        (a[0] + a[1]*x + ... + a[n]*x^n)
+        
+    Raises:
+    ValueError: If x and y have different lengths
+    ValueError: If degree is greater than number of points minus one
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+    
+    if len(x) != len(y):
+        return "Not valid Inputx and y must have the same length"
+    
+    if degree is None:
+        degree = len(x) - 1
+    elif degree > len(x) - 1:
+        return "Not valid Input Degree cannot exceed number of points minus one"
+    
+    # Construct Vandermonde matrix
+    V = np.vander(x, degree + 1, increasing=True)
+    
+    # Solve for coefficients (least squares if overdetermined)
+    coeffs = np.linalg.lstsq(V, y, rcond=None)[0]
+    
+    return coeffs
+
+def lagrange(x, y, t):
+    """
+    Evaluates the Lagrange interpolating polynomial at given point(s).
+    
+    Parameters:
+    x : array_like
+        x-coordinates of data points (1D array)
+    y : array_like
+        y-coordinates of data points (1D array, same length as x)
+    t : float or array_like
+        Point(s) at which to evaluate the interpolating polynomial
+        
+    Returns:
+    float or ndarray
+        Interpolated value(s) at point(s) t
+        
+    Raises:
+    ValueError: If x and y have different lengths
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+    t = np.asarray(t)
+    
+    if len(x) != len(y):
+        return "Not valid Input x and y must have the same length"
+    
+    n = len(x)
+    result = np.zeros_like(t, dtype=float)
+    
+    for i in range(n):
+        # Compute Lagrange basis polynomial L_i(t)
+        L = np.ones_like(t)
+        for j in range(n):
+            if i != j:
+                L *= (t - x[j]) / (x[i] - x[j])
+        result += y[i] * L
+    
+    return result
 
 def lineal_tracers():
     """Placeholder for lineal_tracers Method implementation."""

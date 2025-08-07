@@ -1,5 +1,6 @@
 import random
 from math import *
+import numpy as np
 
 def iterative_sqrt(n,x,A):
     """Iterative SQRT algorithm implementation."""
@@ -61,13 +62,59 @@ def newton_method():
     """Placeholder for Newton's Method implementation."""
     pass
 
-def LU_gaussian_simple():
-    """Placeholder for LU with gaussian simple Method implementation."""
-    pass
+def LU_gaussian_simple(A):
+    #Need be tested
+    n = A.shape[0]
+    if n != A.shape[1]:
+        return "Not valid Input"
+    
+    U = A.astype(float).copy()
+    L = np.eye(n)
+    
+    for j in range(n-1):
+        if abs(U[j, j]) < 1e-15:
+            return "Not valid input :zero pivot encountered at position {}".format(j)
+        for i in range(j+1, n):
+            mult = U[i, j] / U[j, j]
+            L[i, j] = mult
+            U[i, j:] = U[i, j:] - mult * U[j, j:]
+    
+    return L, U
 
-def LU_parcial_pivot():
-    """Placeholder for LU with parcial pivot Method implementation."""
-    pass
+def LU_parcial_pivot(A):
+    #Need be tested
+    n = A.shape[0]
+    if n != A.shape[1]:
+        return "Not valid input"
+    
+    U = A.astype(float).copy()
+    L = np.eye(n)
+    perm = list(range(n))
+    
+    for j in range(n-1):
+        pivot_row = j
+        max_val = abs(U[j, j])
+        for i in range(j+1, n):
+            if abs(U[i, j]) > max_val:
+                max_val = abs(U[i, j])
+                pivot_row = i
+        
+        if max_val < 1e-15:
+            return "Not valid input Matrix is singular to working precision"
+        
+        if pivot_row != j:
+            U[[j, pivot_row], j:] = U[[pivot_row, j], j:]
+            if j > 0:
+                L[[j, pivot_row], :j] = L[[pivot_row, j], :j]
+            perm[j], perm[pivot_row] = perm[pivot_row], perm[j]
+        
+        for i in range(j+1, n):
+            mult = U[i, j] / U[j, j]
+            L[i, j] = mult
+            U[i, j:] = U[i, j:] - mult * U[j, j:]
+    
+    P = np.eye(n)[perm, :]
+    return P, L, U
 
 def crout():
     """Placeholder for crout Method implementation."""

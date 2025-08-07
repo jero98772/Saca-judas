@@ -1,114 +1,108 @@
-document.addEventListener('DOMContentLoaded', function() {
+async function sendChat(message) {
+    const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+    });
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let result = '';
+    
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        result += chunk;
+        console.log(chunk); // Print each chunk as it arrives
+    }
+    
+    return result;
+}
+
+// UI Handling Code
+document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = document.getElementById('chat-container');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const clearBtn = document.getElementById('clear-btn');
-    
-    // Generate a unique session ID for this chat
-    const sessionId = 'session_' + Date.now();
-    
-    // Function to add a message to the chat
-    function addMessage(content, isUser) {
+
+    // Add message to chat UI
+    function addMessage(content, sender) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+        messageDiv.className = `message ${sender}-message`;
         
-        const header = document.createElement('div');
-        header.className = 'message-header';
-        header.textContent = isUser ? 'You' : 'Bot';
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'bubble';
+        bubbleDiv.textContent = content;
         
-        const messageContent = document.createElement('div');
-        messageContent.className = 'message-content';
-        messageContent.textContent = content;
-        
-        messageDiv.appendChild(header);
-        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(bubbleDiv);
         chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // Modified wrapper to parse JSON response
+    async function handleUserMessage(message) {
+        // Add user message to UI
+        addMessage(message, 'user');
         
-        // Scroll to the bottom of the chat
+        // Disable UI during processing
+        sendBtn.disabled = true;
+        userInput.disabled = true;
+        
+        // Create bot message placeholder
+        const botMessageDiv = document.createElement('div');
+        botMessageDiv.className = 'message bot-message';
+        const botBubble = document.createElement('div');
+        botBubble.className = 'bubble';
+        botBubble.textContent = '...'; // Loading indicator
+        botMessageDiv.appendChild(botBubble);
+        chatContainer.appendChild(botMessageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         
-        return messageContent; // Return for streaming updates
-    }
-    
-    // Function to create a streaming bot message
-    function createStreamingMessage() {
-        const botMessageContent = addMessage('', false);
-        return botMessageContent;
-    }
-    
-    // Function to send a message and handle streaming response
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (message === '') return;
-        
-        // Add user message to chat
-        addMessage(message, true);
-        userInput.value = '';
-        
         try {
-            // First send the message to the server
-            const sendResponse = await fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: message,
-                    session_id: sessionId
-                }),
-            });
+            // Use your EXACT original function
+            const rawResponse = await sendChat(message);
             
-            // Create bot message container for streaming content
-            const streamingContainer = createStreamingMessage();
-            
-            // Connect to the streaming endpoint
-            const eventSource = new EventSource(`/stream/${sessionId}`);
-            
-            let responseText = '';
-            
-            eventSource.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                
-                if (data.error) {
-                    streamingContainer.textContent = `Error: ${data.error}`;
-                    eventSource.close();
-                    return;
+            // PARSE THE JSON RESPONSE AND EXTRACT THE CONTENT
+            let responseContent = rawResponse;
+            try {
+                const parsed = JSON.parse(rawResponse);
+                if (parsed.response) {
+                    responseContent = parsed.response;
                 }
-                
-                if (data.status === 'complete') {
-                    eventSource.close();
-                    return;
-                }
-                
-                if (data.content) {
-                    responseText += data.content;
-                    streamingContainer.textContent = responseText;
-                    console.log(data);
-                    // Scroll to the bottom of the chat
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-            };
+            } catch (e) {
+                console.log('Response is not JSON, using raw response');
+            }
             
-            eventSource.onerror = function() {
-                if (responseText === '') {
-                    streamingContainer.textContent = 'An error occurred. Please try again.';
-                }
-                eventSource.close();
-            };
-            
+            // Update bot message with final response
+            botBubble.textContent = responseContent;
         } catch (error) {
-            console.error('Error:', error);
-            addMessage('An error occurred. Please try again.', false);
+            console.error('Chat error:', error);
+            botBubble.textContent = 'Error: ' + error.message;
         }
+        
+        // Re-enable UI
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
     }
-    
-    
-    // Event listeners
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
+
+    // Event handlers
+    sendBtn.addEventListener('click', () => {
+        const message = userInput.value.trim();
+        if (!message) return;
+        
+        userInput.value = '';
+        handleUserMessage(message);
     });
-    clearBtn.addEventListener('click', clearChat);
+
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendBtn.click();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        chatContainer.innerHTML = '';
+    });
 });

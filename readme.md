@@ -79,7 +79,7 @@ uvicorn main:app --reload
 ## 🔌 Backend Architecture
 
 - `FastAPI` for API services
-- `MCP` (Micro Computation Protocol) for remote tool execution
+- `MCP` (Model context protocol) for remote tool execution
 - Connection with `llmstudio` for AI-supported calculations
 
 ---
@@ -101,69 +101,3 @@ uvicorn main:app --reload
 - LaTeX
 ```
 
----
-
-## 📄 `README.tex` (for LaTeX Reports)
-
-```latex
-\documentclass[11pt]{article}
-\usepackage{geometry}
-\usepackage{amsmath}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\geometry{margin=1in}
-
-\title{Saca Judas}
-\author{AI-Powered Numerical Methods Platform}
-\date{}
-
-\begin{document}
-\maketitle
-
-\section*{Overview}
-\textbf{Saca Judas} is an animated, web-based application for performing numerical calculations. It uses artificial intelligence via \texttt{llmstudio} and communicates with a Micro Computation Protocol (\texttt{MCP}) server to handle backend processing.
-
-\section*{Key Features}
-\begin{itemize}
-  \item Web interface built with HTML, CSS, and JavaScript.
-  \item Backend powered by FastAPI and Python.
-  \item Connection to LLMStudio for AI-enhanced calculations.
-  \item Export of reports using \LaTeX.
-  \item Binary-decimal conversions.
-  \item Support for advanced matrix decompositions.
-\end{itemize}
-
-\section*{Numerical Methods}
-Implemented methods include:
-
-\begin{itemize}
-  \item \textbf{Root-finding}: Iterative sqrt, Newton's method, bisection, fixed point, secant, multiple roots.
-  \item \textbf{LU Decomposition}: Simple, partial pivoting, Crout, Cholesky, Doolittle.
-  \item \textbf{Iterative Solvers}: Jacobi, Gauss-Seidel, SOR.
-  \item \textbf{Interpolation}: Vandermonde, Lagrange, linear/quadratic/cubic tracers, spline evaluation.
-  \item \textbf{Binary Conversion}: Decimal to binary float and vice versa.
-  \item \textbf{Gaussian Elimination}: With/without pivoting.
-\end{itemize}
-
-\section*{How to Run}
-\begin{verbatim}
-pip install -r requirements.txt
-uvicorn main:app --reload
-\end{verbatim}
-
-\section*{Architecture}
-\begin{itemize}
-  \item FastAPI for RESTful services.
-  \item MCP server for modular computation.
-  \item Optional LLMStudio connection for enhanced logic.
-\end{itemize}
-
-\section*{Future Work}
-\begin{itemize}
-  \item Add visualization tools.
-  \item Improve reporting tools in \LaTeX.
-  \item Extend AI functionality.
-\end{itemize}
-
-\end{document}
-```

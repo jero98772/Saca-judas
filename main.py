@@ -35,6 +35,7 @@ async def calculations(request: Request,function_names: str):
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):
     function_names = get_function_names("tools/numeric_methods.py")
+    print(function_names)
     return templates.TemplateResponse(
         "chat.html",
         {"request": request, "function_names": function_names}

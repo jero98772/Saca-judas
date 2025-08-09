@@ -87,8 +87,6 @@ def methodTaylorSeries(funcExpr:str, center:int , x_value:int ,p:int, ultimasFil
 
     expr = sympify(funcExpr)
 
-
-
     iteraciones = 0
     errorAbs = 10000
     xAnterior = 0
@@ -98,8 +96,6 @@ def methodTaylorSeries(funcExpr:str, center:int , x_value:int ,p:int, ultimasFil
     historial_x = []
     historial_iteraciones = []
 
-
-
     while(True):
 
         expressionResult = expr.evalf(subs={x_symbol:center})
@@ -107,13 +103,13 @@ def methodTaylorSeries(funcExpr:str, center:int , x_value:int ,p:int, ultimasFil
         constantFunction = pow((x_value - center), iteraciones) / factorial(iteraciones)
 
         x = xAnterior + (expressionResult * constantFunction)
-
+        
         #Cálculo de los errores absolutos
         if iteraciones != 0:
             errorAbs = abs(x - historial_x[-1])
-            historial_errorAbs.append(errorAbs)
         
         # Agregar valores al historial y mantener solo los últimos n valores
+        historial_errorAbs.append(errorAbs)
         historial_x.append(x)
         historial_iteraciones.append(iteraciones)
         
@@ -137,11 +133,12 @@ def methodTaylorSeries(funcExpr:str, center:int , x_value:int ,p:int, ultimasFil
         #valor encontrado
         # Evaluar la inversa de expr en x, y si da x_value es TRUE
         #TODO: Implementar la busqueda de una inversa adecuada para el dominio donde trabajara el metodo.
-        ecuacion = Eq(y, expr)
+        # ecuacion = Eq(y, expr)
 
-        inversa = solve(ecuacion, x_symbol)
+        # inversa = solve(ecuacion, x_symbol)
 
-        print(inversa)
+        # print(inversa)
+
 
         #iteraciones máximas
         iteraciones += 1
@@ -161,8 +158,11 @@ def methodTaylorSeries(funcExpr:str, center:int , x_value:int ,p:int, ultimasFil
         expr = diff(expr, x_symbol)
 
 #ejemplo del video
-resultado = methodTaylorSeries("sin(x + 7)", 0, 0.5, 3, 10)
+resultado = methodTaylorSeries("exp(2*x)-x", 0, 0.7, 6, 3)
 
-print(resultado["historial"]["x"])
-print(resultado["historial"]["errorAbs"])
-print(resultado["historial"]["iteraciones"])
+
+# Imprimir los resultados en formato de tabla
+print(f"{'Iteración':>10} | {'x':>20} | {'Error Absoluto':>20}")
+print("-" * 60)
+for i, (x, error, it) in enumerate(zip(resultado["historial"]["x"], resultado["historial"]["errorAbs"], resultado["historial"]["iteraciones"])):
+    print(f"{it:10} | {x:20.12f} | {error:20.12e}")

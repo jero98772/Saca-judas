@@ -1,17 +1,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>Add data for calculations</h1>
-    
-    <form method="POST">
-        <textarea name="values" placeholder='Enter JSON data, e.g., {"x": 5, "y": 10}'></textarea>
-        <br>
-        <button type="submit">Calculate</button>
-    </form>
-    
-    {% if answer %}
-    <div class="result">
-        <b>{{ answer }}</b>
+<div id="content">
+
+<div class="card-container">
+    <div class="card">
+        <h1>Add data for calculations</h1>
+        
+        <form method="POST">
+            <textarea name="values" placeholder='example 1 2 3'></textarea>
+            <br>
+            <button id="calculation-btn" type="submit">Calculate</button>
+        </form>
+        
+        {% if answer %}
+        <div class="result">
+            <b>{{ answer }}</b>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
+</div>
+</div>
 {% endblock %}

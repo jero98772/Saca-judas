@@ -33,9 +33,7 @@ async def calculations(request: Request,function_names: str):
 
 @app.post("/calculations/{function_names}", response_class=HTMLResponse)
 async def calculations(request: Request,function_names: str,values: str = Form(...)):
-    print(values)
     data = list(map(int,values.split()))
-    print(data)
     try:
         answer = globals()[function_names](*data)   
     except:

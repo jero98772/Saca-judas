@@ -9,7 +9,12 @@
 	      <div class="card h-100 shadow">
 	        <div class="card-body text-center">
 	          <h5 class="card-title">🧮 Manual Calculations</h5>
-	          <p class="card-text">Perform your calculations manually using our intuitive tools.</p>
+	          <p class="card-text">Perform your calculations manually using our intuitive tools.
+	          		{% for i in function_names %}
+	          			<br>
+	          			<a href="/calculations/{{ i }}">{{ i }}</a>
+	          		{% endfor %}
+	          </p>
 	          <a href="/manual" class="btn btn-primary">Go to Manual Calculations</a>
 	        </div>
 	      </div>

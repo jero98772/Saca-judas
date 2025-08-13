@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,9 +26,24 @@ async def options(request: Request):
     function_names = get_function_names("tools/numeric_methods.py")
     return templates.TemplateResponse("options.html", {"request": request,"function_names": function_names})
 
-@app.get("/calculations/<function_names>", response_class=HTMLResponse)
+@app.get("/calculations/{function_names}", response_class=HTMLResponse)
 async def calculations(request: Request,function_names: str):
-    return templates.TemplateResponse("calculations_method.html", {"request": request})
+    answer = ""
+    return templates.TemplateResponse("calculations_methods_interface.html", {"request": request,"answer":answer})
+
+@app.post("/calculations/{function_names}", response_class=HTMLResponse)
+async def calculations(request: Request,function_names: str,values: str = Form(...)):
+    print(values)
+    data = list(map(int,values.split()))
+    print(data)
+    try:
+        answer = globals()[function_names](*data)   
+    except:
+        answer = "No valid input, input must be separate by comma, for example 1 2 3, in iterative sqrt"
+    return templates.TemplateResponse(
+        "calculations_methods_interface.html",
+        {"request": request, "answer": answer}
+    )
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):

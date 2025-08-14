@@ -36,11 +36,13 @@ async def calculations(request: Request,function_names: str,values: str = Form(.
     data = list(map(int,values.split()))
     try:
         answer = globals()[function_names](*data)   
+        step_by_step, plot_values =  "eres" ,str([[0],[0]])
     except:
         answer = "No valid input, input must be separate by comma, for example 1 2 3, in iterative sqrt"
+        step_by_step, plot_values =  "" ,str([[0],[0]])
     return templates.TemplateResponse(
         "calculations_methods_interface.html",
-        {"request": request, "answer": answer}
+        {"request": request, "answer": answer,step_by_step:"step_by_step", plot_values:"plot_values"}
     )
 
 @app.get("/chat", response_class=HTMLResponse)

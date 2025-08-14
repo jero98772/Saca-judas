@@ -4,11 +4,14 @@ import numpy as np
 
 def iterative_sqrt(n,x,A):
     """Iterative SQRT algorithm implementation."""
+    step_by_step=""
     def formula(x,A):
         return sqrt(((x**3)+A)/(2*x))
+    
+    step_by_step+=""
     for i in range(n):
         x=formula(x,A)
-    return x
+    return x, step_by_step ,(0,0)
 
 def binary2decimal_float(binary_str: str) -> float:
     #check it maybe not work properly
@@ -30,12 +33,12 @@ def binary2decimal_float(binary_str: str) -> float:
     for i, bit in enumerate(fractional_part):
         decimal_fraction += int(bit) * (2 ** -(i + 1))
 
-    return decimal_integer + decimal_fraction
+    return decimal_integer + decimal_fraction,step_by_step ,(0,0)
 
 def decimal2binary_float(num: float, precision: int = 10) -> str:
     """Convert a decimal floating-point number to binary string representation."""
     if num < 0:
-        return '-' + decimal2binary_float(-num, precision)
+        return '-' + decimal2binary_float(-num, precision),step_by_step ,(0,0)
 
     integer_part = int(num)
     decimal_part = num - integer_part
@@ -54,9 +57,9 @@ def decimal2binary_float(num: float, precision: int = 10) -> str:
         count += 1
 
     if binary_decimal:
-        return f"{binary_integer}.{''.join(binary_decimal)}"
+        return f"{binary_integer}.{''.join(binary_decimal)}",step_by_step ,(0,0)
     else:
-        return binary_integer
+        return binary_integer,step_by_step ,(0,0)
 
 import numpy as np
 
@@ -98,7 +101,7 @@ def newton_method(F, J, x0, tol=1e-6, max_iter=50):
     
     Fx_norm = np.linalg.norm(Fx)
     converged = Fx_norm < tol
-    return x, converged, max_iter
+    return [x, converged, max_iter], step_by_step ,(0,0)
 
 import numpy as np
 

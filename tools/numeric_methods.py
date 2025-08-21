@@ -1,5 +1,6 @@
 import random
 from math import *
+from manim import *
 import numpy as np
 
 def iterative_sqrt(n,x,A):

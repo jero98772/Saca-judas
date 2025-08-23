@@ -1,0 +1,32 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- TODO: Input de la funcion -->
+
+<div id="content">
+
+<div class="card-container">
+    <div class="card">
+        <h1>Newton Method</h1>
+        
+        <form method="POST">
+            <input type="text" name="function " id="function">
+            <button id="calculation-btn" type="submit">Graficar funcion</button>
+        </form>
+        
+        {% if answer %}
+        <div class="result">
+            <h1>{{answer}}</h1>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+
+
+
+<!-- TODO: Grafica de la funcion  -->
+
+{% endblock %}

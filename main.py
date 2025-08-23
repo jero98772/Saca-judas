@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.requests import Request
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from tools.tools import get_function_names 
 from tools.numeric_methods import *
@@ -26,24 +28,27 @@ async def options(request: Request):
     function_names = get_function_names("tools/numeric_methods.py")
     return templates.TemplateResponse("options.html", {"request": request,"function_names": function_names})
 
-@app.get("/calculations/{function_names}", response_class=HTMLResponse)
-async def calculations(request: Request,function_names: str):
-    answer = ""
-    return templates.TemplateResponse("calculations_methods_interface.html", {"request": request,"answer":answer})
 
-@app.post("/calculations/{function_names}", response_class=HTMLResponse)
-async def calculations(request: Request,function_names: str,values: str = Form(...)):
-    data = list(map(int,values.split()))
+@app.get("/calculations/{method_name}", response_class=HTMLResponse)
+async def method_page(request: Request, method_name: str):
+    function_names = get_function_names("tools/numeric_methods.py")
+    if method_name not in function_names:
+        print("El metodo no esta en la lista")        
+        return templates.TemplateResponse("404.html", {"request": request, "message": "Método no encontrado"}, status_code=404)
     try:
-        answer = globals()[function_names](*data)   
-        step_by_step, plot_values =  "eres" ,str([[0],[0]])
-    except:
-        answer = "No valid input, input must be separate by comma, for example 1 2 3, in iterative sqrt"
-        step_by_step, plot_values =  "" ,str([[0],[0]])
-    return templates.TemplateResponse(
-        "calculations_methods_interface.html",
-        {"request": request, "answer": answer,step_by_step:"step_by_step", plot_values:"plot_values"}
-    )
+        methodPage = templates.TemplateResponse(f"methods/{method_name}.html", {"request": request, "method_name": method_name})
+    except Exception as e:
+        return templates.TemplateResponse("404.html", {"request": request, "message": "Método no encontrado"}, status_code=404)
+    
+    return methodPage
+
+#TODO:Un endpoint para validar la funcion
+
+@app.post("/calculations/validateFunction", response_class=HTMLResponse)
+async def newton_method_post(request: Request, function: str = Form(...)):
+    # Procesa la función aquí
+    answer = f"Resultado para: {function}"
+    return templates.TemplateResponse("methods/newton_method.html", {"request": request, "answer": answer})
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):
@@ -60,3 +65,7 @@ async def chat(request: Request):
     messages = data.get("messages", [])
     full_response = await client.process_query(messages)
     return {"response": full_response}
+
+@app.exception_handler(404)
+async def not_found(request: Request, exc: StarletteHTTPException):
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)

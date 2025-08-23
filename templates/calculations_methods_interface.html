@@ -6,8 +6,8 @@
 <div class="card-container">
     <div class="card">
         <h1>Add data for calculations</h1>
-        
-        <form method="POST">
+
+        <form method="POST" >
             <textarea name="values" placeholder='example 1 2 3'></textarea>
             <br>
             <button id="calculation-btn" type="submit">Calculate</button>
@@ -15,6 +15,7 @@
         
         {% if answer %}
         <div class="result">
+            <h1>Holass</h1>
             <b>{{ answer }}</b>
              <b>{{ step_by_step }}</b>
              <b>{{ plot_values }}</b>

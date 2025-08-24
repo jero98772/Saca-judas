@@ -49,8 +49,11 @@ async def method_page(request: Request, method_name: str):
 async def newton_method_post(request: Request, function: str = Form(...)):
 
     #TODO: Se valida si la funcion esta bien escrita y que problemas tiene con su dominio.
-
+    answer = function
     
+    print(function)
+    
+
     
     return templates.TemplateResponse("methods/newton_method.html", {"request": request, "answer": answer})
 

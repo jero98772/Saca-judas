@@ -6,6 +6,7 @@ from fastapi.requests import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from tools.tools import get_function_names 
+from tools.sympyUtilities import validate_math_function 
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
@@ -46,8 +47,11 @@ async def method_page(request: Request, method_name: str):
 
 @app.post("/calculations/validateFunction", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
-    # Procesa la función aquí
-    answer = f"Resultado para: {function}"
+
+    #TODO: Se valida si la funcion esta bien escrita y que problemas tiene con su dominio.
+
+    
+    
     return templates.TemplateResponse("methods/newton_method.html", {"request": request, "answer": answer})
 
 @app.get("/chat", response_class=HTMLResponse)

@@ -1,32 +1,72 @@
-
 {% extends 'base.html' %}
 
 {% block content %}
 
-<!-- TODO: Input de la funcion -->
+<!-- TODO: Implementar input de la funcion -->
 
 <div id="content">
 
-<div class="card-container">
-    <div class="card">
-        <h1>Newton Method</h1>
-        
-        <form method="POST">
-            <input type="text" name="function " id="function">
-            <button id="calculation-btn" type="submit">Graficar funcion</button>
-        </form>
-        
-        {% if answer %}
-        <div class="result">
-            <h1>{{answer}}</h1>
+    <div class="card-container">
+        <div class="card">
+            <h1>Newton Method</h1>
+
+
+            <!-- TODO: Este formulario deberia actuar como componente -->
+            <form method="post" action="http://127.0.0.1:8000/calculations/validateFunction">
+
+
+                <!-- TODO: Este input deberia ser un teclado matematico con mathquill para obtener el LaTeX-->
+                <input type="text" name="function">
+                <button id="calculation-btn" type="submit">Graficar funcion</button>
+            </form>
+
+
+            <!-- TODO: Implementar graficador para el metodo de la grafica. -->
+            {% if answer %}
+            <div class="result">
+                <h1>{{answer}}</h1>
+            </div>
+            {% endif %}
+
+
+
         </div>
-        {% endif %}
+        <div class="card" id="graph"></div>
     </div>
+
+    <script>
+        document.querySelector("#calculation-btn").addEventListener("click", (event) => {
+            event.preventDefault();
+            const input = document.querySelector('input[name="function"]').value.trim();
+            if (!input) {
+                alert("Por favor ingresa una función.");
+                return;
+            }
+            try {
+
+                
+                // TODO: Implementar conversion de LaTeX a JS Math para pasar la funcion a function-plot
+
+                // Validar si la función es válida usando math.js
+                math.parse(input); // Lanza error si no es válida
+                // Graficar la función
+
+                functionPlot({
+                    target: "#graph",
+                    grid: true,
+                    data: [
+                        {
+                            fn: input
+                        }
+                    ]
+                });
+            } catch (e) {
+                alert("Función inválida. Por favor ingresa una función matemática válida.");
+            }
+        })
+    </script>
+
+
 </div>
-</div>
-
-
-
-<!-- TODO: Grafica de la funcion  -->
 
 {% endblock %}

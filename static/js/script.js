@@ -25,15 +25,18 @@ function preload() {
 }
 
 function setup() {
-    createCanvas(windowWidth, windowHeight);
+
+    let cnv = createCanvas(windowWidth, windowHeight);
+    cnv.parent('myDiv')
+
     textFont('Courier New');
     textSize(16);
-    
+
     // Create multiple calculator instances
     for (let i = 0; i < 15; i++) {
         calculators.push(new Calculator());
     }
-    
+
     // Optional: Try to set up button interaction if button exists
     // This won't break if the button doesn't exist
     const button = document.getElementById('calculation-btn');
@@ -43,7 +46,7 @@ function setup() {
             intensifyAnimations();
         });
     }
-    
+
     // Alternative: Add mouse click interaction for creating effects
     // This works regardless of button presence
     document.addEventListener('click', (e) => {
@@ -53,18 +56,19 @@ function setup() {
             intensifyAnimations();
         }
     });
+
 }
 
 function draw() {
     clear();
     background(15, 15, 35, 200);
-    
+
     // Draw all calculator instances
     calculators.forEach(calc => {
         calc.update();
         calc.display();
     });
-    
+
     // Draw pressed keys effects
     for (let i = pressedKeys.length - 1; i >= 0; i--) {
         pressedKeys[i].update();
@@ -84,7 +88,7 @@ class Calculator {
         this.angle = random(TWO_PI);
         this.keys = [];
         this.lastPress = 0;
-        
+
         // Create key states
         keyPositions.forEach(pos => {
             this.keys.push({
@@ -94,26 +98,26 @@ class Calculator {
             });
         });
     }
-    
+
     update() {
         // Move calculator
         this.x += cos(this.angle) * this.speed;
         this.y += sin(this.angle) * this.speed;
-        
+
         // Bounce off edges
         if (this.x < 0 || this.x > width) this.angle = PI - this.angle;
         if (this.y < 0 || this.y > height) this.angle = -this.angle;
-        
+
         // Keep calculators within bounds
         this.x = constrain(this.x, 0, width);
         this.y = constrain(this.y, 0, height);
-        
+
         // Random key presses
         if (millis() - this.lastPress > random(200, 1000)) {
             const keyIndex = floor(random(this.keys.length));
             this.keys[keyIndex].pressed = true;
             this.keys[keyIndex].pressTime = millis();
-            
+
             // Add visual effect
             const key = this.keys[keyIndex];
             pressedKeys.push(new KeyEffect(
@@ -123,10 +127,10 @@ class Calculator {
                 key.h * this.size,
                 key.key
             ));
-            
+
             this.lastPress = millis();
         }
-        
+
         // Reset key press after delay
         this.keys.forEach(key => {
             if (key.pressed && millis() - key.pressTime > 200) {
@@ -134,34 +138,34 @@ class Calculator {
             }
         });
     }
-    
+
     display() {
         push();
         translate(this.x, this.y);
         scale(this.size);
-        
+
         // Draw calculator body
         image(calculatorImg, 0, 0);
-        
+
         // Draw keys
         fill(30);
         stroke(0, 200, 100);
         strokeWeight(1);
-        
+
         this.keys.forEach(key => {
             if (key.pressed) {
                 fill(0, 100, 40);
             } else {
                 fill(30);
             }
-            
+
             rect(key.x, key.y, key.w, key.h, 3);
             fill(0, 200, 100);
             noStroke();
             textAlign(CENTER, CENTER);
-            text(key.key, key.x + key.w/2, key.y + key.h/2);
+            text(key.key, key.x + key.w / 2, key.y + key.h / 2);
         });
-        
+
         pop();
     }
 }
@@ -176,21 +180,21 @@ class KeyEffect {
         this.alpha = 255;
         this.size = 1;
     }
-    
+
     update() {
         this.alpha -= 5;
         this.size += 0.02;
     }
-    
+
     display() {
         push();
-        translate(this.x + this.w/2, this.y + this.h/2);
+        translate(this.x + this.w / 2, this.y + this.h / 2);
         scale(this.size);
         noFill();
         stroke(0, 255, 100, this.alpha);
         strokeWeight(2);
-        rect(-this.w/2, -this.h/2, this.w, this.h, 3);
-        
+        rect(-this.w / 2, -this.h / 2, this.w, this.h, 3);
+
         fill(0, 255, 100, this.alpha * 0.7);
         noStroke();
         textAlign(CENTER, CENTER);

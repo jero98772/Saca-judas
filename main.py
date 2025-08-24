@@ -32,10 +32,6 @@ async def options(request: Request):
 
 @app.get("/calculations/{method_name}", response_class=HTMLResponse)
 async def method_page(request: Request, method_name: str):
-    function_names = get_function_names("tools/numeric_methods.py")
-    if method_name not in function_names:
-        print("El metodo no esta en la lista")        
-        return templates.TemplateResponse("404.html", {"request": request, "message": "Método no encontrado"}, status_code=404)
     try:
         methodPage = templates.TemplateResponse(f"methods/{method_name}.html", {"request": request, "method_name": method_name})
     except Exception as e:

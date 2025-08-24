@@ -4,33 +4,29 @@
 
 <!-- TODO: Implementar input de la funcion -->
 
-<div id="content">
+<div id="container-fluid text-center">
 
-    <div class="card-container">
-        <div class="card">
-            <h1>Newton Method</h1>
+    <div class="row">
+        <div class="col-6 offset-3">
+            <div class="card-container">
+                <div class="card">
+                    <h1>Newton Method</h1>
 
+                    <!-- TODO: Este formulario deberia actuar como componente -->
+                    <math-field id="function" style="min-width: 200px;">e^{-x}+\sin x</math-field>
+                    <button id="calculation-btn">Graficar funcion</button>
 
-            <!-- TODO: Este formulario deberia actuar como componente -->
-            <!-- TODO: Este input deberia ser un teclado matematico con mathquill para obtener el LaTeX-->
-            <math-field id="function" style="min-width: 200px;">f(x) = \sin(x+\pi)</math-field>
-            <button id="calculation-btn" type="submit">Graficar funcion</button>
+                    {% if answer %}
+                    <div class="result">
+                        <h1>{{answer}}</h1>
+                    </div>
+                    {% endif %}
 
-
-
-            <!-- TODO: Implementar graficador para el metodo de la grafica. -->
-            {% if answer %}
-            <div class="result">
-                <h1>{{answer}}</h1>
+                </div>
+                <div class="card" id="graph"></div>
             </div>
-            {% endif %}
-
-
-
         </div>
-        <div class="card" id="graph"></div>
     </div>
-
 
     <script>
 
@@ -39,27 +35,23 @@
 
         document.getElementById("calculation-btn").addEventListener("click", (event) => {
 
-            // TODO: Implementar conversion de LaTeX a JS Math para pasar la funcion a function-plot
-            const ceExpression = ce.parse(mathField.value,{canonical: false}).toString();
-                        
-            console.log(ceExpression)
-
+            const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
 
             //Esta funcion se encarga de camibiar el formato String a ECMAScript 
             function toECMAScript(expr) {
-            return expr
-                .replace(/e\^/g, "exp")   // e^ → exp
-                .replace(/\bpi\b/gi, "PI") // pi → Math.PI
+                return expr
+                    .replace(/e\^/g, "exp")   // e^ → exp
+                    .replace(/\bpi\b/gi, "PI") // pi → Math.PI
             }
 
-            console.log(toECMAScript(ceExpression))
 
+            //TODO: Mandar la funcion al backend para obtener los resutados del metodo y recibirrlos
             fetch('/calculations/validateFunction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ function:mathField.getValue('math-json')})
+                body: new URLSearchParams({ function: mathField.getValue('math-json') })
             })
-            
+
 
             // Graficar la función
             functionPlot({

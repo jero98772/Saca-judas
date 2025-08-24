@@ -2,35 +2,43 @@
 
 {% block content %}
 <div id="content">
-	<div class="container my-5">
-	  <div class="row justify-content-center">
-	    <!-- Manual Calculations Card -->
-	    <div class="col-md-5 mb-4">
-	      <div class="card h-100 shadow">
-	        <div class="card-body text-center">
-	          <h5 class="card-title">🧮 Manual Calculations</h5>
-	          <p class="card-text">Perform your calculations manually using our intuitive tools.
-	          		{% for i in function_names %}
-	          			<br>
-	          			<a href="/calculations/{{ i }}">{{ i }}</a>
-	          		{% endfor %}
-	          </p>
-	          <a href="/manual" class="btn btn-primary">Go to Manual Calculations</a>
-	        </div>
-	      </div>
-	    </div>
+	<div class="container">
+		<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
+			<div class="col">
+				<div class="card shadow-sm">
+					<img src="/static/img/9321fc62-3a71-4b46-a933-31a898fd6c6c.png" class="card-img-top animated-img"
+						width="100%" alt="Ejemplo">
+					<div class="card-body d-flex flex-column">
+						<h5 class="card-title mb-2">💬 Chat with Assistant</h5>
+						<div class="d-flex justify-content-between align-items-center">
+							<p class="card-text flex-grow-1">Prefer a conversational approach? Chat with our assistant
+								for help.</p>
+							<a href="/chat" class="btn btn-primary mt-auto">Acción</a>
+						</div>
+					</div>
+				</div>
+			</div>
 
-	    <!-- Chat Card -->
-	    <div class="col-md-5 mb-4">
-	      <div class="card h-100 shadow">
-	        <div class="card-body text-center">
-	          <h5 class="card-title">💬 Chat with Assistant</h5>
-	          <p class="card-text">Prefer a conversational approach? Chat with our assistant for help.</p>
-	          <a href="/chat" class="btn btn-success">Start Chat</a>
-	        </div>
-	      </div>
-	    </div>
-	  </div>
+			{% for i in function_names %}
+
+			<div class="col">
+				<div class="card shadow-sm">
+					{% if i == "newton_method" %}
+						<img src="/static/img/newton_method.gif" class="card-img-top animated-img" width="100%" alt="newton_method">
+					{% else %}
+						<img src="/static/img/file.jpeg" class="card-img-top animated-img" width="100%" alt="Ejemplo">
+					{% endif %}
+					<div class="card-body d-flex flex-column">
+						<h5 class="card-title mb-2">{{ i }}</h5>
+						<div class="d-flex justify-content-between align-items-center">
+							<!-- <p class="card-text flex-grow-1">Descripcion del metodo</p> -->
+							<a href="/calculations/{{ i }}" class="btn btn-primary mt-auto">Usar</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
 	</div>
 </div>
 {% endblock %}

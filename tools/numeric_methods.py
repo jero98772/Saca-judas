@@ -822,8 +822,35 @@ def incremental_search():
     """Placeholder for incremental_search Method implementation."""
     pass
 
-def biseccion():
-    """Placeholder for biseccion Method implementation."""
+def biseccion(f: Callable, a: float, b: float, xtol=0.001, maxiter=100) -> Tuple[float, int]:
+    """
+    Encuentra una raíz de la función f en el intervalo [a, b] utilizando el método de la bisección.
+
+    :param f: La función cuya raíz se busca.
+    :param a: Extremo izquierdo del intervalo.
+    :param b: Extremo derecho del intervalo.
+    :param xtol: Tolerancia de error en la raíz (diferencia mínima entre a y b).
+    :param maxiter: Número máximo de iteraciones permitidas.
+    :return: Una tupla que contiene la aproximación de la raíz y el número de iteraciones realizadas.
+    :raise ValueError: Si f(a) y f(b) tienen el mismo signo, lo que significa que no hay una raíz en el intervalo.
+    :raise Exception: Si se excede el número máximo de iteraciones permitidas.
+    """
+
+    if f(b) * f(a) > 0:
+        raise ValueError('No existe raíz en el intervalo dado')
+
+    nit = 0
+    while nit <= maxiter:
+        nit += 1
+        c = (a + b) / 2
+        if abs(f(c)) <= xtol:
+            return c, nit
+        elif f(c) * f(a) < 0:
+            b = c
+        else:
+            a = c
+
+    raise Exception("El número máximo de iteraciones permitidas ha sido excedido.")
     pass
 
 def fixed_point():

@@ -2,6 +2,7 @@ import random
 from math import *
 from manim import *
 import numpy as np
+from typing import Callable, Tuple
 
 def iterative_sqrt(n,x,A):
     """Iterative SQRT algorithm implementation."""

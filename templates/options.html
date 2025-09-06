@@ -11,8 +11,12 @@
 					{% if i == "newton_method" %}
 					<img src="/static/img/newton_method.gif" class="card-img-top animated-img" width="100%"
 						alt="newton_method">
+					{% elif i == "biseccion" %}
+					<img src="/static/img/Bisection_method.svg" class="card-img-top animated-img" width="100%"
+						alt="biseccion">
 					{% else %}
-					<img src="https://picsum.photos/400/200?random={{ loop.index }}" class="card-img-top animated-img" width="100%" alt="Ejemplo">
+					<img src="https://picsum.photos/400/200?random={{ loop.index }}" class="card-img-top animated-img"
+						width="100%" alt="Ejemplo">
 					{% endif %}
 					<div class="card-body d-flex flex-column">
 						<h5 class="card-title mb-2">{{ i }}</h5>

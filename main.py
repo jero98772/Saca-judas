@@ -1,16 +1,18 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse 
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from tools.tools import get_function_names 
-from tools.sympyUtilities import validate_math_function 
+from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 import json
+
+from controller import newton_method_controller
 
 app = FastAPI()
 
@@ -39,19 +41,29 @@ async def method_page(request: Request, method_name: str):
     
     return methodPage
 
-#TODO:Un endpoint para validar la funcion
 
-@app.post("/calculations/validateFunction", response_class=HTMLResponse)
+
+@app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
 
-    #TODO: Se valida si la funcion esta bien escrita y que problemas tiene con su dominio.
-    answer = function
-    
-    print(function)
-    
 
+    answer = derivateLatex(function)
     
-    return templates.TemplateResponse("methods/newton_method.html", {"request": request, "answer": answer})
+    print(answer)
+    
+    return JSONResponse(content={"resultado": answer})
+
+#!Newton method calculations
+@app.post("/eval/newton_method", response_class=HTMLResponse)
+async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
+
+    f = latex_to_sympy_str(function)
+
+    answer = newton_method_controller(function=f, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
+
+    print(answer)
+    
+    return JSONResponse(content=answer)
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):

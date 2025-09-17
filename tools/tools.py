@@ -1,12 +1,22 @@
 import ast
+import os
 from openai import OpenAI
 
 client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
+"""
 def get_function_names(filename):
     with open(filename, "r") as f:
         tree = ast.parse(f.read(), filename=filename)
     return [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+"""
+
+def get_function_names(folder):
+    files = []
+    for f in os.listdir(folder):
+        if f.endswith(".py"):
+            files.append(os.path.splitext(f)[0])
+    return files
 
 def chat_answer(messages):
     """

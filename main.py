@@ -28,7 +28,7 @@ async def index(request: Request):
 
 @app.get("/options", response_class=HTMLResponse)
 async def options(request: Request):
-    function_names = get_function_names("tools/numeric_methods.py")
+    function_names = get_function_names("tools/methods")
     return templates.TemplateResponse("options.html", {"request": request,"function_names": function_names})
 
 

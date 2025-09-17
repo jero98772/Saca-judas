@@ -13,7 +13,9 @@ def get_function_names(filename):
 
 def get_function_names(folder):
     files = []
+    print(os.listdir(folder))
     for f in os.listdir(folder):
+
         if f.endswith(".py"):
             files.append(os.path.splitext(f)[0])
     return files

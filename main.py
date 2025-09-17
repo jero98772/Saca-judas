@@ -38,31 +38,20 @@ async def method_page(request: Request, method_name: str):
         methodPage = templates.TemplateResponse(f"methods/{method_name}.html", {"request": request, "method_name": method_name})
     except Exception as e:
         return templates.TemplateResponse("404.html", {"request": request, "message": "Método no encontrado"}, status_code=404)
-    
     return methodPage
-
 
 
 @app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
-
-
     answer = derivateLatex(function)
-    
     print(answer)
-    
     return JSONResponse(content={"resultado": answer})
 
-#!Newton method calculations
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
-
     f = latex_to_sympy_str(function)
-
     answer = newton_method_controller(function=f, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
-
     print(answer)
-    
     return JSONResponse(content=answer)
 
 @app.get("/chat", response_class=HTMLResponse)

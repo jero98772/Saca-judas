@@ -4,64 +4,7 @@ from manim import *
 import numpy as np
 from typing import Callable, Tuple
 
-def iterative_sqrt(n,x,A):
-    """Iterative SQRT algorithm implementation."""
-    step_by_step=""
-    def formula(x,A):
-        return sqrt(((x**3)+A)/(2*x))
-    
-    step_by_step+=""
-    for i in range(n):
-        x=formula(x,A)
-    return x, step_by_step ,(0,0)
 
-def binary2decimal_float(binary_str: str) -> float:
-    #check it maybe not work properly
-    """Convert a binary string representation to a decimal floating-point number."""
-    binary_str = binary_str.strip()
-    if binary_str.startswith('-'):
-        return -binary2decimal_float(binary_str[1:])
-
-    if '.' in binary_str:
-        integer_part, fractional_part = binary_str.split('.')
-    else:
-        integer_part, fractional_part = binary_str, ''
-
-    # Convert integer part
-    decimal_integer = int(integer_part, 2) if integer_part else 0
-
-    # Convert fractional part
-    decimal_fraction = 0
-    for i, bit in enumerate(fractional_part):
-        decimal_fraction += int(bit) * (2 ** -(i + 1))
-
-    return decimal_integer + decimal_fraction,step_by_step ,(0,0)
-
-def decimal2binary_float(num: float, precision: int = 10) -> str:
-    """Convert a decimal floating-point number to binary string representation."""
-    if num < 0:
-        return '-' + decimal2binary_float(-num, precision),step_by_step ,(0,0)
-
-    integer_part = int(num)
-    decimal_part = num - integer_part
-
-    # Convert integer part to binary
-    binary_integer = bin(integer_part)[2:]
-
-    # Convert decimal part to binary
-    binary_decimal = []
-    count = 0
-    while decimal_part and count < precision:
-        decimal_part *= 2
-        bit = int(decimal_part)
-        binary_decimal.append(str(bit))
-        decimal_part -= bit
-        count += 1
-
-    if binary_decimal:
-        return f"{binary_integer}.{''.join(binary_decimal)}",step_by_step ,(0,0)
-    else:
-        return binary_integer,step_by_step ,(0,0)
 
 import numpy as np
 

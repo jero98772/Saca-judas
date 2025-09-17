@@ -1,5 +1,4 @@
 from sympy import *
-from typing import Tuple
 
 def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:str= None):
     

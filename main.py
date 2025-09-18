@@ -6,15 +6,16 @@ from fastapi.requests import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from tools.tools import get_function_names 
-from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str
+from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str, latex_to_callable_function
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 from tools.methods.newton import newton_method_controller
+from tools.methods.incremental_search import incremental_search
+
 
 import json
 
-#from controller import newton_method_controller
 
 app = FastAPI()
 
@@ -51,11 +52,37 @@ async def newton_method_post(request: Request, function: str = Form(...)):
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
-    print("hereeee")
     f = latex_to_sympy_str(function)
     answer = newton_method_controller(function=f, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
     print(answer)
     return JSONResponse(content=answer)
+
+
+@app.post("/eval/incremental_search")
+async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),tolerance: float = Form(...),nrows: int = Form(...)):
+        
+        print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter),tolerance,type(tolerance))
+        #f = latex_to_sympy_str(function)
+        f = latex_to_callable_function(function)
+
+        print(f)
+        answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter, tolerance=tolerance)
+        """
+        if answer.get("history"):
+            history = answer["history"]
+            if len(history.get("x", [])) > nrows:
+                start_idx = len(history["x"]) - nrows
+                answer["history"] = {
+                    "x": history["x"][start_idx:],
+                    "errorAbs": history["errorAbs"][start_idx:],
+                    "iterations": history["iterations"][start_idx:]
+                }
+        """
+        print(f"Answer: {answer}")
+        
+        return JSONResponse(content=answer)
+        
+
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):

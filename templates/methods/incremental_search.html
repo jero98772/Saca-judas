@@ -8,10 +8,242 @@
             <div class="card-container">
                 <div class="card p-4">
                     <h1>Incremental Search</h1>
+
+                    <h6>Function</h6>
+                    <math-field id="function" style="min-width: 200px;">e^{-x}+\sin x</math-field>
+
+                    <div class="input-group mb-3">
+                        <button class="btn btn-outline-secondary" type="button" id="previewButton">Ver</button>
+                        <input type="text" class="form-control" placeholder="x0" id="x0" value="0">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Delta X</span>
+                        <input type="text" class="form-control" placeholder="0.1" aria-describedby="basic-addon1"
+                            id="delta_x" value="0.1">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Iteraciones máximas</span>
+                        <input type="text" class="form-control" placeholder="100" aria-describedby="basic-addon1"
+                            id="max_iter" value="100">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Tolerancia</span>
+                        <input type="text" class="form-control" placeholder="0.000001" aria-describedby="basic-addon1"
+                            id="tolerance" value="0.000001">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Last N-rows</span>
+                        <input type="text" class="form-control" placeholder="30" aria-describedby="basic-addon1"
+                            id="nrows" value="30">
+                    </div>
+
+                    <button id="calculation-btn" class="btn btn-primary">Calcular Búsqueda Incremental</button>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-5">
+            <div class="card" id="graph-container" style="height: 100vh; width: 100%;">
+                <div id="graph" style="height: 97%; width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="col-4">
+            <div class="card p-3">
+                <h4>Resultados</h4>
+                <div class="table-responsive">
+                    <table id="result-table" class="table table-striped table-bordered table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Iteración</th>
+                                <th>x</th>
+                                <th>Error Abs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Aquí JS meterá las filas -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
+    <script>
+        //Referencias
+        const mathField = document.getElementById('function');
+        const x0input = document.getElementById("x0")
+        const delta_x_input = document.getElementById("delta_x")
+        const max_iter_input = document.getElementById("max_iter")
+        const tolerance_input = document.getElementById("tolerance")
+        const nrows = document.getElementById("nrows")
+
+        //Variables
+        const ce = new ComputeEngine.ComputeEngine();
+
+        //Funciones
+        //Esta funcion se encarga de cambiar el formato String a ECMAScript 
+        function toECMAScript(expr) {
+            return expr
+                .replace(/e\^\(([^)]+)\)/g, "exp($1)")
+                .replace(/e\^([a-zA-Z0-9]+)/g, "exp($1)")
+                .replace(/\bpi\b/gi, "PI");
+        }
+
+        // Function to validate and get form values
+        function getFormValues() {
+            const x0Value = parseFloat(x0input.value) || 0;
+            const deltaXValue = parseFloat(delta_x_input.value) || 0.1;
+            const maxIterValue = parseInt(max_iter_input.value) || 100;
+            const toleranceValue = parseFloat(tolerance_input.value) || 0.000001;
+            const nrowsValue = parseInt(nrows.value) || 30;
+            
+            return {
+                function: mathField.value || "e^{-x}+\\sin x",
+                x0: x0Value,
+                delta_x: deltaXValue,
+                max_iter: maxIterValue,
+                tolerance: toleranceValue,
+                nrows: nrowsValue
+            };
+        }
+
+        const graficar = (data, raiz = NaN) => {
+            functionPlot({
+                target: "#graph",
+                grid: true,
+                width: document.getElementById('graph').offsetWidth,
+                height: document.getElementById('graph').offsetHeight,
+                data
+            });
+        }
+
+        // Default data to show function
+        defaultData = [
+            {
+                fn: "exp(-x)+sin(x)"
+            }
+        ]
+
+        graficar(defaultData)
+
+        //Logica de la previsualización
+        document.getElementById("previewButton").addEventListener("click", (event) => {
+            try {
+                const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
+                const graphData = [
+                    {
+                        fn: toECMAScript(ceExpression)
+                    }
+                ];
+                
+                graficar(graphData);
+            } catch (error) {
+                console.error('Error in preview:', error);
+                alert('Error en la previsualización. Verifica la función.');
+            }
+        });
+
+        document.getElementById("calculation-btn").addEventListener("click", (event) => {
+            // Get validated form values
+            const formValues = getFormValues();
+            
+            console.log("Sending data:", formValues); // Debug log
+
+            fetch('/eval/incremental_search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    function: formValues.function,
+                    x0: formValues.x0.toString(),
+                    delta_x: formValues.delta_x.toString(),
+                    max_iter: formValues.max_iter.toString(),
+                    tolerance: formValues.tolerance.toString(),
+                    nrows: formValues.nrows.toString()
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log("Received data:", data);
+
+                const tbody = document.querySelector("#result-table tbody");
+                tbody.innerHTML = ""; // limpiar por si acaso
+
+                // Handle the response structure from incremental_search
+                const history = data.history || data.historial;
+                
+                if (history && history.x && history.iterations) {
+                    for (let i = 0; i < history.iterations.length; i++) {
+                        const row = `
+                            <tr>
+                                <td>${history.iterations[i]}</td>
+                                <td>${history.x[i].toFixed(6)}</td>
+                                <td>${history.errorAbs[i].toExponential(3)}</td>
+                            </tr>
+                        `;
+                        tbody.insertAdjacentHTML("beforeend", row);
+                    }
+
+                    // Get the final result value
+                    const finalX = data.value || history.x[history.x.length - 1];
+                    const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
+
+                    // Graph the function and mark the result
+                    const graphData = [
+                        {
+                            fn: toECMAScript(ceExpression)
+                        },
+                        {
+                            points: [
+                                [finalX, -1000],
+                                [finalX, 1000]
+                            ],
+                            fnType: "points",
+                            graphType: "polyline",
+                            color: "red"
+                        }
+                    ];
+                    
+                    graficar(graphData);
+                    
+                    // Show result message
+                    if (data.message) {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-3';
+                        alertDiv.innerHTML = `
+                            ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.card p-3').appendChild(alertDiv);
+                        
+                        // Auto-dismiss after 5 seconds
+                        setTimeout(() => {
+                            if (alertDiv.parentNode) {
+                                alertDiv.remove();
+                            }
+                        }, 5000);
+                    }
+                } else {
+                    throw new Error('Invalid response structure');
+                }
+            })
+            .catch(error => {
+                console.error('Error in calculation:', error);
+                alert('Error en el cálculo. Revisa los valores ingresados: ' + error.message);
+            });
+        });
+    </script>
+
+</div>
+
+{% endblock %}

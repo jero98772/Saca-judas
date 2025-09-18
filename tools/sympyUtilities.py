@@ -55,3 +55,32 @@ def latex_to_sympy_str(f: str) -> str:
     # Retornar en formato str legible por sympy
     return str(expr)
 
+def latex_to_callable_function(latex_str):
+
+    # Convert LaTeX to sympy string (assuming you have this function)
+    sympy_str = latex_to_sympy_str(latex_str)
+    print(f"Converted to sympy string: {sympy_str}")
+    
+    # Create sympy symbol
+    x = Symbol('x')
+    
+    # Parse the string into a sympy expression
+    expr = sympify(sympy_str)
+    print(f"Sympy expression: {expr}")
+    
+    # Convert to callable function using lambdify
+    # Using 'numpy' module for better numerical performance
+    func = lambdify(x, expr, modules=['numpy', 'math'])
+    
+    # Test the function with a simple value to ensure it works
+    try:
+        test_result = func(1.0)
+        print(f"Function test at x=1.0: {test_result}")
+    except Exception as test_error:
+        print(f"Function test failed: {test_error}")
+        # Fallback to basic math module
+        func = lambdify(x, expr, modules=['math'])
+        test_result = func(1.0)
+        print(f"Function test with math module at x=1.0: {test_result}")
+    
+    return func

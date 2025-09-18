@@ -2,8 +2,6 @@
 
 {% block content %}
 
-<!-- TODO: Implementar input de la funcion -->
-
 <div id="container-fluid text-center">
     <div class="row align-items-center" style="height: 100vh;">
         <div class="col-3 ms-5">
@@ -24,30 +22,28 @@
 
                     <div class="input-group mb-3">
                         <button class="btn btn-outline-secondary" type="button" id="previewButton">Ver</button>
-                        <input type="text" class="form-control" placeholder="x0" id="x0">
+                        <input type="text" class="form-control" placeholder="x0" id="x0" value="0">
                     </div>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text" id="basic-addon1">Iteraciones maximas</span>
                         <input type="text" class="form-control" placeholder="10000" aria-describedby="basic-addon1"
-                            id="nmax">
+                            id="nmax" value="100">
                     </div>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text" id="basic-addon1">Tolerancia</span>
                         <input type="text" class="form-control" placeholder="0.0000001" aria-describedby="basic-addon1"
-                            id="tol">
+                            id="tol" value="0.0001">
                     </div>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text" id="basic-addon1">Last N-rows</span>
                         <input type="text" class="form-control" placeholder="30" aria-describedby="basic-addon1"
-                            id="nrows">
+                            id="nrows" value="30">
                     </div>
 
-                    <button id="calculation-btn">Graficar funcion</button>
-
-
+                    <button id="calculation-btn">Calcular Newton Method</button>
 
                 </div>
             </div>
@@ -84,7 +80,7 @@
 
         //Referencias
         const mathField = document.getElementById('function');
-        const derivateMathField = document.getElementById('function');
+        const derivateMathField = document.getElementById('derivateField'); // Fixed: was referencing 'function' again
         const toggle = document.getElementById('toggle-mathfield');
         const derivateField = document.getElementById('derivateField');
         const derivateFieldLabel = document.getElementById('derivateFieldLabel');
@@ -93,10 +89,8 @@
         const tol = document.getElementById("tol")
         const nrows = document.getElementById("nrows")
 
-
         //Variables
         const ce = new ComputeEngine.ComputeEngine();
-
 
         //Funciones
         //Esta funcion se encarga de camibiar el formato String a ECMAScript 
@@ -107,8 +101,23 @@
                 .replace(/\bpi\b/gi, "PI");
         }
 
-        const graficar = (data, raiz = NaN) => {
+        // Function to validate and get form values
+        function getFormValues() {
+            const x0Value = parseFloat(x0input.value) || 0;
+            const nmaxValue = parseInt(nmax.value) || 100;
+            const tolValue = parseFloat(tol.value) || 0.0001;
+            const nrowsValue = parseInt(nrows.value) || 30;
+            
+            return {
+                function: mathField.value || "e^{-x}+\\sin x",
+                x0: x0Value,
+                Nmax: nmaxValue,
+                tol: tolValue,
+                nrows: nrowsValue
+            };
+        }
 
+        const graficar = (data, raiz = NaN) => {
             functionPlot({
                 target: "#graph",
                 grid: true,
@@ -127,7 +136,6 @@
             }
         ]
 
-
         graficar(defaultData)
 
         //Logica para ocultar el math field de la derivada
@@ -136,115 +144,114 @@
             derivateFieldLabel.style.display = this.checked ? 'block' : 'none';
         });
 
-
         //Logica de la previsualizacion
         document.getElementById("previewButton").addEventListener("click", (event) => {
-
             const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
             let tangent_str
 
-
             if (!toggle.checked) {
-
                 fetch('/calculations/derivate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ function: mathField.value })
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        const df = ce.parse(data.resultado)
-
-                        const f = ce.parse(mathField.value)
-
-                        const n = parseFloat(document.getElementById("x0").value);
-
-                        const y0 = f.subs({ x: n }).toString();
-                        const m = df.subs({ x: n }).toString();
-
-                        tangent_str = `(${m})*(x - ${n}) + (${y0})`;
-                        tangent_str = toECMAScript(tangent_str)
-
-                        graphData = [
-                            {
-                                fn: toECMAScript(ceExpression)
-                            },
-                            {
-                                fn: tangent_str
-                            }
-                        ]
-
-                        graficar(graphData)
-
-                    })
-            } else {
-                const ceDerivateExpression = ce.parse(derivateField.value, { canonical: false }).toString();
-                tangent_str = toECMAScript(ceDerivateExpression)
-            }
-
-        })
-
-        document.getElementById("calculation-btn").addEventListener("click", (event) => {
-
-            const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
-            const ceDerivateExpression = ce.parse(derivateField.value, { canonical: false }).toString();
-
-            //TODO: Mandar la funcion al backend para obtener los resutados del metodo y recibirrlos
-            fetch('/eval/newton_method', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    function: mathField.value,
-                    x0: parseFloat(x0input.value),
-                    Nmax: parseInt(nmax.value),
-                    tol: parseFloat(tol.value),
-                    nrows: parseInt(nrows.value)
-                })
-            })
                 .then(response => response.json())
-                .then((data) => {
+                .then(data => {
+                    const df = ce.parse(data.resultado)
+                    const f = ce.parse(mathField.value)
+                    const n = parseFloat(document.getElementById("x0").value) || 0;
 
-                    console.log(data);
+                    const y0 = f.subs({ x: n }).toString();
+                    const m = df.subs({ x: n }).toString();
 
-                    const tbody = document.querySelector("#result-table tbody");
-                    tbody.innerHTML = ""; // limpiar por si acaso
-
-                    for (let i = 0; i < data.historial.iteraciones.length; i++) {
-                        const row = `
-                            <tr>
-                                <td>${data.historial.iteraciones[i]}</td>
-                                <td>${data.historial.x[i].toFixed(6)}</td>
-                                <td>${data.historial.errorAbs[i].toExponential(3)}</td>
-                            </tr>
-                        `;
-                        tbody.insertAdjacentHTML("beforeend", row);
-                    }
-
-                    lastX = data.historial.x[data.historial.x.length - 1]
+                    tangent_str = `(${m})*(x - ${n}) + (${y0})`;
+                    tangent_str = toECMAScript(tangent_str)
 
                     graphData = [
                         {
                             fn: toECMAScript(ceExpression)
                         },
                         {
-                            points: [
-                                [lastX, -1000],
-                                [lastX, 1000]
-                            ],
-                            fnType: "points",
-                            graphType: "polyline",
-                            color: "red"
+                            fn: tangent_str
                         }
                     ]
+
                     graficar(graphData)
                 })
+                .catch(error => {
+                    console.error('Error in preview:', error);
+                });
+            } else {
+                const ceDerivateExpression = ce.parse(derivateField.value, { canonical: false }).toString();
+                tangent_str = toECMAScript(ceDerivateExpression)
+            }
+        })
 
+        document.getElementById("calculation-btn").addEventListener("click", (event) => {
+            // Get validated form values
+            const formValues = getFormValues();
+            
+            console.log("Sending data:", formValues); // Debug log
 
-            // Graficar la función
+            fetch('/eval/newton_method', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    function: formValues.function,
+                    x0: formValues.x0.toString(),
+                    Nmax: formValues.Nmax.toString(),
+                    tol: formValues.tol.toString(),
+                    nrows: formValues.nrows.toString()
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log("Received data:", data);
 
+                const tbody = document.querySelector("#result-table tbody");
+                tbody.innerHTML = ""; // limpiar por si acaso
+
+                for (let i = 0; i < data.historial.iteraciones.length; i++) {
+                    const row = `
+                        <tr>
+                            <td>${data.historial.iteraciones[i]}</td>
+                            <td>${data.historial.x[i].toFixed(6)}</td>
+                            <td>${data.historial.errorAbs[i].toExponential(3)}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML("beforeend", row);
+                }
+
+                lastX = data.historial.x[data.historial.x.length - 1]
+                const ceExpression = ce.parse(mathField.value, { canonical: false }).toString();
+
+                graphData = [
+                    {
+                        fn: toECMAScript(ceExpression)
+                    },
+                    {
+                        points: [
+                            [lastX, -1000],
+                            [lastX, 1000]
+                        ],
+                        fnType: "points",
+                        graphType: "polyline",
+                        color: "red"
+                    }
+                ]
+                graficar(graphData)
+            })
+            .catch(error => {
+                console.error('Error in calculation:', error);
+                alert('Error en el cálculo. Revisa los valores ingresados.');
+            });
         })
     </script>
-
 
 </div>
 

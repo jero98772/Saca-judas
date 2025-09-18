@@ -10,9 +10,11 @@ from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
+from tools.methods.newton import newton_method_controller
+
 import json
 
-from controller import newton_method_controller
+#from controller import newton_method_controller
 
 app = FastAPI()
 
@@ -49,6 +51,7 @@ async def newton_method_post(request: Request, function: str = Form(...)):
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
+    print("hereeee")
     f = latex_to_sympy_str(function)
     answer = newton_method_controller(function=f, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
     print(answer)

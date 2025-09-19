@@ -32,6 +32,7 @@ async def index(request: Request):
 @app.get("/options", response_class=HTMLResponse)
 async def options(request: Request):
     function_names = get_function_names("tools/methods")
+    print(function_names)
     return templates.TemplateResponse("options.html", {"request": request,"function_names": function_names})
 
 
@@ -47,14 +48,17 @@ async def method_page(request: Request, method_name: str):
 @app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
         
+    print(function)
+        
     answer = derivatePythonExpr(function)    
+    
+    print(answer)
 
     return JSONResponse(content={"result": answer})
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
-    f = latex_to_sympy_str(function)
-    answer = newton_method_controller(function=f, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
+    answer = newton_method_controller(function=function, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
     print(answer)
     return JSONResponse(content=answer)
 

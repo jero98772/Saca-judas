@@ -1,5 +1,5 @@
 # secante.py
 '''Implementation of secante method'''
 
-def secante():
+def secant():
     pass

@@ -10,7 +10,22 @@ const tol = document.getElementById("tol")
 const nrows = document.getElementById("nrows")
 
 function pythonPowToJS(expr) {
-  return expr.replace(/\*\*/g, "^");
+    return expr.replace(/\*\*/g, "^");
+}
+
+function getFormValues() {
+    const x0Value = parseFloat(x0input.value) || 0;
+    const nmaxValue = parseInt(nmax.value) || 100;
+    const tolValue = parseFloat(tol.value) || 0.0001;
+    const nrowsValue = parseInt(nrows.value) || 30;
+
+    return {
+        function: mathField.value || "e^{-x}+\\sin x",
+        x0: x0Value,
+        Nmax: nmaxValue,
+        tol: tolValue,
+        nrows: nrowsValue
+    };
 }
 
 const graficar = (data, raiz = NaN) => {
@@ -53,7 +68,7 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
             .then(response => response.json())
             .then(data => {
 
-                const df = math.parse(data.result)
+                const df = math.parse(pythonPowToJS(data.result))
                 const f = math.parse(pythonPowToJS(mathField.value))
 
                 const a = parseFloat(x0input.value) || 0;
@@ -98,7 +113,10 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
 
 //Logic for get the table and results
 document.getElementById("calculation-btn").addEventListener("click", (event) => {
+
+
     // Get validated form values
+
     const formValues = getFormValues();
 
     console.log("Sending data:", formValues); // Debug log
@@ -108,10 +126,10 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
             function: formValues.function,
-            x0: formValues.x0.toString(),
-            Nmax: formValues.Nmax.toString(),
-            tol: formValues.tol.toString(),
-            nrows: formValues.nrows.toString()
+            x0: formValues.x0,
+            Nmax: formValues.Nmax,
+            tol: formValues.tol,
+            nrows: formValues.nrows
         })
     })
         .then(response => {

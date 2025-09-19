@@ -162,7 +162,14 @@ resultado = methodTaylorSeries("1/(1 + x)", 0, -0.5, 4, 15)
 
 
 # Imprimir los resultados en formato de tabla
-print(f"{'Iteración':>10} | {'x':>20} | {'Error Absoluto':>20}")
-print("-" * 60)
-for i, (x, error, it) in enumerate(zip(resultado["historial"]["x"], resultado["historial"]["errorAbs"], resultado["historial"]["iteraciones"])):
-    print(f"{it:10} | {x:>20} | {error:>20}")
+# print(f"{'Iteración':>10} | {'x':>20} | {'Error Absoluto':>20}")
+# print("-" * 60)
+# for i, (x, error, it) in enumerate(zip(resultado["historial"]["x"], resultado["historial"]["errorAbs"], resultado["historial"]["iteraciones"])):
+#     print(f"{it:10} | {x:>20} | {error:>20}")
+
+
+x = symbols("x")
+
+expr = sympify("(((exp(-1) + sin(1)-exp(-1) + sin(1))/(1-1))*(x-1))+exp(-1) + sin(1)")
+
+print(expr)

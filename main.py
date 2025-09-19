@@ -11,6 +11,7 @@ from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 from tools.methods.newton import newton_method_controller
+from tools.methods.secant import secant_method_controller
 from tools.methods.incremental_search import incremental_search
 
 
@@ -60,6 +61,27 @@ async def newton_method_post(request: Request, function: str = Form(...)):
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
     answer = newton_method_controller(function=function, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
     print(answer)
+    
+    return JSONResponse(content=answer)
+
+@app.post("/eval/secant", response_class=HTMLResponse)
+async def secant_method_post(
+    request: Request,
+    function: str = Form(...),
+    x0: float = Form(...),
+    x1: float = Form(...),
+    Nmax: int = Form(...),
+    tol: float = Form(...),
+    nrows: int = Form(...)
+):
+    answer = secant_method_controller(
+        function=function,
+        x0=x0,
+        x1=x1,  
+        Nmax=Nmax,
+        tol=tol,
+        nrows=nrows
+    )
     return JSONResponse(content=answer)
 
 

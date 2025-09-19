@@ -7,7 +7,7 @@
             <div class="col-12 col-md-3 mb-md-0 mb-2">
                 <div class="card-container">
                     <div class="card p-4">
-                        <h1>Newton Method</h1>
+                        <h1>Secant Method</h1>
 
                         <!-- TODO: Este formulario deberia actuar como componente -->
                         <h6>Function in <span style="font-style:italic;">Python format</span></h6>
@@ -18,27 +18,19 @@
                                 aria-describedby="basic-addon1" id="function" value="exp(-x) + sin(x)">
                         </div>
 
-                        <div class="form-check form-switch mb-3 text-start">
-                            <input class="form-check-input" type="checkbox" id="toggle-mathfield" value="off">
-                            <label class="form-check-label" for="toggle-mathfield">Manual Derivate</label>
+                        <div class="input-group mb-1">
+                            <span class="input-group-text " id="basic-addon2">x0</span>
+                            <input type="text" class="form-control" placeholder="x0" id="x0"
+                                aria-describedby="basic-addon2" value="1">
+                            <span class="input-group-text " id="basic-addon3">x1</span>
+                            <input type="text" class="form-control" placeholder="x1" id="x1"
+                                aria-describedby="basic-addon3" value="2">
                         </div>
 
-                        <div id="derivateField" style="display: none;">
-                            <h6 class="">Derivate in <span style="font-style:italic;">Python format</span></h6>
-                            <div class="input-group mb-3">
-                                <span class="input-group-text">f'(x) =</span>
-                                <input type="text" class="form-control" placeholder="-exp(-x)+cos(x)"
-                                    aria-describedby="basic-addon1" value="-exp(-x)+cos(x)">
-                            </div>
-                        </div>
+                        <button class="btn btn-outline-success mb-3" type="button" id="previewButton">Ver</button>
 
                         <div class="input-group mb-3">
-                            <button class="btn btn-outline-secondary" type="button" id="previewButton">Ver</button>
-                            <input type="text" class="form-control" placeholder="x0" id="x0" value="0">
-                        </div>
-
-                        <div class="input-group mb-3">
-                            <span class="input-group-text" id="basic-addon1">Iteraciones maximas</span>
+                            <span class="input-group-text " id="basic-addon1">Iteraciones maximas</span>
                             <input type="text" class="form-control" placeholder="10000" aria-describedby="basic-addon1"
                                 id="nmax" value="100">
                         </div>
@@ -55,7 +47,7 @@
                                 id="nrows" value="30">
                         </div>
 
-                        <button id="calculation-btn">Calcular Newton Method</button>
+                        <button id="calculation-btn">Calculate Secant Method</button>
 
                     </div>
                 </div>
@@ -69,27 +61,27 @@
 
             <div class="col-12 col-md-5 mb-md-0 mb-2">
                 <div class="card p-3">
-                    <h4>Resultados</h4>
+                    <h4>Results</h4>
                     <div class="table-responsive">
                         <table id="result-table" class="table table-striped table-bordered table-hover table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Iteración</th>
-                                    <th>x</th>
-                                    <th>Error Abs</th>
+                                    <th>Iteration</th>
+                                    <th>x<sub>i</sub></th>
+                                    <th>f(x<sub>i</sub>)</th>
+                                    <th>Error (E)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Aquí JS meterá las filas -->
+                                <!-- Rows inserted by JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
+            <script src="/static/js/secant.js"></script>
+
         </div>
-
-        <script src="/static/js/newton.js"></script>
-
     </div>
-</div>
-{% endblock %}
+    {% endblock %}

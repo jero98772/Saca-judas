@@ -6,7 +6,7 @@ from fastapi.requests import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from tools.tools import get_function_names 
-from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str, latex_to_callable_function
+from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str, latex_to_callable_function, derivatePythonExpr
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
@@ -46,9 +46,10 @@ async def method_page(request: Request, method_name: str):
 
 @app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
-    answer = derivateLatex(function)
-    print(answer)
-    return JSONResponse(content={"resultado": answer})
+        
+    answer = derivatePythonExpr(function)    
+
+    return JSONResponse(content={"result": answer})
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):

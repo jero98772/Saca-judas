@@ -70,3 +70,11 @@ canvas{
     flex: 1 1 auto;
     overflow: auto;
 }
+
+@media screen and (min-width: 736px) {
+    
+    #graph-container {
+        height: 50vh; 
+    }
+
+}

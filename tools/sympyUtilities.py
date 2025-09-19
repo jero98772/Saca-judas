@@ -32,6 +32,12 @@ def derivateLatex(f: str):
     
     return latex(dfexpr) 
 
+
+def derivatePythonExpr(f):
+    x = symbols("x")
+    return str(diff(f,x))
+
+
 def latex_to_sympy_str(f: str) -> str:
     """
     Convierte una expresión en LaTeX a un string que sympy pueda volver a procesar.

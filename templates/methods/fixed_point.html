@@ -1,0 +1,189 @@
+{# templates/methods/fixed_point.html #}
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+  /* Keep content above the animated background */
+  .bring-to-front { position: relative; z-index: 10; }
+
+  /* --- Newton-style GLOW --- */
+  :root{
+    --green: #0b7d2e;
+    --neon: rgba(0,255,128,0.35);
+    --card-bg: #ffffff;
+  }
+
+  .glow-card{
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow:
+      0 14px 28px rgba(0,0,0,0.20),
+      0 0 0 2px rgba(255,255,255,0.6),
+      0 0 24px var(--neon);            /* greenish outer halo */
+    padding: 22px;
+  }
+
+  .glow-title{
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111;                       /* black text */
+    text-shadow:
+      0 0 8px rgba(0,255,128,0.25),    /* soft glow */
+      0 0 18px rgba(0,255,128,0.15);
+    margin-bottom: 12px;
+    letter-spacing: .2px;
+  }
+
+  .btn-newton{
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    width: 100%;
+    padding: 12px 14px;
+    box-shadow:
+      inset 0 0 0 3px rgba(0,255,128,0.18),
+      0 10px 22px rgba(0,128,0,0.35),
+      0 0 18px var(--neon);            /* button halo */
+    transition: transform .06s ease, filter .15s ease, box-shadow .15s ease;
+  }
+  .btn-newton:hover{ filter: brightness(1.06); }
+  .btn-newton:active{ transform: translateY(1px); }
+
+  /* Result containers also with white background and rounded border */
+  .panel-white{
+    background:#fff; border-radius:16px;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.15);
+  }
+
+  /* Plot image with white frame */
+  .plot-frame{
+    background:#fff; border:1px solid rgba(0,0,0,0.08);
+    border-radius:12px; padding:8px;
+  }
+</style>
+
+<div class="container-fluid mt-4 bring-to-front">
+  <div class="row g-4">
+    <!-- Left column: form card -->
+    <div class="col-12 col-lg-4">
+      <div class="glow-card h-100">
+        <h2 class="glow-title">Fixed-Point Method</h2>
+        <p class="text-muted" style="margin-top:-6px">
+          Iterate <code>x_{n+1} = g(x_n)</code> until <code>|x_{n+1}-x_n| ≤ tol</code>.
+          If you don’t enter <code>g(x)</code> but do provide <code>f(x)</code>, we use
+          <code>g(x) = x - f(x)/f'(x)</code> (numerical derivative).
+        </p>
+
+        <!-- FORM -->
+        <form class="row g-3" method="post" action="/eval/fixed_point">
+          <div class="col-12">
+            <label for="g" class="form-label">g(x)</label>
+            <input type="text" class="form-control" id="g" name="g"
+                   placeholder="e.g.: (x**2 + 4.16)/6"
+                   value="{{ (form.g if form is defined else '') | default('') }}">
+          </div>
+
+          <div class="col-12">
+            <label for="f" class="form-label">f(x) (optional)</label>
+            <input type="text" class="form-control" id="f" name="f"
+                   placeholder="e.g.: x**2 - 2"
+                   value="{{ (form.f if form is defined else '') | default('') }}">
+          </div>
+
+          <div class="col-4">
+            <label for="x0" class="form-label">x0</label>
+            <input type="number" step="any" class="form-control" id="x0" name="x0"
+                   value="{{ (form.x0 if form is defined else '') | default('') }}" required>
+          </div>
+
+          <div class="col-4">
+            <label for="tol" class="form-label">Tolerance</label>
+            <input type="number" step="any" class="form-control" id="tol" name="tol"
+                   value="{{ (form.tol if form is defined else '1e-6') | default('1e-6') }}">
+          </div>
+
+          <div class="col-4">
+            <label for="max_iter" class="form-label">Max iterations</label>
+            <input type="number" class="form-control" id="max_iter" name="max_iter"
+                   value="{{ (form.max_iter if form is defined else '100') | default('100') }}">
+          </div>
+
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="on"
+                     id="use_relative_error" name="use_relative_error"
+                     {% if form is defined and form.use_relative_error %}checked{% endif %}>
+              <label class="form-check-label" for="use_relative_error">
+                Use relative error (|xₙ₊₁−xₙ| / max(1, |xₙ₊₁|))
+              </label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button class="btn-newton">Compute</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right column: plot + summary + table -->
+    <div class="col-12 col-lg-8">
+      {% if result is defined and result %}
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="plot-frame">
+            <img alt="Plot" class="img-fluid rounded" src="{{ result.plot_data_url }}">
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="panel-white p-3">
+            <h5 class="mb-3">Summary</h5>
+            <div class="row">
+              <div class="col-6 col-md-3"><strong>Converged:</strong> {{ 'Yes' if result.converged else 'No' }}</div>
+              <div class="col-6 col-md-3"><strong>Final x:</strong> {{ '%.10f'|format(result.x_final) }}</div>
+              <div class="col-12 col-md-6 mt-2 mt-md-0"><strong>Reason:</strong> {{ result.reason }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="panel-white p-3">
+            <h5 class="mb-3">Iterations</h5>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>i</th>
+                    <th>xᵢ</th>
+                    <th>g(xᵢ)</th>
+                    <th>f(xᵢ)</th>
+                    <th>Eᵢ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in result.steps %}
+                  <tr>
+                    <td>{{ s.i }}</td>
+                    <td>{{ '%.10f'|format(s.x) }}</td>
+                    <td>{{ '%.10f'|format(s.gx) }}</td>
+                    <td>{% if s.fx is not none %}{{ '%.10f'|format(s.fx) }}{% else %}—{% endif %}</td>
+                    <td>{{ '%.10e'|format(s.err) }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

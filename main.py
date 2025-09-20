@@ -11,6 +11,7 @@ from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 from tools.methods.newton import newton_method_controller
+from tools.methods.newton import bisection_controller
 from tools.methods.secant import secant_method_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
@@ -21,10 +22,10 @@ import json
 
 app = FastAPI()
 
-# Mount static files
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Set up templates directory
+
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
@@ -64,6 +65,16 @@ async def newton_method_post(request: Request, function: str = Form(...), x0:flo
     print(answer)
     
     return JSONResponse(content=answer)
+
+@app.post("/eval/bisection", response_class=HTMLResponse)
+async def bisection_post(request: Request, function: str = Form(...), a: float = Form(...), b: float = Form(...), nmax: int = Form(...), tolerance: float = Form(...), last_n_rows: int = Form(...)):
+
+    answer = bisection_controller(function=function, a=a, b=b, nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
+    print(answer)
+
+
+    return JSONResponse(content=answer)
+
 
 
 @app.get("/methods/punto-fijo", response_class=HTMLResponse)

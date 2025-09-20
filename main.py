@@ -14,6 +14,7 @@ from tools.methods.newton import newton_method_controller
 from tools.methods.secant import secant_method_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
+from tools.methods.gaussian_elimination_with_pivot_total import run_gauss_pivote_web
 
 import json
 
@@ -109,7 +110,22 @@ async def fixed_point_page(request: Request):
         "methods/fixed_point.html",
         {"request": request, "method_name": "fixed_point", "form": {}, "result": None}
     )
+#ajuste
+@app.get("/calculations/gauss_pivote", response_class=HTMLResponse)
+async def gauss_pivote_get(request: Request):
+    return templates.TemplateResponse(
+        "methods/gaussian_elimination_with_pivot_total.html",  
+        {"request": request, "form": {}, "result": None}
+    )
 
+@app.post("/eval/gauss_pivote", response_class=HTMLResponse)
+async def gauss_pivote_eval(request: Request, matrix: str = Form(...)):
+    result = run_gauss_pivote_web(matrix)
+    return templates.TemplateResponse(
+        "methods/gaussian_elimination_with_pivot_total.html",  
+        {"request": request, "form": {"matrix": matrix}, "result": result}
+    )
+#------------------------------------------------------------------------------------
 @app.post("/eval/secant", response_class=HTMLResponse)
 async def secant_method_post(
     request: Request,

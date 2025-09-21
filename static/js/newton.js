@@ -29,6 +29,11 @@ function getFormValues() {
 }
 
 const graficar = (data, raiz = NaN) => {
+
+    const graph = document.getElementById('graph');
+
+    graph.innerHTML = "";
+    
     functionPlot({
         target: "#graph",
         grid: true,
@@ -71,7 +76,19 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
                 const df = math.parse(pythonPowToJS(data.result))
                 const f = math.parse(pythonPowToJS(mathField.value))
 
+                const fCompiled = f.compile();
+                const fDerivatedCompiled = df.compile();
+
                 const a = parseFloat(x0input.value) || 0;
+
+                let xIntercept
+                if(fDerivatedCompiled.evaluate({x:a}) != 0){
+                    xIntercept = a - fCompiled.evaluate({x:a}) / fDerivatedCompiled.evaluate({x:a});
+                }else{
+                    xIntercept = 0
+                }
+                
+
 
                 const substituted = f.transform(function (n) {
                     if (n.isSymbolNode && n.name === "x") {
@@ -96,6 +113,15 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
                     },
                     {
                         fn: tangent_str
+                    },
+                    {
+                        points: [
+                            [a, fCompiled.evaluate({ x: a })],
+                            [xIntercept, 0],
+                        ],
+                        fnType: 'points',
+                        graphType: 'scatter',
+                        attr: { r: 6 }
                     }
                 ]
 

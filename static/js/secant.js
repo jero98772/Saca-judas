@@ -64,7 +64,17 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
 
     graphData = [
         { fn: pythonPowToJS(mathField.value) },
-        { fn: secant_str }
+        { fn: secant_str },
+        {
+            points: [
+                [x0, f0],
+                [x1, f1],
+            ],
+            fnType: 'points',
+            graphType: 'scatter',
+            attr: { r: 6 }
+        }
+
     ];
 
     graficar(graphData);

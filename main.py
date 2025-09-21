@@ -11,7 +11,7 @@ from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 from tools.methods.newton import newton_method_controller
-from tools.methods.newton import bisection_controller
+#from tools.methods.newton import bisection_controller
 from tools.methods.secant import secant_method_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
@@ -167,17 +167,6 @@ async def incremental_search_post(request: Request, function: str = Form(...), x
 
         print(f)
         answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter, tolerance=tolerance)
-        """
-        if answer.get("history"):
-            history = answer["history"]
-            if len(history.get("x", [])) > nrows:
-                start_idx = len(history["x"]) - nrows
-                answer["history"] = {
-                    "x": history["x"][start_idx:],
-                    "errorAbs": history["errorAbs"][start_idx:],
-                    "iterations": history["iterations"][start_idx:]
-                }
-        """
         print(f"Answer: {answer}")
         
         return JSONResponse(content=answer)

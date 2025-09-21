@@ -90,3 +90,38 @@ def latex_to_callable_function(latex_str):
         print(f"Function test with math module at x=1.0: {test_result}")
     
     return func
+
+
+def latex_to_callable_function(latex_str):
+
+    # Skip LaTeX conversion for Python expressions
+    if not any(latex_char in latex_str for latex_char in ['\\', '{', '}', '^']):
+        # It's likely a Python expression, use it directly
+        sympy_str = latex_str
+    else:
+        f = f.replace(r"\pi", "pi")
+        
+        # Try antlr backend first (more robust)
+        expr = parse_latex(f, backend="antlr")
+        
+        # Check if it's actually a SymPy expression before accessing free_symbols
+        if hasattr(expr, 'free_symbols'):
+            # Normalizar constante e -> E
+            if Symbol('e') in expr.free_symbols:
+                expr = expr.subs(Symbol('e'), E)
+            
+            # Normalizar producto pi (p*i) en caso raro
+            p, i = symbols("p i")
+            if expr.has(p*i):
+                expr = expr.subs(p*i, pi)
+        
+        sympy_str = str(expr)
+
+    
+    print(f"Using sympy string: {sympy_str}")
+    
+    x = Symbol('x')
+    expr = sympify(sympy_str)
+    func = lambdify(x, expr, modules=['numpy', 'math'])
+    
+    return func

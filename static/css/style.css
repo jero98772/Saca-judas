@@ -87,3 +87,8 @@ canvas {
     stroke: blue;
     /* color de la línea */
 }
+
+.table-container {
+    max-height: 80vh; /* un poco menos que el alto de la pantalla */
+    overflow-y: auto;  /* activa scroll vertical si se excede */
+}

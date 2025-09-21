@@ -72,7 +72,6 @@ async def bisection_post(request: Request, function: str = Form(...), a: float =
     answer = bisection_controller(function=function, a=a, b=b, nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
     print(answer)
 
-
     return JSONResponse(content=answer)
 
 

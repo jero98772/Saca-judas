@@ -30,7 +30,7 @@ function getFormValues() {
 
 
 function postValidateForm(values) {
-    
+
     const f = math.parse(pythonPowToJS(mathField.value))
     const fa = f.evaluate({ x: values.a });
     const fb = f.evaluate({ x: values.b });
@@ -89,12 +89,23 @@ function validateForm(values) {
 }
 
 // === UTILITY: show validation messages ===
-function showMessage(msg) {
+function showMessage(msg, type = "danger") {
     const messageBox = document.getElementById("result-message");
     if (msg) {
         messageBox.style.display = "block";
-        messageBox.classList.remove("alert-info");
-        messageBox.classList.add("alert-danger");
+
+        // limpiar clases anteriores
+        messageBox.classList.remove("alert-danger", "alert-success", "alert-info");
+
+        // aplicar la clase segun el tipo
+        if (type === "success") {
+            messageBox.classList.add("alert-success");
+        } else if (type === "info") {
+            messageBox.classList.add("alert-info");
+        } else {
+            messageBox.classList.add("alert-danger");
+        }
+
         messageBox.textContent = msg;
     } else {
         messageBox.style.display = "none";
@@ -173,10 +184,8 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
 
 
 
-//Logic for get the table and results
+// Logic for get the table and results
 document.getElementById("calculation-btn").addEventListener("click", (event) => {
-
-
     const formValues = getFormValues();
     const validation = validateForm(formValues);
 
@@ -185,21 +194,28 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         return;
     }
 
+    const postValidation = postValidateForm(formValues)
+
+    if (!postValidation.valid) {
+        showMessage(postValidation.message)
+        return;
+    }
+
     // Clear error message
     showMessage("");
 
     console.log("Sending data:", formValues); // Debug log
 
-    fetch('/eval/secant', {
+    fetch('/eval/bisection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
             function: formValues.function,
             a: formValues.a,
             b: formValues.b,
-            Nmax: formValues.Nmax,
-            tol: formValues.tol,
-            nrows: formValues.nrows
+            nmax: formValues.Nmax,
+            tolerance: formValues.tol,
+            last_n_rows: formValues.nrows
         })
     })
         .then(response => {
@@ -211,28 +227,33 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         .then((data) => {
             console.log("Received data:", data);
 
+            // Mostrar mensaje que viene del backend
+            showMessage(data.message, "success");
+
+            // Limpiar y poblar la tabla
             const tbody = document.querySelector("#result-table tbody");
             tbody.innerHTML = ""; // clear table first
 
-            for (let i = 0; i < data.history.iter.length; i++) {
+            for (let i = 0; i < data.iterations.length; i++) {
                 const row = `
-            <tr>
-                <td>${data.history.iter[i]}</td>
-                <td>${data.history.xi[i].toFixed(6)}</td>
-                <td>${data.history["f(xi)"][i].toFixed(6)}</td>
-                <td>${data.history.E[i].toExponential(3)}</td>
-            </tr>
-        `;
+                    <tr>
+                        <td>${data.iterations[i]}</td>
+                        <td>${data.roots[i].toFixed(6)}</td>
+                        <td>${(math.parse(pythonPowToJS(formValues.function))
+                        .compile()
+                        .evaluate({ x: data.roots[i] })
+                    ).toFixed(6)}</td>
+                        <td>${data.errors[i].toExponential(3)}</td>
+                    </tr>
+                `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 
-            // Last approximation
-            lastX = data.history.xi[data.history.xi.length - 1]
+            // Última aproximación
+            const lastX = data.final_root;
 
-            graphData = [
-                {
-                    fn: mathField.value
-                },
+            const graphData = [
+                { fn: formValues.function },
                 {
                     points: [
                         [lastX, -1000],
@@ -242,12 +263,12 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
                     graphType: "polyline",
                     color: "red"
                 }
-            ]
-            graficar(graphData)
-        })
+            ];
 
+            graficar(graphData);
+        })
         .catch(error => {
             console.error('Error in calculation:', error);
-            alert('Error en el cálculo. Revisa los valores ingresados.');
+            showMessage("Error in calculation. Please check input values.");
         });
-})
+});

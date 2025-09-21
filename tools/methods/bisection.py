@@ -2,24 +2,13 @@ from sympy import *
 
 def bisection(f: str, a: float, b: float, nmax: int, last_n_rows: int, tolerance: float):
 
-    if a >= b:
-        return {"message": "Left endpoint 'a' must be less than right endpoint 'b'", "error": "Interval Error"}
-
     x = symbols("x")
     f_math = lambdify(x, sympify(f), "math")
 
-    if f_math(a) == 0:
-        return {"message": f"Root found at a = {a}", "value": a}
-    if f_math(b) == 0:
-        return {"message": f"Root found at b = {b}", "value": a}
-
-
-    if f_math(a) * f_math(b) > 0:
-        return {"message": "The function must change sign in the interval [a, b]"}
     
     list_ite, list_a, list_b, list_root, list_abs = [], [], [], [], []
 
-    x_0 = (a+b)/2  # initial midpoint
+    x_0 = a
     for i in range(nmax):
         middle = (a+b)/2
         abs_error = abs(x_0 - middle)

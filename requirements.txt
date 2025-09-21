@@ -7,3 +7,4 @@ sympy
 openai
 manim
 lark
+matplotlib

@@ -7,7 +7,7 @@
             <div class="col-12 col-md-3 mb-md-0 mb-2">
                 <div class="card-container">
                     <div class="card p-4">
-                        <h1>Bisection Method</h1>
+                        <h1>False Position Method</h1>
 
                         <h6>Function in <span style="font-style:italic;">Python format</span></h6>
 
@@ -37,7 +37,7 @@
                         <div class="input-group mb-3">
                             <span class="input-group-text" id="basic-addon1">Tolerancia</span>
                             <input type="text" class="form-control" placeholder="0.0000001"
-                                aria-describedby="basic-addon1" id="tol" value="0.0001">
+                                aria-describedby="basic-addon1" id="tol" value="0.0000001">
                         </div>
 
                         <div class="input-group mb-3">
@@ -46,7 +46,7 @@
                                 id="nrows" value="30">
                         </div>
 
-                        <button id="calculation-btn">Calculate Bisection Method</button>
+                        <button id="calculation-btn">Calculate False Position Method</button>
 
                     </div>
                 </div>
@@ -68,8 +68,10 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Iter</th>
-                                    <th>Middels</th>
-                                    <th>f(middles)</th>
+                                    <th>a</th>
+                                    <th>x <sub>m</sub></th>
+                                    <th>b</th>
+                                    <th>f(x<sub>m</sub>)</th>
                                     <th>Error (E)</th>
                                 </tr>
                             </thead>
@@ -82,7 +84,7 @@
                 </div>
             </div>
 
-            <script src="/static/js/bisection.js"></script>
+            <script src="/static/js/false_position.js"></script>
 
         </div>
     </div>

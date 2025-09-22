@@ -13,6 +13,7 @@ from tools.llm_tools import chat_answer
 from tools.methods.newton import newton_method_controller
 from tools.methods.bisection import bisection_controller
 from tools.methods.secant import secant_method_controller
+from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
 from tools.methods.gaussian_elimination_with_pivot_total import run_gauss_pivote_web
@@ -70,7 +71,27 @@ async def bisection_post(request: Request, function: str = Form(...), a: float =
 
     return JSONResponse(content=answer)
 
+@app.post("/eval/false_position", response_class=HTMLResponse)
+async def false_position_post(
+    request: Request,
+    function: str = Form(...),
+    a: float = Form(...),
+    b: float = Form(...),
+    nmax: int = Form(...),
+    tolerance: float = Form(...),
+    last_n_rows: int = Form(...)
+):
+    answer = false_position_controller(
+        function=function,
+        a=a,
+        b=b,
+        nmax=nmax,
+        tolerance=tolerance,
+        last_n_rows=last_n_rows
+    )
+    print(answer)
 
+    return JSONResponse(content=answer)
 
 @app.get("/methods/punto-fijo", response_class=HTMLResponse)
 def get_punto_fijo(request: Request):

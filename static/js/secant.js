@@ -29,6 +29,11 @@ function getFormValues() {
 }
 
 const graficar = (data) => {
+
+    const graph = document.getElementById('graph');
+
+    graph.innerHTML = "";
+    
     functionPlot({
         target: "#graph",
         grid: true,

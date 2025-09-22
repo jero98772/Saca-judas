@@ -43,6 +43,30 @@ const graficar = (data, raiz = NaN) => {
     });
 }
 
+function showMessage(msg, type = "danger") {
+    const messageBox = document.getElementById("result-message");
+    if (msg) {
+        messageBox.style.display = "block";
+
+        // limpiar clases anteriores
+        messageBox.classList.remove("alert-danger", "alert-success", "alert-info");
+
+        // aplicar la clase segun el tipo
+        if (type === "success") {
+            messageBox.classList.add("alert-success");
+        } else if (type === "info") {
+            messageBox.classList.add("alert-info");
+        } else {
+            messageBox.classList.add("alert-danger");
+        }
+
+        messageBox.textContent = msg;
+    } else {
+        messageBox.style.display = "none";
+        messageBox.textContent = "";
+    }
+}
+
 const preview = (derivatedFunction) => {
     const df = math.parse(pythonPowToJS(derivatedFunction))
     const f = math.parse(pythonPowToJS(mathField.value))
@@ -168,6 +192,8 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         })
         .then((data) => {
             console.log("Received data:", data);
+        
+            showMessage(data.message, data.type)
 
             const tbody = document.querySelector("#result-table tbody");
             tbody.innerHTML = ""; // limpiar por si acaso
@@ -183,7 +209,12 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 
-            lastX = data.historial.x[data.historial.x.length - 1]
+            if (data.historial.x[data.historial.x.length - 1]){
+                lastX = data.historial.x[data.historial.x.length - 1]
+            }else { 
+                lastX = 100000000000000
+            }
+
 
             graphData = [
                 {

@@ -183,6 +183,12 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
             fnType: 'points',
             graphType: 'scatter',
             attr: { r: 3 }
+        },
+        {
+            graphType: 'text',
+            location: [x_intersect, 1],
+            text: 'Middle',
+            color: "black"
         }
     ];
     annotations = [

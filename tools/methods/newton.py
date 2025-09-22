@@ -17,6 +17,31 @@ def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:st
     
     for n in range(Nmax):
         
+        try: 
+            test = 1/deriv(x0)
+        except OverflowError:
+            return {
+                "message": "f'(x0) is too Big or to small for f(x0)/f'(x0)",
+                "value": x0,
+                "type":"danger",
+                "historial": {
+                    "x": historial_x,
+                    "errorAbs": historial_errorAbs,
+                    "iteraciones": historial_iteraciones
+                }
+            }
+        except ZeroDivisionError:
+            return {
+                "message": "Se produjo division por 0, revisar las condiciones de que f' no sea 0 en el intervalo",
+                "value": x0,
+                "type":"danger",
+                "historial": {
+                    "x": historial_x,
+                    "errorAbs": historial_errorAbs,
+                    "iteraciones": historial_iteraciones
+                }
+            }
+        
         x1 = x0 - (func(x0)/deriv(x0))
         
         errorAbs = abs(x1 - x0)
@@ -35,6 +60,7 @@ def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:st
             return {
                 "message": "Tolerancia satisfecha",
                 "value": x1,
+                "type":"success",
                 "historial": {
                     "x": historial_x,
                     "errorAbs": historial_errorAbs,
@@ -46,6 +72,7 @@ def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:st
             return {
                 "message": "Cantidad de iteraciones superadas",
                 "value": x1,
+                "type":"info",
                 "historial": {
                     "x": historial_x,
                     "errorAbs": historial_errorAbs,
@@ -53,18 +80,6 @@ def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:st
                 }
             }
         
-        try: 
-            test = 1/deriv(x1)
-        except ZeroDivisionError:
-            return {
-                "message": "Se produjo division por 0, revisar las condiciones de que f' no sea 0 en el intervalo",
-                "value": x1,
-                "historial": {
-                    "x": historial_x,
-                    "errorAbs": historial_errorAbs,
-                    "iteraciones": historial_iteraciones
-                }
-            }
         
         x0 = x1
     

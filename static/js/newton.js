@@ -3,7 +3,7 @@
 const mathField = document.getElementById('function');
 const toggle = document.getElementById('toggle-mathfield');
 const derivateField = document.getElementById('derivateField');
-const derivateFieldLabel = document.getElementById('derivateFieldLabel');
+const derivateInput = document.getElementById('derivateInput');
 const x0input = document.getElementById("x0")
 const nmax = document.getElementById("nmax")
 const tol = document.getElementById("tol")
@@ -16,7 +16,7 @@ function pythonPowToJS(expr) {
 function getFormValues() {
     const x0Value = parseFloat(x0input.value) || 0;
     const nmaxValue = parseInt(nmax.value) || 100;
-    const tolValue = parseFloat(tol.value) || 0.0001;
+    const tolValue = parseFloat(tol.value) || 0.0000001;
     const nrowsValue = parseInt(nrows.value) || 30;
 
     return {
@@ -33,7 +33,7 @@ const graficar = (data, raiz = NaN) => {
     const graph = document.getElementById('graph');
 
     graph.innerHTML = "";
-    
+
     functionPlot({
         target: "#graph",
         grid: true,
@@ -41,6 +41,62 @@ const graficar = (data, raiz = NaN) => {
         height: document.getElementById('graph').offsetHeight,
         data
     });
+}
+
+const preview = (derivatedFunction) => {
+    const df = math.parse(pythonPowToJS(derivatedFunction))
+    const f = math.parse(pythonPowToJS(mathField.value))
+
+    const fCompiled = f.compile();
+    const fDerivatedCompiled = df.compile();
+
+    const a = parseFloat(x0input.value) || 0;
+
+    let xIntercept
+    if (fDerivatedCompiled.evaluate({ x: a }) != 0) {
+        xIntercept = a - fCompiled.evaluate({ x: a }) / fDerivatedCompiled.evaluate({ x: a });
+    } else {
+        xIntercept = 0
+    }
+
+
+
+    const substituted = f.transform(function (n) {
+        if (n.isSymbolNode && n.name === "x") {
+            return new math.ConstantNode(a);
+        }
+        return n;
+    });
+
+    const substitutedDerivate = df.transform(function (n) {
+        if (n.isSymbolNode && n.name === "x") {
+            return new math.ConstantNode(a);
+        }
+        return n;
+    });
+
+    tangent_str = `(${substituted}) + ((${substitutedDerivate})*(x-${a}))`
+    tangent_str = pythonPowToJS(tangent_str)
+
+    graphData = [
+        {
+            fn: pythonPowToJS(mathField.value)
+        },
+        {
+            fn: tangent_str
+        },
+        {
+            points: [
+                [a, fCompiled.evaluate({ x: a })],
+                [xIntercept, 0],
+            ],
+            fnType: 'points',
+            graphType: 'scatter',
+            attr: { r: 6 }
+        }
+    ]
+
+    graficar(graphData)
 }
 
 defaultData = [
@@ -57,7 +113,6 @@ graficar(defaultData)
 //Logica para ocultar el math field de la derivada
 toggle.addEventListener('change', function () {
     derivateField.style.display = this.checked ? 'block' : 'none';
-    derivateFieldLabel.style.display = this.checked ? 'block' : 'none';
 });
 
 //Logica de la previsualizacion
@@ -72,66 +127,13 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
         })
             .then(response => response.json())
             .then(data => {
-
-                const df = math.parse(pythonPowToJS(data.result))
-                const f = math.parse(pythonPowToJS(mathField.value))
-
-                const fCompiled = f.compile();
-                const fDerivatedCompiled = df.compile();
-
-                const a = parseFloat(x0input.value) || 0;
-
-                let xIntercept
-                if(fDerivatedCompiled.evaluate({x:a}) != 0){
-                    xIntercept = a - fCompiled.evaluate({x:a}) / fDerivatedCompiled.evaluate({x:a});
-                }else{
-                    xIntercept = 0
-                }
-                
-
-
-                const substituted = f.transform(function (n) {
-                    if (n.isSymbolNode && n.name === "x") {
-                        return new math.ConstantNode(a);
-                    }
-                    return n;
-                });
-
-                const substitutedDerivate = df.transform(function (n) {
-                    if (n.isSymbolNode && n.name === "x") {
-                        return new math.ConstantNode(a);
-                    }
-                    return n;
-                });
-
-                tangent_str = `(${substituted}) + ((${substitutedDerivate})*(x-${a}))`
-                tangent_str = pythonPowToJS(tangent_str)
-
-                graphData = [
-                    {
-                        fn: pythonPowToJS(mathField.value)
-                    },
-                    {
-                        fn: tangent_str
-                    },
-                    {
-                        points: [
-                            [a, fCompiled.evaluate({ x: a })],
-                            [xIntercept, 0],
-                        ],
-                        fnType: 'points',
-                        graphType: 'scatter',
-                        attr: { r: 6 }
-                    }
-                ]
-
-                graficar(graphData)
+                preview(data.result)
             })
             .catch(error => {
                 console.error('Error in preview:', error);
             });
     } else {
-        tangent_str = derivateField.value
+        preview(derivateInput.value)
     }
 })
 
@@ -185,7 +187,7 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
 
             graphData = [
                 {
-                    fn: mathField.value
+                    fn: pythonPowToJS(mathField.value)
                 },
                 {
                     points: [

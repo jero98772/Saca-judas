@@ -35,13 +35,14 @@ def derivateLatex(f: str):
 
 def derivatePythonExpr(f):
     x = symbols("x")
+    print(str(diff(f,x)))
     return str(diff(f,x))
 
 
 def latex_to_sympy_str(f: str) -> str:
     """
     Convierte una expresión en LaTeX a un string que sympy pueda volver a procesar.
-    Ejemplo: r"e^{-x} + \sin{x}" -> "exp(-x) + sin(x)"
+    Ejemplo: r"e^{-x} + sin{x}" -> "exp(-x) + sin(x)"
     """
     # Normalizar símbolos especiales
     f = f.replace(r"\pi", "pi")

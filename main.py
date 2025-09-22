@@ -50,19 +50,15 @@ async def method_page(request: Request, method_name: str):
 
 @app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
-        
-    print(function)
-        
-    answer = derivatePythonExpr(function)    
+
     
-    print(answer)
+    answer = derivatePythonExpr(function)    
 
     return JSONResponse(content={"result": answer})
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
     answer = newton_method_controller(function=function, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
-    print(answer)
     
     return JSONResponse(content=answer)
 

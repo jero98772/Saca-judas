@@ -48,6 +48,7 @@ graficar();
 // Preview button functionality
 document.getElementById("previewButton").addEventListener("click", (event) => {
     try {
+        /*
         const f = math.parse(pythonPowToJS(mathField.value));
         const fcompiled = f.compile();
 
@@ -82,7 +83,7 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
             }
         ];
 
-        graficar(graphData);
+        graficar(graphData);*/
 
     } catch (error) {
         console.error("Error in preview:", error);
@@ -134,8 +135,9 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
 
         // Display the result message
         if (data.message) {
-            const messageType = data.message.includes("satisfied") ? "success" : 
-                              data.message.includes("Maximum") ? "warning" : "danger";
+            const messageType = data.message.includes("No valid interval") ? "warning" : 
+                              data.message.includes("satisfied") ? "success" : 
+                              data.message.includes("Maximum") ? "warning" : "info";
             displayMessage(data.message, messageType);
         }
 
@@ -143,15 +145,19 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         const tbody = document.querySelector("#result-table tbody");
         tbody.innerHTML = ""; // Clear table first
 
-        if (data.history && data.history.x && data.history.x.length > 0) {
+        // Handle the new response format
+        if (data.history && data.history.search_points && data.history.search_points.length > 0) {
             // Limit rows based on nrows parameter
-            const maxRows = Math.min(data.history.x.length, formValues.nrows);
-            const startIndex = Math.max(0, data.history.x.length - maxRows);
+            const maxRows = Math.min(data.history.search_points.length, formValues.nrows);
+            const startIndex = Math.max(0, data.history.search_points.length - maxRows);
 
-            for (let i = startIndex; i < data.history.x.length; i++) {
+            for (let i = startIndex; i < data.history.search_points.length; i++) {
                 const iteration = data.history.iterations[i] || (i + 1);
-                const xi = data.history.x[i];
-                const errorAbs = data.history.errorAbs[i];
+                const searchPoint = data.history.search_points[i];
+                
+                // Extract x value and calculate error
+                const xi = searchPoint.x || searchPoint[0]; // Handle both object and array formats
+                const errorAbs = i > 0 ? Math.abs(xi - (data.history.search_points[i-1].x || data.history.search_points[i-1][0])) : 0;
 
                 const row = `
                     <tr>
@@ -163,36 +169,65 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 
-            // Plot the result if a root was found
-            if (data.value !== null) {
-                const rootX = data.value;
+            // Visualize search points on the graph
+            const searchPointsForGraph = data.history.search_points.map(point => {
+                const x = point.x || point[0];
+                const fx = point.fx || point[1];
+                return [x, fx];
+            });
+
+            const graphData = [
+                { fn: pythonPowToJS(mathField.value) },
+                {
+                    points: searchPointsForGraph,
+                    fnType: "points",
+                    graphType: "scatter",
+                    color: "red",
+                    attr: { r: 4 }
+                }
+            ];
+
+            // If an interval was found, highlight it
+            if (data.interval && data.interval.length === 2) {
+                const [a, b] = data.interval;
                 
-                const graphData = [
-                    {
-                        fn: pythonPowToJS(mathField.value)
-                    },
-                    {
-                        points: [
-                            [rootX, -1000],
-                            [rootX, 1000]
-                        ],
-                        fnType: "points",
-                        graphType: "polyline",
-                        color: "red",
-                        attr: { "stroke-width": 2, "stroke-dasharray": "5,5" }
-                    },
-                    {
-                        points: [[rootX, 0]],
-                        fnType: "points",
-                        graphType: "scatter",
-                        color: "green",
-                        attr: { r: 6 }
-                    }
-                ];
-                graficar(graphData);
+                // Add vertical lines to show the interval
+                graphData.push({
+                    points: [
+                        [a, -1000],
+                        [a, 1000]
+                    ],
+                    fnType: "points",
+                    graphType: "polyline",
+                    color: "green",
+                    attr: { "stroke-width": 2, "stroke-dasharray": "5,5" }
+                });
+
+                graphData.push({
+                    points: [
+                        [b, -1000],
+                        [b, 1000]
+                    ],
+                    fnType: "points",
+                    graphType: "polyline",
+                    color: "green",
+                    attr: { "stroke-width": 2, "stroke-dasharray": "5,5" }
+                });
+
+                // Highlight the interval endpoints
+                graphData.push({
+                    points: [[a, 0], [b, 0]],
+                    fnType: "points",
+                    graphType: "scatter",
+                    color: "green",
+                    attr: { r: 6 }
+                });
             }
+
+            graficar(graphData);
+
         } else {
-            displayMessage("No iterations data received", "warning");
+            displayMessage("No search points data received", "warning");
         }
     })
     .catch(error => {

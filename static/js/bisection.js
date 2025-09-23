@@ -18,9 +18,6 @@ function getFormValues() {
     const tolValue = parseFloat(tol.value) 
     const nrowsValue = parseInt(nrows.value) 
 
-    console.log(aValue, bValue )
-
-
     return {
         function: mathField.value || "exp(-x) + sin(x)",
         a: (isNaN(aValue) ? 1 : aValue),

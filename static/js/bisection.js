@@ -251,7 +251,6 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
                 `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
-
             // Última aproximación
             const lastX = data.final_root;
 

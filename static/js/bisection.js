@@ -12,16 +12,19 @@ function pythonPowToJS(expr) {
 }
 
 function getFormValues() {
-    const aValue = parseFloat(aInput.value) || 1;
-    const bValue = parseFloat(bInput.value) || 2;
-    const nmaxValue = parseInt(nmax.value) || 100;
-    const tolValue = parseFloat(tol.value) || 0.0001;
-    const nrowsValue = parseInt(nrows.value) || 30;
+    const aValue = parseFloat(aInput.value)
+    const bValue = parseFloat(bInput.value) 
+    const nmaxValue = parseInt(nmax.value) 
+    const tolValue = parseFloat(tol.value) 
+    const nrowsValue = parseInt(nrows.value) 
+
+    console.log(aValue, bValue )
+
 
     return {
         function: mathField.value || "exp(-x) + sin(x)",
-        a: aValue,
-        b: bValue,
+        a: (isNaN(aValue) ? 1 : aValue),
+        b: (isNaN(bValue) ? 2 : bValue),
         Nmax: nmaxValue,
         tol: tolValue,
         nrows: nrowsValue
@@ -253,7 +256,7 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             const lastX = data.final_root;
 
             const graphData = [
-                { fn: formValues.function },
+                { fn: pythonPowToJS(mathField.value) },
                 {
                     points: [
                         [lastX, -1000],

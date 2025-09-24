@@ -3,7 +3,6 @@ const mathField = document.getElementById('function');
 const x0input = document.getElementById("x0");
 const deltaXinput = document.getElementById("delta_x");
 const maxIterInput = document.getElementById("max_iter");
-const toleranceInput = document.getElementById("tolerance");
 const nrowsInput = document.getElementById("nrows");
 const resultMessage = document.getElementById("result-message");
 
@@ -15,7 +14,6 @@ function getFormValues() {
     const x0Value = parseFloat(x0input.value) || 0;
     const deltaXValue = parseFloat(deltaXinput.value) || 0.5;
     const maxIterValue = parseInt(maxIterInput.value) || 100;
-    const toleranceValue = parseFloat(toleranceInput.value) || 0.000001;
     const nrowsValue = parseInt(nrowsInput.value) || 30;
 
     return {
@@ -23,7 +21,6 @@ function getFormValues() {
         x0: x0Value,
         delta_x: deltaXValue,
         max_iter: maxIterValue,
-        tolerance: toleranceValue,
         nrows: nrowsValue
     };
 }

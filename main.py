@@ -149,13 +149,13 @@ async def secant_method_post(
 
 
 @app.post("/eval/incremental_search")
-async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),tolerance: float = Form(...),nrows: int = Form(...)):
-        print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter),tolerance,type(tolerance))
+async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),nrows: int = Form(...)):
+        print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter))
         #f = latex_to_sympy_str(function)
         f = latex_to_callable_function(function)
 
         print(f)
-        answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter, tolerance=tolerance)
+        answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter)
         print(f"Answer: {answer}")
         
         return JSONResponse(content=answer)

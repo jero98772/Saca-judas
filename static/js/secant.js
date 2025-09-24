@@ -139,7 +139,7 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
 
             graphData = [
                 {
-                    fn: mathField.value
+                    fn: pythonPowToJS(mathField.value)
                 },
                 {
                     points: [

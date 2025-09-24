@@ -1,6 +1,6 @@
 import numpy as np
 
-def gauss_parcial(A: list, b: list, decimals: int = 6):
+def gauss_pivot_parcial(A: list, b: list, decimals: int = 6):
 
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)

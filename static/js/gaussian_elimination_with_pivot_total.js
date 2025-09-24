@@ -234,6 +234,9 @@ document.addEventListener("DOMContentLoaded", function() {
             
             fetch('/eval/gauss_pivote', {
                 method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                },
                 body: formData
             })
             .then(response => {

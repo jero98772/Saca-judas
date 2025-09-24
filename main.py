@@ -16,7 +16,7 @@ from tools.methods.secant import secant_method_controller
 from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
-from tools.methods.gaussian_elimination_with_pivot_total import run_gauss_pivote_web
+from tools.methods.gaussian_elimination_with_pivot_total import gaussian_elimination_with_pivot_total_controller
 from tools.methods.gaussian_elimination_simple import gauss_simple_controller
 
 
@@ -113,9 +113,15 @@ async def eval_fixed_point(
          "result": result}
     )
 
-@app.post("/eval/gauss_pivote", response_class=HTMLResponse)
-async def gauss_pivote_eval(request: Request, matrix: str = Form(...)):
-    result = run_gauss_pivote_web(matrix)
+@app.post("/eval/gauss_pivote")
+async def gauss_pivote_eval(request: Request, matrix: str = Form(...), decimals: int = Form(6)):
+    result = gaussian_elimination_with_pivot_total_controller(matrix, decimals)
+    
+    # Check if request expects JSON (from AJAX)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse(content=result)
+    
+    # Otherwise return HTML template (for regular form submission)
     return templates.TemplateResponse(
         "methods/gaussian_elimination_with_pivot_total.html",  
         {"request": request, "form": {"matrix": matrix}, "result": result}
@@ -144,7 +150,6 @@ async def secant_method_post(
 
 @app.post("/eval/incremental_search")
 async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),tolerance: float = Form(...),nrows: int = Form(...)):
-        
         print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter),tolerance,type(tolerance))
         #f = latex_to_sympy_str(function)
         f = latex_to_callable_function(function)

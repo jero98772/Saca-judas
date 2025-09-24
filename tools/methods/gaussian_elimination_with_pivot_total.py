@@ -1,134 +1,193 @@
-from __future__ import annotations
-from typing import List, Dict, Any, Tuple
 import numpy as np
 
-def parse_augmented_matrix(text: str) -> np.ndarray:
+def gaussian_elimination_with_pivot_total(matrix_text: str, decimals: int = 6):
     """
-    Convierte texto a matriz aumentada (floats).
-    Soporta separadores por espacio o coma. Una fila por línea.
+    Gaussian Elimination with Total Pivoting from augmented matrix text.
+    
+    Args:
+        matrix_text (str): Augmented matrix as text (n x n+1)
+        decimals (int): Number of decimal places for rounding
+    
+    Returns:
+        dict: Contains solution, stages, and permutation info
     """
+    # Parse matrix from text
     rows = []
-    for raw in text.strip().splitlines():
-        if not raw.strip():
+    for line in matrix_text.strip().splitlines():
+        if not line.strip():
             continue
-        parts = [p.strip() for p in raw.replace(",", " ").split()]
+        parts = [p.strip() for p in line.replace(",", " ").split()]
         rows.append([float(p) for p in parts])
-    mat = np.array(rows, dtype=float)
-    # validaciones básicas
-    if mat.ndim != 2:
-        raise ValueError("La matriz debe ser 2D.")
-    n, m = mat.shape
-    if m != n + 1:
-        raise ValueError(f"Para un sistema de {n} ecuaciones, se esperan {n+1} columnas (incluyendo b).")
-    return mat
-
-def eliminacion_gaussiana_pivoteo_total_web(A: np.ndarray) -> Dict[str, Any]:
-    """
-    Ejecuta eliminación gaussiana con pivoteo total sobre la matriz aumentada A (n x (n+1)).
-    Devuelve:
-      - stages: lista de matrices por etapa (cada una como lista de listas redondeada)
-      - swaps: info de intercambios por etapa
-      - x: solución final (ordenada según permutaciones de columnas)
-      - perm_cols: permutación de columnas aplicada (para reconstruir orden original)
-    """
-    A = A.copy()
+    
+    A = np.array(rows, dtype=float)
     n, m = A.shape
+    
+    # Validate dimensions
     if m != n + 1:
-        raise ValueError("La matriz debe ser de tamaño n x (n+1).")
-
-    # Rastrear intercambios
+        return {
+            "solution": None,
+            "stages": [{
+                "k": 0,
+                "note": "Error",
+                "matrix": A.round(decimals).tolist(),
+                "swap": {"rows": None, "cols": None},
+                "message": f"Invalid matrix dimensions: {n}x{m}. Expected {n}x{n+1}."
+            }],
+            "perm_cols": list(range(n)),
+            "perm_rows": list(range(n))
+        }
+    
+    # Initialize permutation tracking
     perm_rows = list(range(n))
     perm_cols = list(range(n))
-
-    # Almacenar etapas (matrices y swaps)
-    stages: List[Dict[str, Any]] = []
+    
+    stages = []
+    
+    # Add initial stage
     stages.append({
         "k": 0,
-        "matrix": A.copy(),
+        "note": "Initial matrix",
+        "matrix": A.round(decimals).tolist(),
         "swap": {"rows": None, "cols": None},
-        "note": "Matriz inicial"
+        "message": f"Starting Gaussian elimination with total pivoting"
     })
-
-    # Eliminación con pivoteo total
+    
+    # Forward elimination with total pivoting
     for k in range(n - 1):
-        # Buscar pivote máximo en submatriz A[k:n, k:n]
-        sub = np.abs(A[k:n, k:n])
-        idx = np.unravel_index(np.argmax(sub), sub.shape)
-        i_max = k + idx[0]
-        j_max = k + idx[1]
-        max_val = sub[idx]
-
+        # Find maximum pivot in submatrix A[k:n, k:n]
+        sub_matrix = np.abs(A[k:n, k:n])
+        if sub_matrix.size == 0:
+            break
+            
+        max_idx = np.unravel_index(np.argmax(sub_matrix), sub_matrix.shape)
+        i_max = k + max_idx[0]
+        j_max = k + max_idx[1]
+        max_val = sub_matrix[max_idx]
+        
+        # Check for singular matrix
         if max_val < 1e-12:
-            raise ValueError("Pivote muy pequeño o cero. Sistema singular o mal condicionado.")
-
+            return {
+                "solution": None,
+                "stages": stages + [{
+                    "k": k + 1,
+                    "note": f"Error at stage {k+1}",
+                    "matrix": A.round(decimals).tolist(),
+                    "swap": {"rows": None, "cols": None},
+                    "message": "Matrix is singular or nearly singular"
+                }],
+                "perm_cols": perm_cols,
+                "perm_rows": perm_rows
+            }
+        
         swap_info = {"rows": None, "cols": None}
-
-        # Intercambio de filas
+        
+        # Row swap if needed
         if i_max != k:
             A[[k, i_max], :] = A[[i_max, k], :]
             perm_rows[k], perm_rows[i_max] = perm_rows[i_max], perm_rows[k]
             swap_info["rows"] = (k, i_max)
-
-        # Intercambio de columnas (solo en coeficientes, excluyendo término independiente)
+        
+        # Column swap if needed (only for coefficient matrix, not augmented column)
         if j_max != k:
             A[:, [k, j_max]] = A[:, [j_max, k]]
             perm_cols[k], perm_cols[j_max] = perm_cols[j_max], perm_cols[k]
             swap_info["cols"] = (k, j_max)
-
-        # Eliminación hacia abajo
+        
+        # Elimination
         for i in range(k + 1, n):
             if abs(A[k, k]) > 1e-16:
-                f = A[i, k] / A[k, k]
-                A[i, k:m] = A[i, k:m] - f * A[k, k:m]
-
+                factor = A[i, k] / A[k, k]
+                A[i, k:] = A[i, k:] - factor * A[k, k:]
+        
+        # Add stage
         stages.append({
             "k": k + 1,
-            "matrix": A.copy(),
+            "note": f"Stage {k+1} - Pivot: ({i_max}, {j_max})",
+            "matrix": A.round(decimals).tolist(),
             "swap": swap_info,
-            "note": f"Etapa {k+1}"
+            "message": f"Elimination completed for column {k+1}"
         })
-
-    # Sustitución regresiva
+    
+    # Back substitution
     y = np.zeros(n, dtype=float)
     for i in range(n - 1, -1, -1):
-        s = float(np.dot(A[i, i+1:n], y[i+1:n])) if i+1 < n else 0.0
         if abs(A[i, i]) < 1e-16:
-            raise ValueError("Cero en la diagonal durante sustitución regresiva.")
-        y[i] = (A[i, n] - s) / A[i, i]
-
-    # Reordenar solución a las variables originales según perm_cols
+            return {
+                "solution": None,
+                "stages": stages + [{
+                    "k": n,
+                    "note": "Back substitution error",
+                    "matrix": A.round(decimals).tolist(),
+                    "swap": {"rows": None, "cols": None},
+                    "message": f"Zero pivot at position ({i}, {i}) during back substitution"
+                }],
+                "perm_cols": perm_cols,
+                "perm_rows": perm_rows
+            }
+        
+        sum_ax = sum(A[i, j] * y[j] for j in range(i + 1, n))
+        y[i] = (A[i, n] - sum_ax) / A[i, i]
+    
+    # Reorder solution according to column permutations
     x = np.zeros(n, dtype=float)
     for i in range(n):
         x[perm_cols[i]] = y[i]
-
+    
+    # Add final stage
+    stages.append({
+        "k": n,
+        "note": "Back substitution completed",
+        "matrix": A.round(decimals).tolist(),
+        "swap": {"rows": None, "cols": None},
+        "message": "Solution obtained successfully"
+    })
+    
     return {
-        "stages": [ _stage_to_serializable(st) for st in stages ],
-        "solution": x.tolist(),
+        "solution": x.round(decimals).tolist(),
+        "stages": stages,
         "perm_cols": perm_cols,
-        "perm_rows": perm_rows,
+        "perm_rows": perm_rows
     }
 
-def _stage_to_serializable(st: Dict[str, Any]) -> Dict[str, Any]:
-    M = st["matrix"]
-    return {
-        "k": st["k"],
-        "note": st["note"],
-        "swap": st["swap"],
-        "matrix": [[float(v) for v in row] for row in M]
-    }
 
-def run_gauss_pivote_web(text_matrix: str) -> Dict[str, Any]:
+def gaussian_elimination_with_pivot_total_controller(matrix: str, decimals: int = 6):
     """
-    Punto de entrada para la vista web. Recibe el texto de la matriz aumentada.
-    Devuelve contexto para la plantilla: etapas, solución, etc.
+    Controller for Gaussian Elimination with Total Pivoting.
+    Wraps gaussian_elimination_with_pivot_total() and prepares the response.
+    
+    Args:
+        matrix (str): Augmented matrix as text
+        decimals (int): Number of decimal places for rounding
+    
+    Returns:
+        dict: Response with solution, stages, and status message
     """
-    A = parse_augmented_matrix(text_matrix)
-    result = eliminacion_gaussiana_pivoteo_total_web(A)
-    return {
-        "n": A.shape[0],
-        "m": A.shape[1],
-        "stages": result["stages"],
-        "solution": result["solution"],
-        "perm_cols": result["perm_cols"],
-        "perm_rows": result["perm_rows"],
-    }
+    try:
+        result = gaussian_elimination_with_pivot_total(matrix, decimals)
+        
+        if result.get("solution") is not None:
+            result["message"] = "Gaussian elimination with total pivoting completed successfully."
+            result["type"] = "success"
+        else:
+            result["message"] = "Gaussian elimination with total pivoting failed."
+            result["type"] = "danger"
+        
+        return result
+        
+    except Exception as e:
+        return {
+            "solution": None,
+            "stages": [{
+                "k": 0,
+                "note": "Error",
+                "matrix": [],
+                "swap": {"rows": None, "cols": None},
+                "message": f"Error processing matrix: {str(e)}"
+            }],
+            "perm_cols": [],
+            "perm_rows": [],
+            "message": f"Error: {str(e)}",
+            "type": "danger"
+        }
+
+

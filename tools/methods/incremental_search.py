@@ -2,49 +2,54 @@ import math
 
 def incremental_search(f, x0, delta_x, max_iter=100, tolerance=1e-6):
     """
-    Finds a root interval using incremental search to locate an interval [a, b]
-    where f(a) and f(b) have opposite signs, indicating a root exists between them.
+    Encuentra TODOS los intervalos con raíces usando búsqueda incremental.
+    Busca intervalos [a, b] donde f(a) y f(b) tienen signos opuestos.
     
     Parameters:
-        f: Function to evaluate.
-        x0: Initial point.
-        delta_x: Search step.
-        max_iter: Maximum number of iterations.
-        tolerance: Convergence tolerance (not used in this version).
+        f: Función a evaluar.
+        x0: Punto inicial.
+        delta_x: Paso de búsqueda.
+        max_iter: Número máximo de iteraciones (n_iteraciones).
+        tolerance: Tolerancia de convergencia (no usado en esta versión).
     
     Returns:
-        A dictionary with the message, the root interval [a, b], and search history.
+        Diccionario con mensaje, todos los intervalos encontrados e historial.
     """
-    # Incremental search to find an interval [a, b] with a sign change
     a = x0
     b = x0 + delta_x
-    iter_count_inc = 0
+    iter_count = 0
     search_history = []
+    intervals_found = []
     
-    while iter_count_inc < max_iter:
-        search_history.append([a, b, f(a), f(b)])
+    # Buscar durante exactamente max_iter iteraciones
+    while iter_count < max_iter:
+        fa = f(a)
+        fb = f(b)
+        search_history.append([a, b, fa, fb])
         
-        if f(a) * f(b) < 0:
-            # Valid interval found - f(a) and f(b) have opposite signs
-            return {
-                "message": f"Root interval found: [{a:.6f}, {b:.6f}]",
-                "interval": [a, b],
-                "history": {
-                    "search_points": search_history,
-                    "iterations": iter_count_inc + 1
-                }
-            }
+        # Si hay cambio de signo, guardar el intervalo
+        if fa * fb < 0:
+            intervals_found.append([a, b])
         
+        # Avanzar al siguiente punto
         a = b
         b = a + delta_x
-        iter_count_inc += 1
+        iter_count += 1
     
-    # No valid interval found
+    # Crear mensaje basado en los intervalos encontrados
+    if intervals_found:
+        interval_strings = [f"[{interval[0]:.6f}, {interval[1]:.6f}]" for interval in intervals_found]
+        message = f"Se encontraron {len(intervals_found)} intervalo(s): " + ", ".join(interval_strings)
+    else:
+        message = f"No se encontraron intervalos con cambio de signo en {max_iter} iteraciones"
+    
     return {
-        "message": "No valid interval found after incremental search",
-        "interval": None,
+        "message": message,
+        "intervals": intervals_found,  # Lista de todos los intervalos
+        "interval": intervals_found[0] if intervals_found else None,  # Primer intervalo para compatibilidad
         "history": {
             "search_points": search_history,
-            "iterations": iter_count_inc
+            "iterations": iter_count,
+            "total_intervals": len(intervals_found)
         }
     }

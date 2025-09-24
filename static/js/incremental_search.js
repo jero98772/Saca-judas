@@ -48,43 +48,7 @@ graficar();
 // Preview button functionality
 document.getElementById("previewButton").addEventListener("click", (event) => {
     try {
-        /*
-        const f = math.parse(pythonPowToJS(mathField.value));
-        const fcompiled = f.compile();
-
-        const x0 = parseFloat(x0input.value) || 0;
-        const deltaX = parseFloat(deltaXinput.value) || 0.5;
-
-        console.log("x0:", x0, "deltaX:", deltaX);
-
-        // Show the search interval visualization
-        const searchPoints = [];
-        let currentX = x0;
-        
-        // Generate some search points for visualization
-        for (let i = 0; i < 10; i++) {
-            try {
-                const y = fcompiled.evaluate({ x: currentX });
-                searchPoints.push([currentX, y]);
-            } catch (e) {
-                break;
-            }
-            currentX += deltaX;
-        }
-
-        const graphData = [
-            { fn: pythonPowToJS(mathField.value) },
-            {
-                points: searchPoints,
-                fnType: "points",
-                graphType: "scatter",
-                color: "red",
-                attr: { r: 4 }
-            }
-        ];
-
-        graficar(graphData);*/
-
+        graficar();
     } catch (error) {
         console.error("Error in preview:", error);
         alert("Error in function preview. Check the function syntax.");
@@ -133,9 +97,10 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
     .then((data) => {
         console.log("Received data:", data);
 
-        // Display the result message
+        // Display the result message - now handles multiple intervals
         if (data.message) {
-            const messageType = data.message.includes("No valid interval") ? "warning" : 
+            const messageType = data.intervals && data.intervals.length > 0 ? "success" : 
+                              data.message.includes("No valid interval") ? "warning" : 
                               data.message.includes("satisfied") ? "success" : 
                               data.message.includes("Maximum") ? "warning" : "info";
             displayMessage(data.message, messageType);
@@ -145,35 +110,45 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         const tbody = document.querySelector("#result-table tbody");
         tbody.innerHTML = ""; // Clear table first
 
-        // Handle the new response format
+        // Handle the new response format for multiple intervals
         if (data.history && data.history.search_points && data.history.search_points.length > 0) {
             // Limit rows based on nrows parameter
-            const maxRows = Math.min(data.history.search_points.length, formValues.nrows);
-            const startIndex = Math.max(0, data.history.search_points.length - maxRows);
+            const searchPoints = data.history.search_points;
+            const maxRows = Math.min(searchPoints.length, formValues.nrows);
+            const startIndex = Math.max(0, searchPoints.length - maxRows);
 
-            for (let i = startIndex; i < data.history.search_points.length; i++) {
-                const iteration = data.history.iterations[i] || (i + 1);
-                const searchPoint = data.history.search_points[i];
+            // Populate table with search history showing intervals found
+            for (let i = startIndex; i < searchPoints.length; i++) {
+                const [a, b, fa, fb] = searchPoints[i];
+                const iteration = i + 1;
                 
-                // Extract x value and calculate error
-                const xi = searchPoint.x || searchPoint[0]; // Handle both object and array formats
-                const errorAbs = i > 0 ? Math.abs(xi - (data.history.search_points[i-1].x || data.history.search_points[i-1][0])) : 0;
+                // Check if this iteration found an interval (sign change)
+                const hasSignChange = fa * fb < 0;
+                const intervalText = hasSignChange ? `[${a.toFixed(6)}, ${b.toFixed(6)}]` : "No interval";
+                const rowClass = hasSignChange ? "table-success" : "";
 
                 const row = `
-                    <tr>
+                    <tr class="${rowClass}">
                         <td>${iteration}</td>
-                        <td>${xi.toFixed(8)}</td>
-                        <td>${errorAbs.toExponential(6)}</td>
+                        <td>${intervalText}</td>
+                        <td>${hasSignChange ? "✓" : "✗"}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 
-            // Visualize search points on the graph
-            const searchPointsForGraph = data.history.search_points.map(point => {
-                const x = point.x || point[0];
-                const fx = point.fx || point[1];
-                return [x, fx];
+            // Update table headers to show intervals instead of individual points
+            const thead = document.querySelector("#result-table thead tr");
+            thead.innerHTML = `
+                <th>Iteration</th>
+                <th>Interval Found</th>
+                <th>Sign Change</th>
+            `;
+
+            // Visualize all search points and intervals on the graph
+            const searchPointsForGraph = searchPoints.map(point => {
+                const [a, b, fa, fb] = point;
+                return [a, fa]; // Plot the 'a' points
             });
 
             const graphData = [
@@ -183,45 +158,51 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
                     fnType: "points",
                     graphType: "scatter",
                     color: "red",
-                    attr: { r: 4 }
+                    attr: { r: 3 }
                 }
             ];
 
-            // If an interval was found, highlight it
-            if (data.interval && data.interval.length === 2) {
-                const [a, b] = data.interval;
+            // Highlight ALL intervals found, not just the first one
+            if (data.intervals && data.intervals.length > 0) {
+                const colors = ["green", "blue", "orange", "purple", "brown", "cyan", "magenta"];
                 
-                // Add vertical lines to show the interval
-                graphData.push({
-                    points: [
-                        [a, -1000],
-                        [a, 1000]
-                    ],
-                    fnType: "points",
-                    graphType: "polyline",
-                    color: "green",
-                    attr: { "stroke-width": 2, "stroke-dasharray": "5,5" }
+                data.intervals.forEach((interval, index) => {
+                    const [a, b] = interval;
+                    const color = colors[index % colors.length];
+                    
+                    // Add vertical lines to show interval boundaries
+                    graphData.push({
+                        points: [[a, -1000], [a, 1000]],
+                        fnType: "points",
+                        graphType: "polyline",
+                        color: color,
+                        attr: { "stroke-width": 3, "stroke-dasharray": "8,4" }
+                    });
+
+                    graphData.push({
+                        points: [[b, -1000], [b, 1000]],
+                        fnType: "points",
+                        graphType: "polyline", 
+                        color: color,
+                        attr: { "stroke-width": 3, "stroke-dasharray": "8,4" }
+                    });
+
+                    // Highlight the interval endpoints
+                    graphData.push({
+                        points: [[a, 0], [b, 0]],
+                        fnType: "points",
+                        graphType: "scatter",
+                        color: color,
+                        attr: { r: 6 }
+                    });
                 });
 
-                graphData.push({
-                    points: [
-                        [b, -1000],
-                        [b, 1000]
-                    ],
-                    fnType: "points",
-                    graphType: "polyline",
-                    color: "green",
-                    attr: { "stroke-width": 2, "stroke-dasharray": "5,5" }
-                });
-
-                // Highlight the interval endpoints
-                graphData.push({
-                    points: [[a, 0], [b, 0]],
-                    fnType: "points",
-                    graphType: "scatter",
-                    color: "green",
-                    attr: { r: 6 }
-                });
+                // Add a legend-like info to the message
+                if (data.intervals.length > 1) {
+                    const currentMessage = resultMessage.textContent;
+                    displayMessage(`${currentMessage} (Each interval shown in different color)`, 
+                                 data.intervals.length > 0 ? "success" : "warning");
+                }
             }
 
             graficar(graphData);

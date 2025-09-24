@@ -1,26 +1,22 @@
 import numpy as np
 
 def gauss_simple(A: list, b: list, decimals: int = 6):
-    """
-    Gaussian Elimination without pivoting (simple).
-    Returns solution and detailed logs for each step.
-    """
-
+    
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
     n = len(b)
     logs = []
 
-
+    # Determinant check
     det = np.linalg.det(A)
-    if abs(det) < 1e-12:
+    if det == 0:
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
                 "A": A.round(decimals).tolist(),
                 "b": b.round(decimals).tolist(),
-                "message": "Matrix is not invertible (det ≈ 0)."
+                "message": "Matrix is not invertible (det = 0)."
             }]
         }
 
@@ -32,7 +28,7 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
     })
 
     for k in range(n - 1):
-        if abs(A[k, k]) < 1e-12:
+        if A[k, k] == 0:
             return {
                 "solution": None,
                 "logs": logs + [{
@@ -44,7 +40,7 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
             }
 
         for i in range(k + 1, n):
-            if abs(A[i, k]) < 1e-12:
+            if A[i, k] == 0:
                 continue
 
             m = A[i, k] / A[k, k]
@@ -58,9 +54,10 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
             "message": f"Elimination at column {k+1} complete."
         })
 
+    # Back substitution
     x = np.zeros(n)
     for i in range(n - 1, -1, -1):
-        if abs(A[i, i]) < 1e-12:
+        if A[i, i] == 0:
             return {
                 "solution": None,
                 "logs": logs + [{
@@ -92,12 +89,9 @@ def gauss_simple_controller(A: list, b: list, decimals: int = 6):
     """
     result = gauss_simple(A, b, decimals)
 
-
     if result.get("solution") is not None:
         result["message"] = "Gaussian elimination completed successfully."
     else:
         result["message"] = "Gaussian elimination failed."
 
     return result
-
-

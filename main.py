@@ -17,6 +17,8 @@ from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
 from tools.methods.gaussian_elimination_with_pivot_total import run_gauss_pivote_web
+from tools.methods.gaussian_elimination_simple import gauss_simple_controller
+
 
 import json
 
@@ -187,6 +189,42 @@ async def incremental_search_post(request: Request, function: str = Form(...), x
         
         return JSONResponse(content=answer)
         
+
+@app.post("/eval/gauss_simple", response_class=HTMLResponse)
+async def gauss_simple_post(
+    request: Request, 
+    A: str = Form(...), 
+    b: str = Form(...), 
+    decimals: int = Form(6)
+):
+    try:
+        # Parse the JSON strings back to Python objects
+        A_parsed = json.loads(A)
+        b_parsed = json.loads(b)
+        
+        # Call the controller function
+        answer = gauss_simple_controller(A=A_parsed, b=b_parsed, decimals=decimals)
+        
+        return JSONResponse(content=answer)
+        
+    except json.JSONDecodeError as e:
+        return JSONResponse(
+            content={
+                "solution": None,
+                "message": f"Error parsing input data: {str(e)}",
+                "logs": []
+            },
+            status_code=400
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "solution": None,
+                "message": f"Error in calculation: {str(e)}",
+                "logs": []
+            },
+            status_code=500
+        )
 
 
 @app.get("/chat", response_class=HTMLResponse)

@@ -1,193 +1,130 @@
 import numpy as np
 
-def gaussian_elimination_with_pivot_total(matrix_text: str, decimals: int = 6):
-    """
-    Gaussian Elimination with Total Pivoting from augmented matrix text.
-    
-    Args:
-        matrix_text (str): Augmented matrix as text (n x n+1)
-        decimals (int): Number of decimal places for rounding
-    
-    Returns:
-        dict: Contains solution, stages, and permutation info
-    """
-    # Parse matrix from text
-    rows = []
-    for line in matrix_text.strip().splitlines():
-        if not line.strip():
-            continue
-        parts = [p.strip() for p in line.replace(",", " ").split()]
-        rows.append([float(p) for p in parts])
-    
-    A = np.array(rows, dtype=float)
-    n, m = A.shape
-    
-    # Validate dimensions
-    if m != n + 1:
+def gauss_pivot_total(A: list, b: list, decimals: int = 6):
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    n = len(b)
+    logs = []
+
+    col_order = list(range(n))
+
+    # Determinant check
+    det = np.linalg.det(A)
+    if det == 0:
         return {
             "solution": None,
-            "stages": [{
-                "k": 0,
-                "note": "Error",
-                "matrix": A.round(decimals).tolist(),
-                "swap": {"rows": None, "cols": None},
-                "message": f"Invalid matrix dimensions: {n}x{m}. Expected {n}x{n+1}."
-            }],
-            "perm_cols": list(range(n)),
-            "perm_rows": list(range(n))
+            "logs": [{
+                "step": "Check",
+                "A": A.round(decimals).tolist(),
+                "b": b.round(decimals).tolist(),
+                "message": "Matrix is not invertible (det = 0)."
+            }]
         }
-    
-    # Initialize permutation tracking
-    perm_rows = list(range(n))
-    perm_cols = list(range(n))
-    
-    stages = []
-    
-    # Add initial stage
-    stages.append({
-        "k": 0,
-        "note": "Initial matrix",
-        "matrix": A.round(decimals).tolist(),
-        "swap": {"rows": None, "cols": None},
-        "message": f"Starting Gaussian elimination with total pivoting"
+
+    logs.append({
+        "step": "Initial",
+        "A": A.round(decimals).tolist(),
+        "b": b.round(decimals).tolist(),
+        "message": f"Initial system. Determinant = {det:.4f}"
     })
-    
-    # Forward elimination with total pivoting
+
     for k in range(n - 1):
-        # Find maximum pivot in submatrix A[k:n, k:n]
-        sub_matrix = np.abs(A[k:n, k:n])
-        if sub_matrix.size == 0:
-            break
-            
+        # --- Total pivoting: find the largest absolute value in the submatrix A[k:, k:] ---
+        sub_matrix = np.abs(A[k:, k:])
         max_idx = np.unravel_index(np.argmax(sub_matrix), sub_matrix.shape)
-        i_max = k + max_idx[0]
-        j_max = k + max_idx[1]
-        max_val = sub_matrix[max_idx]
-        
-        # Check for singular matrix
-        if max_val < 1e-12:
+        max_row = max_idx[0] + k
+        max_col = max_idx[1] + k
+
+        if A[max_row, max_col] == 0:
             return {
                 "solution": None,
-                "stages": stages + [{
-                    "k": k + 1,
-                    "note": f"Error at stage {k+1}",
-                    "matrix": A.round(decimals).tolist(),
-                    "swap": {"rows": None, "cols": None},
-                    "message": "Matrix is singular or nearly singular"
-                }],
-                "perm_cols": perm_cols,
-                "perm_rows": perm_rows
+                "logs": logs + [{
+                    "step": f"Iteration {k+1}",
+                    "A": A.round(decimals).tolist(),
+                    "b": b.round(decimals).tolist(),
+                    "message": "All pivots in submatrix are zero. Method fails."
+                }]
             }
-        
-        swap_info = {"rows": None, "cols": None}
-        
-        # Row swap if needed
-        if i_max != k:
-            A[[k, i_max], :] = A[[i_max, k], :]
-            perm_rows[k], perm_rows[i_max] = perm_rows[i_max], perm_rows[k]
-            swap_info["rows"] = (k, i_max)
-        
-        # Column swap if needed (only for coefficient matrix, not augmented column)
-        if j_max != k:
-            A[:, [k, j_max]] = A[:, [j_max, k]]
-            perm_cols[k], perm_cols[j_max] = perm_cols[j_max], perm_cols[k]
-            swap_info["cols"] = (k, j_max)
-        
-        # Elimination
+
+        # Swap rows if needed
+        if max_row != k:
+            A[[k, max_row]] = A[[max_row, k]]
+            b[[k, max_row]] = b[[max_row, k]]
+            logs.append({
+                "step": f"Iteration {k+1} - Pivoting Row",
+                "A": A.round(decimals).tolist(),
+                "b": b.round(decimals).tolist(),
+                "message": f"Swapped row {k+1} with row {max_row+1}."
+            })
+
+        # Swap columns if needed
+        if max_col != k:
+            A[:, [k, max_col]] = A[:, [max_col, k]]
+            col_order[k], col_order[max_col] = col_order[max_col], col_order[k]
+            logs.append({
+                "step": f"Iteration {k+1} - Pivoting Column",
+                "A": A.round(decimals).tolist(),
+                "b": b.round(decimals).tolist(),
+                "message": f"Swapped column {k+1} with column {max_col+1}."
+            })
+
+        # Forward elimination
         for i in range(k + 1, n):
-            if abs(A[k, k]) > 1e-16:
-                factor = A[i, k] / A[k, k]
-                A[i, k:] = A[i, k:] - factor * A[k, k:]
-        
-        # Add stage
-        stages.append({
-            "k": k + 1,
-            "note": f"Stage {k+1} - Pivot: ({i_max}, {j_max})",
-            "matrix": A.round(decimals).tolist(),
-            "swap": swap_info,
-            "message": f"Elimination completed for column {k+1}"
+            if A[i, k] == 0:
+                continue
+            m = A[i, k] / A[k, k]
+            A[i, k:] -= m * A[k, k:]
+            b[i] -= m * b[k]
+
+        logs.append({
+            "step": f"Iteration {k+1}",
+            "A": A.round(decimals).tolist(),
+            "b": b.round(decimals).tolist(),
+            "message": f"Elimination at column {k+1} complete."
         })
-    
+
     # Back substitution
-    y = np.zeros(n, dtype=float)
+    x = np.zeros(n)
     for i in range(n - 1, -1, -1):
-        if abs(A[i, i]) < 1e-16:
+        if A[i, i] == 0:
             return {
                 "solution": None,
-                "stages": stages + [{
-                    "k": n,
-                    "note": "Back substitution error",
-                    "matrix": A.round(decimals).tolist(),
-                    "swap": {"rows": None, "cols": None},
-                    "message": f"Zero pivot at position ({i}, {i}) during back substitution"
-                }],
-                "perm_cols": perm_cols,
-                "perm_rows": perm_rows
+                "logs": logs + [{
+                    "step": "Back Substitution",
+                    "A": A.round(decimals).tolist(),
+                    "b": b.round(decimals).tolist(),
+                    "message": f"Zero pivot at row {i+1}. Method fails."
+                }]
             }
-        
-        sum_ax = sum(A[i, j] * y[j] for j in range(i + 1, n))
-        y[i] = (A[i, n] - sum_ax) / A[i, i]
-    
-    # Reorder solution according to column permutations
-    x = np.zeros(n, dtype=float)
-    for i in range(n):
-        x[perm_cols[i]] = y[i]
-    
-    # Add final stage
-    stages.append({
-        "k": n,
-        "note": "Back substitution completed",
-        "matrix": A.round(decimals).tolist(),
-        "swap": {"rows": None, "cols": None},
-        "message": "Solution obtained successfully"
+        x[i] = (b[i] - np.dot(A[i, i+1:], x[i+1:])) / A[i, i]
+
+    # Reorder solution according to column swaps
+    x_final = np.zeros(n)
+    for i, col in enumerate(col_order):
+        x_final[col] = x[i]
+
+    logs.append({
+        "step": "Back Substitution",
+        "A": A.round(decimals).tolist(),
+        "b": b.round(decimals).tolist(),
+        "message": "Back substitution complete. Solution reordered according to column swaps."
     })
-    
+
     return {
-        "solution": x.round(decimals).tolist(),
-        "stages": stages,
-        "perm_cols": perm_cols,
-        "perm_rows": perm_rows
+        "solution": x_final.round(decimals).tolist(),
+        "logs": logs
     }
 
 
-def gaussian_elimination_with_pivot_total_controller(matrix: str, decimals: int = 6):
+def gauss_total_controller(A: list, b: list, decimals: int = 6):
     """
-    Controller for Gaussian Elimination with Total Pivoting.
-    Wraps gaussian_elimination_with_pivot_total() and prepares the response.
-    
-    Args:
-        matrix (str): Augmented matrix as text
-        decimals (int): Number of decimal places for rounding
-    
-    Returns:
-        dict: Response with solution, stages, and status message
+    Controller for Gaussian elimination with total pivoting.
     """
-    try:
-        result = gaussian_elimination_with_pivot_total(matrix, decimals)
-        
-        if result.get("solution") is not None:
-            result["message"] = "Gaussian elimination with total pivoting completed successfully."
-            result["type"] = "success"
-        else:
-            result["message"] = "Gaussian elimination with total pivoting failed."
-            result["type"] = "danger"
-        
-        return result
-        
-    except Exception as e:
-        return {
-            "solution": None,
-            "stages": [{
-                "k": 0,
-                "note": "Error",
-                "matrix": [],
-                "swap": {"rows": None, "cols": None},
-                "message": f"Error processing matrix: {str(e)}"
-            }],
-            "perm_cols": [],
-            "perm_rows": [],
-            "message": f"Error: {str(e)}",
-            "type": "danger"
-        }
+    result = gauss_total(A, b, decimals)
 
+    if result.get("solution") is not None:
+        result["message"] = "Gaussian elimination with total pivoting completed successfully."
+    else:
+        result["message"] = "Gaussian elimination with total pivoting failed."
 
+    return result

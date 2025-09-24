@@ -45,16 +45,6 @@ const graficar = (data) => {
 // Initial plot
 graficar();
 
-// Preview button functionality
-document.getElementById("previewButton").addEventListener("click", (event) => {
-    try {
-        graficar();
-    } catch (error) {
-        console.error("Error in preview:", error);
-        alert("Error in function preview. Check the function syntax.");
-    }
-});
-
 // Display result message
 function displayMessage(message, type = "info") {
     resultMessage.className = `alert alert-${type}`;

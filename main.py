@@ -53,10 +53,7 @@ async def method_page(request: Request, method_name: str):
 
 @app.post("/calculations/derivate", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...)):
-
-    
     answer = derivatePythonExpr(function)    
-
     return JSONResponse(content={"result": answer})
 
 @app.post("/eval/newton_method", response_class=HTMLResponse)
@@ -67,10 +64,8 @@ async def newton_method_post(request: Request, function: str = Form(...), x0:flo
 
 @app.post("/eval/bisection", response_class=HTMLResponse)
 async def bisection_post(request: Request, function: str = Form(...), a: float = Form(...), b: float = Form(...), nmax: int = Form(...), tolerance: float = Form(...), last_n_rows: int = Form(...)):
-
     answer = bisection_controller(function=function, a=a, b=b, nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
     print(answer)
-
     return JSONResponse(content=answer)
 
 @app.post("/eval/false_position", response_class=HTMLResponse)
@@ -95,20 +90,6 @@ async def false_position_post(
 
     return JSONResponse(content=answer)
 
-@app.get("/methods/punto-fijo", response_class=HTMLResponse)
-def get_punto_fijo(request: Request):
-    return templates.TemplateResponse("methods/fixed_point.html", {"request": request, "form": {}, "result": None})
-
-@app.post("/methods/punto-fijo", response_class=HTMLResponse)
-def post_punto_fijo(request: Request, g: str = Form(""), f: str = Form(""),
-                    x0: float = Form(...), tol: float = Form(1e-6),
-                    max_iter: int = Form(100), use_relative_error: str = Form(None)):
-    result = run_fixed_point_web(g_text=g, f_text=f, x0=x0, tol=tol, max_iter=max_iter,
-                                 use_relative_error=bool(use_relative_error))
-    return templates.TemplateResponse("methods/fixed_point.html",
-            {"request": request, "form": {"g": g, "f": f, "x0": x0, "tol": tol, "max_iter": max_iter,
-                                          "use_relative_error": bool(use_relative_error)},
-             "result": result})
 
 @app.post("/eval/fixed_point", response_class=HTMLResponse)
 async def eval_fixed_point(
@@ -130,21 +111,6 @@ async def eval_fixed_point(
          "form": {"g": g, "f": f, "x0": x0, "tol": tol, "max_iter": max_iter,
                   "use_relative_error": bool(use_relative_error)},
          "result": result}
-    )
-
-@app.get("/calculations/fixed_point", response_class=HTMLResponse)
-async def fixed_point_page(request: Request):
-    # Ruta explícita: evita el f-string y cualquier error en el try/except dinámico
-    return templates.TemplateResponse(
-        "methods/fixed_point.html",
-        {"request": request, "method_name": "fixed_point", "form": {}, "result": None}
-    )
-#ajuste
-@app.get("/calculations/gauss_pivote", response_class=HTMLResponse)
-async def gauss_pivote_get(request: Request):
-    return templates.TemplateResponse(
-        "methods/gaussian_elimination_with_pivot_total.html",  
-        {"request": request, "form": {}, "result": None}
     )
 
 @app.post("/eval/gauss_pivote", response_class=HTMLResponse)

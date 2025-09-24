@@ -4,7 +4,7 @@
 
 ---
 
-https://github.com/jero98772/Saca-judas/blob/main/tools/numeric_methods.py
+https://es.overleaf.com/2651113446bfxbmpvggvrp#feee7e
 
 ## 🚀 Run Locally
 

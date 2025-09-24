@@ -18,6 +18,7 @@ from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
 from tools.methods.gaussian_elimination_with_pivot_total import gaussian_elimination_with_pivot_total_controller
 from tools.methods.gaussian_elimination_simple import gauss_simple_controller
+from tools.java_methods.muller.Muller import gauss_simple_controller
 
 
 import json

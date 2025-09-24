@@ -1,26 +1,38 @@
 import numpy as np
 
-def gauss_partial_pivoting(A: list, b: list, decimals: int = 6):
-    """
-    Gaussian Elimination with partial pivoting.
-    Returns solution and detailed logs for each step.
-    """
+def gauss_parcial(A: list, b: list, decimals: int = 6):
+
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
     n = len(b)
     logs = []
 
+    #Check the determinant
+    det = np.linalg.det(A)
+    if det == 0:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.round(decimals).tolist(),
+                "b": b.round(decimals).tolist(),
+                "message": "Matrix is not invertible (det = 0)."
+            }]
+        }
+
     logs.append({
         "step": "Initial",
         "A": A.round(decimals).tolist(),
         "b": b.round(decimals).tolist(),
-        "message": "Initial system."
+        "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    # Forward elimination with partial pivoting
+
     for k in range(n - 1):
-        # --- Partial pivoting ---
-        max_row = np.argmax(abs(A[k:, k])) + k
+
+        max_row = np.argmax(np.abs(A[k:, k])) + k
+
+
         if A[max_row, k] == 0:
             return {
                 "solution": None,
@@ -32,7 +44,7 @@ def gauss_partial_pivoting(A: list, b: list, decimals: int = 6):
                 }]
             }
 
-        # Swap rows if needed
+
         if max_row != k:
             A[[k, max_row]] = A[[max_row, k]]
             b[[k, max_row]] = b[[max_row, k]]
@@ -43,7 +55,7 @@ def gauss_partial_pivoting(A: list, b: list, decimals: int = 6):
                 "message": f"Swapped row {k+1} with row {max_row+1}."
             })
 
-        # --- Elimination ---
+
         for i in range(k + 1, n):
             if A[i, k] == 0:
                 continue
@@ -58,7 +70,7 @@ def gauss_partial_pivoting(A: list, b: list, decimals: int = 6):
             "message": f"Elimination at column {k+1} complete."
         })
 
-    # Back substitution
+    # Sustitución hacia atrás
     x = np.zeros(n)
     for i in range(n - 1, -1, -1):
         if A[i, i] == 0:
@@ -87,7 +99,9 @@ def gauss_partial_pivoting(A: list, b: list, decimals: int = 6):
 
 
 def gauss_parcial_controller(A: list, b: list, decimals: int = 6):
-    
+    """
+    Controller para la eliminación de Gauss con pivoteo parcial.
+    """
     result = gauss_parcial(A, b, decimals)
 
     if result.get("solution") is not None:

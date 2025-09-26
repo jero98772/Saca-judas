@@ -101,5 +101,8 @@ uvicorn main:app --reload
 - HTML + CSS
 - MCP + LLMStudio
 - LaTeX
-```
 
+
+### Jype1 combination
+
+Just compile inside the folder, no make problems pls

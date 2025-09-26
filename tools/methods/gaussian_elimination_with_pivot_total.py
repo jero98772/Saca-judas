@@ -116,7 +116,7 @@ def gauss_pivot_total(A: list, b: list, decimals: int = 6):
     }
 
 
-def gauss_total_controller(A: list, b: list, decimals: int = 6):
+def gaussian_elimination_with_pivot_total_controller(A: list, b: list, decimals: int = 6):
     """
     Controller for Gaussian elimination with total pivoting.
     """

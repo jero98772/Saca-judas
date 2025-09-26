@@ -18,7 +18,9 @@ from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
 from tools.methods.gaussian_elimination_with_pivot_total import gaussian_elimination_with_pivot_total_controller
 from tools.methods.gaussian_elimination_simple import gauss_simple_controller
-from tools.java_methods.muller.Muller import gauss_simple_controller
+
+from tools.java_methods.java_utils import start_jvm, shutdown_jvm
+from tools.java_methods.muller.Muller import muller_controller
 
 
 import json
@@ -66,6 +68,20 @@ async def newton_method_post(request: Request, function: str = Form(...), x0:flo
 @app.post("/eval/bisection", response_class=HTMLResponse)
 async def bisection_post(request: Request, function: str = Form(...), a: float = Form(...), b: float = Form(...), nmax: int = Form(...), tolerance: float = Form(...), last_n_rows: int = Form(...)):
     answer = bisection_controller(function=function, a=a, b=b, nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
+    print(answer)
+    return JSONResponse(content=answer)
+
+@app.post("/eval/muller", response_class=HTMLResponse)
+async def muller_post(request: Request, 
+                      function: str = Form(...), 
+                      p0: float = Form(...), 
+                      p1: float = Form(...), 
+                      p2: float = Form(...), 
+                      nmax: int = Form(...), 
+                      tolerance: float = Form(...), 
+                      last_n_rows: int = Form(...)):
+    answer = muller_controller(function=function, p0=p0, p1=p1, p2=p2, 
+                              nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
     print(answer)
     return JSONResponse(content=answer)
 
@@ -149,6 +165,64 @@ async def secant_method_post(
     return JSONResponse(content=answer)
 
 
+@app.post("/eval/muller")
+async def muller_post(
+    request: Request, 
+    function: str = Form(...), 
+    p0: float = Form(...), 
+    p1: float = Form(...), 
+    p2: float = Form(...),
+    max_iter: int = Form(...),
+    nrows: int = Form(...),
+    tolerance: float = Form(1e-6)
+):
+    """
+    FastAPI endpoint for Muller's method
+    
+    Parameters:
+    - function: String representation of the function (e.g., "x^3-x^2-x-1")
+    - p0: First initial approximation for the root
+    - p1: Second initial approximation for the root  
+    - p2: Third initial approximation for the root
+    - max_iter: Maximum number of iterations
+    - nrows: Number of final rows to return
+    - tolerance: Convergence tolerance (default: 1e-6)
+    """
+    
+    print(f"Function: {function}, type: {type(function)}")
+    print(f"p0: {p0}, type: {type(p0)}")
+    print(f"p1: {p1}, type: {type(p1)}")
+    print(f"p2: {p2}, type: {type(p2)}")
+    print(f"max_iter: {max_iter}, type: {type(max_iter)}")
+    print(f"nrows: {nrows}, type: {type(nrows)}")
+    print(f"tolerance: {tolerance}, type: {type(tolerance)}")
+    
+    try:
+        # Call Muller's method
+        answer = muller_controller(
+            function=function,
+            p0=p0,
+            p1=p1, 
+            p2=p2,
+            nmax=max_iter,
+            last_n_rows=nrows,
+            tolerance=tolerance
+        )
+        
+        print(f"Answer: {answer}")
+        
+        return JSONResponse(content=answer)
+        
+    except Exception as e:
+        error_response = {
+            "iterations": [],
+            "roots": [],
+            "errors": [],
+            "final_root": "Error",
+            "message": f"Server error: {str(e)}"
+        }
+        return JSONResponse(content=error_response, status_code=500)
+
 @app.post("/eval/incremental_search")
 async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),nrows: int = Form(...)):
         print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter))
@@ -218,3 +292,16 @@ async def chat(request: Request):
 @app.exception_handler(404)
 async def not_found(request: Request, exc: StarletteHTTPException):
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize JVM when FastAPI starts"""
+    
+    start_jvm()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown JVM when FastAPI stops"""
+    if jpype.isJVMStarted():
+        jpype.shutdownJVM()
+        print("JVM shutdown successfully")

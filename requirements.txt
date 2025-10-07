@@ -8,4 +8,4 @@ openai
 manim
 lark
 matplotlib
-JPype1
+jpype1

@@ -2,6 +2,14 @@ const Ainput = document.getElementById("A");
 const binput = document.getElementById("b");
 const decimalsInput = document.getElementById("decimals");
 
+const mathField = document.getElementById("mathfield");
+
+mathField.addEventListener("input", () => {
+    console.log(mathField.value)
+})
+
+
+
 function showMessage(msg, type = "danger") {
     const messageBox = document.getElementById("result-message");
     if (msg) {

@@ -11,11 +11,14 @@ from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
 from tools.methods.newton import newton_method_controller
+from tools.methods.modified_newton import newton_multiple_controller
 from tools.methods.bisection import bisection_controller
 from tools.methods.secant import secant_method_controller
 from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
+
+from typing import Optional
 
 # from tools.java_methods.java_utils import start_jvm, shutdown_jvm
 # from tools.java_methods.muller.Muller import muller_controller
@@ -60,6 +63,12 @@ async def newton_method_post(request: Request, function: str = Form(...)):
 @app.post("/eval/newton_method", response_class=HTMLResponse)
 async def newton_method_post(request: Request, function: str = Form(...), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
     answer = newton_method_controller(function=function, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows)
+    
+    return JSONResponse(content=answer)
+
+@app.post("/eval/modified_newton", response_class=HTMLResponse)
+async def newton_method_post(request: Request, function: str = Form(...), df:Optional[str] = Form(None), d2f:Optional[str] = Form(None), x0:float = Form(...), Nmax:int= Form(...), tol:float= Form(...), nrows:int = Form(...)):
+    answer = newton_multiple_controller(function=function, x0=x0, Nmax =Nmax, tol=tol, nrows=nrows, df=df, d2f=d2f)
     
     return JSONResponse(content=answer)
 

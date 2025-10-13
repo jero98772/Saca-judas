@@ -24,6 +24,8 @@ function getFormValues() {
 
     return {
         function: mathField.value || "e^{-x}+\\sin x",
+        derivatedFunction: derivateInput.value,
+        secondDerivate: secondDerivateInput.value,
         x0: x0Value,
         Nmax: nmaxValue,
         tol: tolValue,
@@ -70,62 +72,6 @@ function showMessage(msg, type = "danger") {
     }
 }
 
-const preview = (derivatedFunction) => {
-    const df = math.parse(pythonPowToJS(derivatedFunction))
-    const f = math.parse(pythonPowToJS(mathField.value))
-
-    const fCompiled = f.compile();
-    const fDerivatedCompiled = df.compile();
-
-    const a = parseFloat(x0input.value) || 0;
-
-    let xIntercept
-    if (fDerivatedCompiled.evaluate({ x: a }) != 0) {
-        xIntercept = a - fCompiled.evaluate({ x: a }) / fDerivatedCompiled.evaluate({ x: a });
-    } else {
-        xIntercept = 0
-    }
-
-
-
-    const substituted = f.transform(function (n) {
-        if (n.isSymbolNode && n.name === "x") {
-            return new math.ConstantNode(a);
-        }
-        return n;
-    });
-
-    const substitutedDerivate = df.transform(function (n) {
-        if (n.isSymbolNode && n.name === "x") {
-            return new math.ConstantNode(a);
-        }
-        return n;
-    });
-
-    tangent_str = `(${substituted}) + ((${substitutedDerivate})*(x-${a}))`
-    tangent_str = pythonPowToJS(tangent_str)
-
-    graphData = [
-        {
-            fn: pythonPowToJS(mathField.value)
-        },
-        {
-            fn: tangent_str
-        },
-        {
-            points: [
-                [a, fCompiled.evaluate({ x: a })],
-                [xIntercept, 0],
-            ],
-            fnType: 'points',
-            graphType: 'scatter',
-            attr: { r: 6 }
-        }
-    ]
-
-    graficar(graphData)
-}
-
 defaultData = [
     {
         fn: "exp(-x)+sin(x)"
@@ -151,33 +97,8 @@ secondToggle.addEventListener('change', function () {
     secondDerivateField.style.display = this.checked ? 'block' : 'none';
 });
 
-//Logica de la previsualizacion
-document.getElementById("previewButton").addEventListener("click", (event) => {
-    let tangent_str
-
-    if (!toggle.checked) {
-        fetch('/calculations/derivate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ function: mathField.value })
-        })
-            .then(response => response.json())
-            .then(data => {
-                preview(data.result)
-            })
-            .catch(error => {
-                console.error('Error in preview:', error);
-            });
-    } else {
-        preview(derivateInput.value)
-    }
-})
-
-
-
 //Logic for get the table and results
 document.getElementById("calculation-btn").addEventListener("click", (event) => {
-
 
     // Get validated form values
 
@@ -185,7 +106,7 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
 
     console.log("Sending data:", formValues); // Debug log
 
-    fetch('/eval/newton_method', {
+    fetch('/eval/modified_newton', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -193,59 +114,62 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             x0: formValues.x0,
             Nmax: formValues.Nmax,
             tol: formValues.tol,
-            nrows: formValues.nrows
+            nrows: formValues.nrows,
+            ...(formValues.derivatedFunction ? { df: formValues.derivatedFunction } : {}),
+            ...(formValues.secondDerivate ? { d2f: formValues.secondDerivate } : {}),
         })
+})
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then((data) => {
-            console.log("Received data:", data);
-        
-            showMessage(data.message, data.type)
+    .then((data) => {
+        console.log("Received data:", data);
 
-            const tbody = document.querySelector("#result-table tbody");
-            tbody.innerHTML = ""; 
+        showMessage(data.message, data.type)
 
-            for (let i = 0; i < data.historial.iteraciones.length; i++) {
-                const row = `
+        const tbody = document.querySelector("#result-table tbody");
+        tbody.innerHTML = "";
+
+        for (let i = 0; i < data.historial.iteraciones.length; i++) {
+            const row = `
                         <tr>
                             <td>${data.historial.iteraciones[i]}</td>
                             <td>${data.historial.x[i].toFixed(6)}</td>
-                            <td>${data.historial.errorAbs[i].toExponential(3)}</td>
+                            <td>${data.historial.denominadores[i].toExponential(2)}</td>
+                            <td>${data.historial.errorAbs[i].toExponential(2)}</td>
                         </tr>
                     `;
-                tbody.insertAdjacentHTML("beforeend", row);
+            tbody.insertAdjacentHTML("beforeend", row);
+        }
+
+        if (data.historial.x[data.historial.x.length - 1]) {
+            lastX = data.historial.x[data.historial.x.length - 1]
+        } else {
+            lastX = 100000000000000
+        }
+
+
+        graphData = [
+            {
+                fn: pythonPowToJS(mathField.value)
+            },
+            {
+                points: [
+                    [lastX, -1000],
+                    [lastX, 1000]
+                ],
+                fnType: "points",
+                graphType: "polyline",
+                color: "red"
             }
-
-            if (data.historial.x[data.historial.x.length - 1]){
-                lastX = data.historial.x[data.historial.x.length - 1]
-            }else { 
-                lastX = 100000000000000
-            }
-
-
-            graphData = [
-                {
-                    fn: pythonPowToJS(mathField.value)
-                },
-                {
-                    points: [
-                        [lastX, -1000],
-                        [lastX, 1000]
-                    ],
-                    fnType: "points",
-                    graphType: "polyline",
-                    color: "red"
-                }
-            ]
-            graficar(graphData)
-        })
-        .catch(error => {
-            console.error('Error in calculation:', error);
-            alert('Error en el cálculo. Revisa los valores ingresados.');
-        });
+        ]
+        graficar(graphData)
+    })
+    .catch(error => {
+        console.error('Error in calculation:', error);
+        alert('Error en el cálculo. Revisa los valores ingresados.');
+    });
 })

@@ -28,7 +28,7 @@
                             <div class="input-group mb-3">
                                 <span class="input-group-text">f'(x) =</span>
                                 <input type="text" class="form-control" placeholder="-exp(-x)+cos(x)"
-                                    aria-describedby="basic-addon1" value="-exp(-x)+cos(x)" id="derivateInput">
+                                    aria-describedby="basic-addon1" id="derivateInput">
                             </div>
 
                             <div class="form-check form-switch mb-3 text-start">
@@ -40,8 +40,8 @@
                                 <h6 class="">Second Derivate in <span style="font-style:italic;">Python format</span></h6>
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">f''(x) =</span>
-                                    <input type="text" class="form-control" placeholder="exp(-x)-cos(x)"
-                                        aria-describedby="basic-addon1" value="exp(-x)-cos(x)" id="secondDerivateInput">
+                                    <input type="text" class="form-control" placeholder="exp(-x)-sin(x)"
+                                        aria-describedby="basic-addon1" id="secondDerivateInput">
                                 </div>
                             </div>
 
@@ -49,7 +49,7 @@
                         </div>
 
                         <div class="input-group mb-3">
-                            <button class="btn btn-outline-secondary" type="button" id="previewButton">Ver</button>
+                            <button class="btn btn-outline-secondary" type="button" id="previewButton">x0</button>
                             <input type="text" class="form-control" placeholder="x0" id="x0" value="0">
                         </div>
 
@@ -93,6 +93,7 @@
                                 <tr>
                                     <th>Iteration</th>
                                     <th>x<sub>i</sub></th>
+                                    <th>f'(x<sub>i</sub>)^2 - f(x<sub>i</sub>)f''(x<sub>i</sub>)</th>
                                     <th>Error (E)</th>
                                 </tr>
                             </thead>

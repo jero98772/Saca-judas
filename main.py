@@ -16,11 +16,11 @@ from tools.methods.secant import secant_method_controller
 from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
-from tools.methods.gaussian_elimination_with_pivot_total import gaussian_elimination_with_pivot_total_controller
-from tools.methods.gaussian_elimination_simple import gauss_simple_controller
+# from tools.methods.gaussian_elimination_with_pivot_total import gaussian_elimination_with_pivot_total_controller
+# from tools.methods.gaussian_elimination_simple import gauss_simple_controller
 
-from tools.java_methods.java_utils import start_jvm, shutdown_jvm
-from tools.java_methods.muller.Muller import muller_controller
+# from tools.java_methods.java_utils import start_jvm, shutdown_jvm
+# from tools.java_methods.muller.Muller import muller_controller
 
 
 import json
@@ -293,15 +293,15 @@ async def chat(request: Request):
 async def not_found(request: Request, exc: StarletteHTTPException):
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize JVM when FastAPI starts"""
+# @app.on_event("startup")
+# async def startup_event():
+#     """Initialize JVM when FastAPI starts"""
     
-    start_jvm()
+#     start_jvm()
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Shutdown JVM when FastAPI stops"""
-    if jpype.isJVMStarted():
-        jpype.shutdownJVM()
-        print("JVM shutdown successfully")
+# @app.on_event("shutdown")
+# async def shutdown_event():
+#     """Shutdown JVM when FastAPI stops"""
+#     if jpype.isJVMStarted():
+#         jpype.shutdownJVM()
+#         print("JVM shutdown successfully")

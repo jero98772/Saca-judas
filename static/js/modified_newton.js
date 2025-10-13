@@ -208,7 +208,7 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             showMessage(data.message, data.type)
 
             const tbody = document.querySelector("#result-table tbody");
-            tbody.innerHTML = ""; // limpiar por si acaso
+            tbody.innerHTML = ""; 
 
             for (let i = 0; i < data.historial.iteraciones.length; i++) {
                 const row = `

@@ -14,7 +14,7 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
                 "step": "Check",
                 "A": A.round(decimals).tolist(),
                 "b": b.round(decimals).tolist(),
-                "message": "Matrix is not invertible (det ≈ 0)."
+                "message": "det(A) ≈ 0, solutions can be unstable by higher divisions."
             }]
         }
 
@@ -83,7 +83,7 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
 
 
 def print_augmented_matrix(A, b, decimals):
-    """Print the matrix A with the vector b"""
+    "Print the matrix A with the vector b"
     for row, bi in zip(A, b):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")

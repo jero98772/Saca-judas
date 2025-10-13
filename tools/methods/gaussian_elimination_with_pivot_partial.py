@@ -14,7 +14,7 @@ def gauss_partial(A: list, b: list, decimals: int = 6):
                 "step": "Check",
                 "A": A.round(decimals).tolist(),
                 "b": b.round(decimals).tolist(),
-                "message": "Matrix is not invertible (det ≈ 0)."
+                "message": "det(A) ≈ 0, solutions can be unstable by higher divisions."
             }]
         }
 

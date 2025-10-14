@@ -3,12 +3,35 @@ import numpy as np
 def gauss_total(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
-    n = len(b)
     logs = []
+
+    if A.shape[0] != A.shape[1]:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.tolist(),
+                "b": b.tolist(),
+                "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
+            }]
+        }
+
+
+    if A.shape[0] != len(b):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.tolist(),
+                "b": b.tolist(),
+                "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
+            }]
+        }
 
 
     marks = np.arange(n)
 
+    n = len(b)
     det = np.linalg.det(A)
     if np.isclose(det, 0):
         return {

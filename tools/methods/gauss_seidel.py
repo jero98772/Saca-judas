@@ -7,7 +7,7 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
     n = len(b)
     logs = []
 
-    # --- Validaciones básicas ---
+
     if A.shape[0] != A.shape[1]:
         return {
             "solution": None,
@@ -26,17 +26,17 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
             "logs": [{"step": "Check", "message": f"Initial approximation size ({len(x_0)}) does not match matrix size ({A.shape[0]})."}]
         }
 
-    # --- Descomposición de A ---
+   
     D = np.diag(np.diag(A))
     L = np.tril(A, -1)
     U = np.triu(A, 1)
 
-    # --- Matriz de iteración y vector constante ---
+
     DL_inv = np.linalg.inv(D + L)
     T_GS = -np.dot(DL_inv, U)
     c = np.dot(DL_inv, b)
 
-    # --- Propiedades de T_GS ---
+
     eigen_vals_TGS = np.linalg.eigvals(T_GS)
     spectral_radius = max(abs(eigen_vals_TGS))
     norm2_TGS = np.linalg.norm(T_GS, 2)
@@ -47,13 +47,13 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
         "message": f"Spectral radius ρ(T_GS) = {spectral_radius:.6f},  ||T_GS||₂ = {norm2_TGS:.6f}"
     })
 
-    # --- Iteraciones ---
+
     x = x_0.copy()
     for iteration in range(1, n_max + 1):
         x_new = np.zeros_like(x)
         for i in range(n):
-            sum1 = np.dot(A[i, :i], x_new[:i])  # usa los valores ya actualizados
-            sum2 = np.dot(A[i, i+1:], x[i+1:])  # usa los valores viejos
+            sum1 = np.dot(A[i, :i], x_new[:i])
+            sum2 = np.dot(A[i, i+1:], x[i+1:])
             x_new[i] = (b[i] - sum1 - sum2) / A[i, i]
 
         error = np.linalg.norm(x_new - x, ord=2)
@@ -82,3 +82,4 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
         "iterations": n_max,
         "logs": logs
     }
+

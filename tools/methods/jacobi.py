@@ -1,6 +1,6 @@
 import numpy as np
 
-def jacobi(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: int = 6):
+def jacobi(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: int = 8):
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
     x_0 = np.array(x_0, dtype=float)
@@ -85,3 +85,4 @@ def jacobi(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: 
         "iterations": n_max,
         "logs": logs
     }
+

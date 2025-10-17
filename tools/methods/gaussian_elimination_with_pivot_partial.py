@@ -144,3 +144,7 @@ def print_augmented_matrix(A, b, decimals):
     for row, bi in zip(A, b):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")
+
+
+
+

@@ -28,10 +28,10 @@ def gauss_total(A: list, b: list, decimals: int = 6):
             }]
         }
 
-
+    n = len(b)
     marks = np.arange(n)
 
-    n = len(b)
+    
     det = np.linalg.det(A)
     if np.isclose(det, 0):
         return {
@@ -138,3 +138,4 @@ def print_augmented_matrix(A, b, decimals):
     for row, bi in zip(A, b):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")
+

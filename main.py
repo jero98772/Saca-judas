@@ -10,6 +10,8 @@ from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to
 from tools.numeric_methods import *
 from tools.llm_tools import chat_answer
 
+
+#Ecuaciones no lineales
 from tools.methods.newton import newton_method_controller
 from tools.methods.modified_newton import newton_multiple_controller
 from tools.methods.bisection import bisection_controller
@@ -17,6 +19,9 @@ from tools.methods.secant import secant_method_controller
 from tools.methods.false_position import false_position_controller
 from tools.methods.incremental_search import incremental_search
 from tools.methods.fixed_point import run_fixed_point_web
+
+#Sistemas de ecuaciones lineales
+from tools.methods.gaussian_elimination_simple import gauss_simple
 
 from typing import Optional
 
@@ -92,6 +97,41 @@ async def muller_post(request: Request,
     print(answer)
     return JSONResponse(content=answer)
 
+@app.post("/eval/gauss_simple", response_class=JSONResponse)
+async def gauss_simple_post(request: Request):
+
+    try:
+        data = await request.json()
+        A = data.get("A")
+        b = data.get("b")
+        decimals = data.get("decimals", 6)
+
+        if A is None or b is None:
+            return JSONResponse(
+                content={"error": "Se requieren los parámetros A y b."},
+                status_code=400
+            )
+
+        result = gauss_simple(A, b, decimals)
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"Error procesando la solicitud: {str(e)}"},
+            status_code=500
+        )
+    
+@app.post("/eval/incremental_search")
+async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),nrows: int = Form(...)):
+        print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter))
+        f = latex_to_callable_function(function)
+
+        print(f)
+        answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter)
+        print(f"Answer: {answer}")
+        
+        return JSONResponse(content=answer)
+
 @app.post("/eval/false_position", response_class=HTMLResponse)
 async def false_position_post(
     request: Request,
@@ -137,20 +177,7 @@ async def eval_fixed_point(
          "result": result}
     )
 
-@app.post("/eval/gauss_pivote")
-async def gauss_pivote_eval(request: Request, matrix: str = Form(...), decimals: int = Form(6)):
-    result = gaussian_elimination_with_pivot_total_controller(matrix, decimals)
-    
-    # Check if request expects JSON (from AJAX)
-    if "application/json" in request.headers.get("accept", ""):
-        return JSONResponse(content=result)
-    
-    # Otherwise return HTML template (for regular form submission)
-    return templates.TemplateResponse(
-        "methods/gaussian_elimination_with_pivot_total.html",  
-        {"request": request, "form": {"matrix": matrix}, "result": result}
-    )
-#------------------------------------------------------------------------------------
+
 @app.post("/eval/secant", response_class=HTMLResponse)
 async def secant_method_post(
     request: Request,
@@ -229,56 +256,7 @@ async def muller_post(
             "message": f"Server error: {str(e)}"
         }
         return JSONResponse(content=error_response, status_code=500)
-
-@app.post("/eval/incremental_search")
-async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),nrows: int = Form(...)):
-        print(function,type(function),x0,type(x0),delta_x,type(delta_x),max_iter,type(max_iter))
-        #f = latex_to_sympy_str(function)
-        f = latex_to_callable_function(function)
-
-        print(f)
-        answer = incremental_search(f=f, x0=x0, delta_x=delta_x, max_iter=max_iter)
-        print(f"Answer: {answer}")
         
-        return JSONResponse(content=answer)
-        
-
-@app.post("/eval/gauss_simple", response_class=HTMLResponse)
-async def gauss_simple_post(
-    request: Request, 
-    A: str = Form(...), 
-    b: str = Form(...), 
-    decimals: int = Form(6)
-):
-    try:
-        # Parse the JSON strings back to Python objects
-        A_parsed = json.loads(A)
-        b_parsed = json.loads(b)
-        
-        # Call the controller function
-        answer = gauss_simple_controller(A=A_parsed, b=b_parsed, decimals=decimals)
-        
-        return JSONResponse(content=answer)
-        
-    except json.JSONDecodeError as e:
-        return JSONResponse(
-            content={
-                "solution": None,
-                "message": f"Error parsing input data: {str(e)}",
-                "logs": []
-            },
-            status_code=400
-        )
-    except Exception as e:
-        return JSONResponse(
-            content={
-                "solution": None,
-                "message": f"Error in calculation: {str(e)}",
-                "logs": []
-            },
-            status_code=500
-        )
-
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):

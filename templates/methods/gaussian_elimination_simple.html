@@ -2,11 +2,11 @@
 
 {% block content %}
 <div id="content">
-  <div id="container-fluid text-center">
-    <div class="row align-items-start" style="width: 95vw;">
-      
-      <!-- ===== COL IZQUIERDA: MATRICES ===== -->
-      <div class="col-12 col-md-4 mb-md-0 mb-2">
+  <div class="container text-center">
+    <div class="row justify-content-center" style="width: 95vw;">
+
+      <!-- ===== MATRICES, BOTÓN Y DECIMALES ===== -->
+      <div class="col-12 col-lg-8 mb-3">
         <div class="card p-4">
           <h2>Gaussian Elimination (Simple)</h2>
           <h6>Enter matrix values directly below</h6>
@@ -34,17 +34,17 @@
         </div>
       </div>
 
-      <!-- ===== COL CENTRAL: LOGS ===== -->
-      <div class="col-12 col-md-4 mb-md-0 mb-2">
-        <div class="card p-3" style="height: 90vh; overflow-y: auto;">
+      <!-- ===== ELIMINATION STEPS ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
           <h4>Elimination Steps</h4>
           <div id="logs-container"></div>
         </div>
       </div>
 
-      <!-- ===== COL DERECHA: SOLUCIÓN ===== -->
-      <div class="col-12 col-md-4 mb-md-0 mb-2">
-        <div class="card p-3 table-container">
+      <!-- ===== SOLUTION ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3">
           <h4>Solution</h4>
           <div id="solution-container" style="display:none;"></div>
         </div>
@@ -54,6 +54,8 @@
   </div>
 </div>
 
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
 <script src="/static/js/matrix_grid.js"></script>
 <script src="/static/js/gaussian_elimination_simple.js"></script>
+
 {% endblock %}

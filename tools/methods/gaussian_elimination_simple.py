@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def gauss_simple(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
@@ -10,24 +11,22 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.tolist(),
-                "b": b.tolist(),
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
                 "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
             }]
         }
-
 
     if A.shape[0] != len(b):
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.tolist(),
-                "b": b.tolist(),
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
                 "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
             }]
         }
-
 
     n = len(b)
     det = np.linalg.det(A)
@@ -36,8 +35,8 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.round(decimals).tolist(),
-                "b": b.round(decimals).tolist(),
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
                 "message": "det(A) ≈ 0, solutions can be unstable by higher divisions."
             }]
         }
@@ -45,36 +44,33 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
 
     logs.append({
         "step": "Initial",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(np.column_stack((A, b)), 
+                               columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
         "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    
+
     for k in range(n - 1):
         if A[k, k] == 0:
-            return {
-                "solution": None,
-                "logs": logs + [{
-                    "step": f"Iteration {k+1}",
-                    "A": A.copy().round(decimals).tolist(),
-                    "b": b.copy().round(decimals).tolist(),
-                    "message": f"Pivot at row {k+1} is zero. Method fails."
-                }]
-            }
+            logs.append({
+                "step": f"Iteration {k+1}",
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"Pivot at row {k+1} is zero. Method fails."
+            })
+            return {"solution": None, "logs": logs}
 
         for i in range(k + 1, n):
             if A[i, k] == 0:
                 continue
             m = A[i, k] / A[k, k]
-            A[i, k:] = A[i, k:] - m * A[k, k:]
-            b[i] = b[i] - m * b[k]
-
+            A[i, k:] -= m * A[k, k:]
+            b[i] -= m * b[k]
 
         logs.append({
             "step": f"Iteration {k+1}",
-            "A": A.copy().round(decimals).tolist(),
-            "b": b.copy().round(decimals).tolist(),
+            "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                   columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
             "message": f"Elimination at column {k+1} complete."
         })
 
@@ -82,21 +78,19 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
     x = np.zeros(n)
     for i in range(n - 1, -1, -1):
         if A[i, i] == 0:
-            return {
-                "solution": None,
-                "logs": logs + [{
-                    "step": "Back Substitution",
-                    "A": A.copy().round(decimals).tolist(),
-                    "b": b.copy().round(decimals).tolist(),
-                    "message": f"Zero pivot at row {i+1}. Method fails."
-                }]
-            }
+            logs.append({
+                "step": "Back Substitution",
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"Zero pivot at row {i+1}. Method fails."
+            })
+            return {"solution": None, "logs": logs}
         x[i] = (b[i] - np.dot(A[i, i+1:], x[i+1:])) / A[i, i]
 
     logs.append({
         "step": "Back Substitution",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(np.column_stack((A, b)),
+                               columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
         "message": "Back substitution complete."
     })
 
@@ -104,12 +98,3 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
         "solution": x.round(decimals).tolist(),
         "logs": logs
     }
-
-
-def print_augmented_matrix(A, b, decimals):
-    "Print the matrix A with the vector b"
-    for row, bi in zip(A, b):
-        row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
-        print(f"{row_str} | {bi:.{decimals}f}")
-
-

@@ -99,25 +99,72 @@ async def muller_post(request: Request,
 
 @app.post("/eval/gauss_simple", response_class=JSONResponse)
 async def gauss_simple_post(request: Request):
-
     try:
         data = await request.json()
         A = data.get("A")
         b = data.get("b")
         decimals = data.get("decimals", 6)
 
+        # 1️⃣ Validate presence
         if A is None or b is None:
             return JSONResponse(
-                content={"error": "Se requieren los parámetros A y b."},
+                content={"error": "Parameters 'A' and 'b' are required."},
                 status_code=400
             )
 
+        if not isinstance(A, list) or not A or not all(isinstance(row, list) for row in A):
+            return JSONResponse(
+                content={"error": "Matrix 'A' must be a non-empty list of lists."},
+                status_code=400
+            )
+
+        if not isinstance(b, list) or not b:
+            return JSONResponse(
+                content={"error": "Vector 'b' must be a non-empty list."},
+                status_code=400
+            )
+
+        def is_number(x):
+            try:
+                float(x)
+                return True
+            except (TypeError, ValueError):
+                return False
+
+        for i, row in enumerate(A):
+            for j, val in enumerate(row):
+                if not is_number(val):
+                    return JSONResponse(
+                        content={"error": f"Non-numeric value found at A[{i+1}][{j+1}] → '{val}'."},
+                        status_code=400
+                    )
+        
+        for i, val in enumerate(b):
+            if not is_number(val):
+                return JSONResponse(
+                    content={"error": f"Non-numeric value found at b[{i+1}] → '{val}'."},
+                    status_code=400
+                )
+        
+        try:
+            decimals = int(decimals)
+            if decimals < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return JSONResponse(
+                content={"error": "Parameter 'decimals' must be a positive integer."},
+                status_code=400
+            )
+        
+        A = np.array(A, dtype=float).tolist()
+        b = np.array(b, dtype=float).tolist()
+        
         result = gauss_simple(A, b, decimals)
         return JSONResponse(content=result)
 
     except Exception as e:
         return JSONResponse(
-            content={"error": f"Error procesando la solicitud: {str(e)}"},
+            content={"error": f"Error processing request: {str(e)}"},
             status_code=500
         )
     

@@ -99,10 +99,3 @@ def gauss_simple(A: list, b: list, decimals: int = 6):
         "logs": logs
     }
 
-def render_gauss_tables(logs):
-    html = ""
-    for paso in logs:
-        html += f"<h2>{paso['step']}</h2>"
-        html += f"<p><em>{paso['message']}</em></p>"
-        html += paso["matrix"].to_html(index=False, classes='gauss-table', border=0)
-    return html

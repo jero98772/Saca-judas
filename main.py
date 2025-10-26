@@ -5,6 +5,11 @@ from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+import html as html_lib
+import pandas as pd
+import numpy as np
+from typing import Dict, Callable
+
 from tools.tools import get_function_names 
 from tools.sympyUtilities import validate_math_function, derivateLatex, latex_to_sympy_str, latex_to_callable_function, derivatePythonExpr
 from tools.numeric_methods import *
@@ -22,6 +27,16 @@ from tools.methods.fixed_point import run_fixed_point_web
 
 #Sistemas de ecuaciones lineales
 from tools.methods.gaussian_elimination_simple import gauss_simple
+from tools.methods.gaussian_elimination_with_pivot_partial import gauss_partial
+from tools.methods.gaussian_elimination_with_pivot_total import gauss_total
+from tools.methods.lu_simple import lu_simple
+from tools.methods.lu_partial import lu_partial
+from tools.methods.crout import crout
+from tools.methods.doolittle import doolittle
+from tools.methods.jacobi import jacobi
+from tools.methods.gauss_seidel import gauss_seidel
+from tools.methods.cholesky import cholesky
+from tools.methods.SOR import sor
 
 from typing import Optional
 
@@ -97,33 +112,41 @@ async def muller_post(request: Request,
     print(answer)
     return JSONResponse(content=answer)
 
+def serialize_logs(logs):
+    for log in logs:
+        if isinstance(log.get("matrix"), pd.DataFrame):
+            log["matrix"] = log["matrix"].to_html(index=False, classes="gauss-table", border=0)
+    return logs
+
+
 @app.post("/eval/gauss_simple", response_class=JSONResponse)
 async def gauss_simple_post(request: Request):
     try:
-        data = await request.json()
+       
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
+
         A = data.get("A")
         b = data.get("b")
         decimals = data.get("decimals", 6)
 
-        # 1️⃣ Validate presence
+       
         if A is None or b is None:
-            return JSONResponse(
-                content={"error": "Parameters 'A' and 'b' are required."},
-                status_code=400
-            )
+            return JSONResponse(content={"error": "Parameters 'A' and 'b' are required."}, status_code=400)
 
-        if not isinstance(A, list) or not A or not all(isinstance(row, list) for row in A):
-            return JSONResponse(
-                content={"error": "Matrix 'A' must be a non-empty list of lists."},
-                status_code=400
-            )
+        if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
+            return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
+        if not (isinstance(b, list) and b):
+            return JSONResponse(content={"error": "Vector 'b' must be a non-empty list."}, status_code=400)
 
-        if not isinstance(b, list) or not b:
-            return JSONResponse(
-                content={"error": "Vector 'b' must be a non-empty list."},
-                status_code=400
-            )
+        
+        cols = len(A[0])
+        if not all(len(row) == cols for row in A):
+            return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
 
+       
         def is_number(x):
             try:
                 float(x)
@@ -135,38 +158,48 @@ async def gauss_simple_post(request: Request):
             for j, val in enumerate(row):
                 if not is_number(val):
                     return JSONResponse(
-                        content={"error": f"Non-numeric value found at A[{i+1}][{j+1}] → '{val}'."},
+                        content={"error": f"Non-numeric value at A[{i+1}][{j+1}] → {repr(val)}"},
                         status_code=400
                     )
-        
         for i, val in enumerate(b):
             if not is_number(val):
                 return JSONResponse(
-                    content={"error": f"Non-numeric value found at b[{i+1}] → '{val}'."},
+                    content={"error": f"Non-numeric value at b[{i+1}] → {repr(val)}"},
                     status_code=400
                 )
-        
+
+   
         try:
             decimals = int(decimals)
-            if decimals < 0:
+            if not (0 <= decimals <= 10):
                 raise ValueError
         except (TypeError, ValueError):
             return JSONResponse(
-                content={"error": "Parameter 'decimals' must be a positive integer."},
+                content={"error": "Parameter 'decimals' must be an integer between 0 and 10."},
                 status_code=400
             )
-        
-        A = np.array(A, dtype=float).tolist()
-        b = np.array(b, dtype=float).tolist()
+
         
         result = gauss_simple(A, b, decimals)
-        return JSONResponse(content=result)
+
+       
+        for log in result["logs"]:
+            if "matrix" in log and isinstance(log["matrix"], pd.DataFrame):
+           
+                float_fmt = f"%.{decimals}f"
+                log["matrix"] = log["matrix"].to_html(
+                    index=False,
+                    classes="gauss-table",
+                    border=0,
+                    float_format=float_fmt
+                )
+
+        return JSONResponse(content=result, status_code=200)
 
     except Exception as e:
-        return JSONResponse(
-            content={"error": f"Error processing request: {str(e)}"},
-            status_code=500
-        )
+        
+        return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+
     
 @app.post("/eval/incremental_search")
 async def incremental_search_post(request: Request, function: str = Form(...), x0: float = Form(...), delta_x: float = Form(...),max_iter: int = Form(...),nrows: int = Form(...)):

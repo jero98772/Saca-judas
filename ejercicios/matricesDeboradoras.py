@@ -337,6 +337,86 @@ def lu_partial_pivot(A: list, b: list, decimals: int = 6):
 
     return x.round(decimals).tolist()
 
+import numpy as np
+
+def jacobi(A, b, x0=None, tol=1e-6, max_iter=100, decimals=6):
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    n = len(b)
+
+    # inicial
+    if x0 is None:
+        x = np.zeros(n)
+    else:
+        x = np.array(x0, dtype=float)
+
+    # comprobar diagonal no cero
+    diag = np.diag(A)
+    if np.any(np.isclose(diag, 0)):
+        raise ValueError("La matriz A tiene algún a_ii ≈ 0 en la diagonal; Jacobi no se puede aplicar directamente.")
+
+    # descomposición D y R
+    D = np.diagflat(diag)
+    R = A - D
+    D_inv = np.diag(1.0 / diag)           # forma eficiente de invertir la diagonal
+    T = - D_inv @ R                       # matriz iterativa
+    c = D_inv @ b
+
+    # radio espectral
+    eigs = np.linalg.eigvals(T)
+    rho = max(np.abs(eigs))
+
+    print("=== Método de Jacobi (con error en norma 2 y radio espectral) ===")
+    print("A | b:")
+    for row, bi in zip(A, b):
+        row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
+        print(f"{row_str} | {bi:.{decimals}f}")
+    print()
+    print("D =")
+    print(np.round(D, decimals))
+    print("\nR = A - D =")
+    print(np.round(R, decimals))
+    print()
+    print("Matriz iterativa T = -D^{-1} R :")
+    print(np.round(T, decimals))
+    print("\nVector constante c = D^{-1} b :")
+    print(np.round(c, decimals))
+    print()
+    print(f"Radio espectral ρ(T) = {rho:.6f}")
+    if rho >= 1:
+        print("AVISO: ρ(T) ≥ 1 → la convergencia no está garantizada (puede divergir).")
+    else:
+        print("ρ(T) < 1 → convergencia garantizada (condición suficiente).")
+    print()
+    print(f"Vector inicial x^(0) = {np.round(x, decimals)}")
+    print()
+
+    # iteraciones
+    converged = False
+    for k in range(1, max_iter + 1):
+        x_new = T @ x + c
+        error = np.linalg.norm(x_new - x, 2)   # norma 2 del cambio entre iteraciones
+
+        print(f"Iteración {k}: x^(k) = {np.round(x_new, decimals)},  error (||x^(k)-x^(k-1)||_2) = {error:.{decimals}e}")
+
+        if error < tol:
+            print("\nConvergencia alcanzada.")
+            converged = True
+            x = x_new
+            break
+
+        x = x_new
+
+    if not converged:
+        print("\nNo se alcanzó convergencia en el número máximo de iteraciones.")
+
+    print("\nSolución aproximada final x =", np.round(x, decimals))
+    return {
+        "x": x.round(decimals).tolist(),
+        "rho": float(rho),
+        "converged": bool(converged),
+        "iterations": k
+    }
 
 
 # Ejemplo de uso:
@@ -398,4 +478,27 @@ A = [
 
 b = [-12, 13, 31, -32]
 
-lu_partial_pivot(A,b,6)
+# lu_partial_pivot(A,b,6)
+A = [
+    [10,-3,0,-1],
+    [-3,15,2,9],
+    [0,2,10,2],
+    [-1,9,2,9]
+]
+
+b = [1,1,1,1]
+
+A = [
+    [10, -3, 0, -1],
+    [-3, 15, 2, 9],
+    [0, 2, 10, 2],
+    [-1, 9, 2, 9]
+]
+
+b = [1,1,1,1]
+
+x0 = [1, 2, 3, 4]  # Vector inicial dado: x con un cero arriba
+
+jacobi(A, b, x0=x0, tol=1e-6, max_iter=25)
+
+

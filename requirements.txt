@@ -9,3 +9,4 @@ manim
 lark
 matplotlib
 jpype1
+pandas

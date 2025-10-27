@@ -1,6 +1,6 @@
 import numpy as np
 
-def lu_partial_pivot(A: list, b: list, decimals: int = 6):
+def lu_partial(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
     n = len(b)

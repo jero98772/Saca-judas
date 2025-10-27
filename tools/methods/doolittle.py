@@ -18,7 +18,7 @@ def solve_triangular(T, b, lower=True):
     
     return x
 
-def solve_doolittle(A, b):
+def doolittle(A, b):
     """
     Solve Ax = b using Doolittle decomposition with JSON-compatible output.
     

@@ -499,6 +499,70 @@ b = [1,1,1,1]
 
 x0 = [1, 2, 3, 4]  # Vector inicial dado: x con un cero arriba
 
-jacobi(A, b, x0=x0, tol=1e-6, max_iter=25)
+# jacobi(A, b, x0=x0, tol=1e-6, max_iter=25)
 
 
+import numpy as np
+
+# Definir N
+N = 59
+
+# Definir matriz A y vector b
+A = np.array([
+    [10, -3,  0,  -1],
+    [-3, 15,  2,   N],
+    [0,   2,  N+1, 2],
+    [-1,  N,  2,   9]
+], dtype=float)
+
+b = np.array([1, 1, 1, 1], dtype=float)
+
+# Calcular valores propios
+valores_propios = np.linalg.eigvals(A)
+
+# print("Matriz A =\n", A)
+# print("\nVector b =", b)
+# print("\nValores propios de A =", valores_propios)
+
+def gaussEliminationTridigonal(a,b,c,d):
+    n = len(b)
+    for k in range(n - 1):
+        m = a[k]/b[k]
+        b[k + 1] = b[k + 1] - (m*c[k])
+        d[k + 1] = d[k + 1] - (m*d[k])
+        
+    print(b)
+    print(d)     
+        
+    return b,d
+
+
+A = [
+    [5,  2,  0,   0,   0,   0],
+    [1,  4,  2,   0,   0,   0],
+    [0, -4, 10,   3,   0,   0],
+    [0,  0,  3,  12,  -8,   0],
+    [0,  0,  0,   5, -25,   4],
+    [0,  0,  0,   0,   7,  12]
+]
+
+b = [12, 24, -8, 13, -30, 9]
+
+gauss_simple(A, b)
+
+a = [1,-4,3,5, 7 ]
+b = [5,4,10,12,-25,12]
+c = [2,2,3,-8,4]
+d = [12, 24, -8, 13, -30, 9]
+
+gaussEliminationTridigonal(a,b,c,d)
+
+
+A = np.array([[1, -2],
+              [3,  4]])
+
+# Normas
+n1 = np.linalg.norm(A, 1)       # norma 1 (máx suma de columnas)
+ninf = np.linalg.norm(A, np.inf)  # norma infinita (máx suma de filas)
+n2 = np.linalg.norm(A, 2)       # norma espectral
+nf = np.linalg.norm(A, 'fro')   # norma de Frobenius

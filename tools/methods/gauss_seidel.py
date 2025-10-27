@@ -29,11 +29,12 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
    
     D = np.diag(np.diag(A))
     L = np.tril(A, -1)
+    L = -L
     U = np.triu(A, 1)
+    U = -U
 
-
-    DL_inv = np.linalg.inv(D + L)
-    T_GS = -np.dot(DL_inv, U)
+    DL_inv = np.linalg.inv(D - L)
+    T_GS = np.dot(DL_inv, U)
     c = np.dot(DL_inv, b)
 
 
@@ -82,4 +83,3 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
         "iterations": n_max,
         "logs": logs
     }
-

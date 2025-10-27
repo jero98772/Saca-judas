@@ -36,8 +36,8 @@ def lagrange_polynomial(x_points, y_points):
     print(f"P(x) = {P_simplified}")
     return P_simplified
 
-x = [1, 1.2, 1.4, 1.6, 1.8, 2]
-y = [0.6747, 0.8491, 1.1214, 1.4921, 1.9607, 2.5258]
+x = [-2, -1, 2, 3]
+y = [12.13533528,6.367879441,-4.610943901,2.085536923]
 
 P = lagrange_polynomial(x,y)
 

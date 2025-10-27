@@ -17,7 +17,7 @@ def jacobi(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: 
             }]
         }
 
-    if A.shape[0] != len(b):
+    if A.shape[0] != n:
         return {
             "solution": None,
             "logs": [{

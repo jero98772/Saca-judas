@@ -42,7 +42,7 @@ def crout(A: list, b: list, decimals: int = 6):
                     "message": f"Zero pivot at L[{j},{j}]. Method fails."
                 })
                 return {"solution": None, "logs": logs}
-            U[j, i] = (A[j, i] - np.sum(L[j, :j] * U[:j, i])) / L[j, j]
+            U[j, i] = (A[j, i] - np.sum(L[j, :j] * U[:  j, i])) / L[j, j]
 
         logs.append({
             "step": f"Step {j+1}",

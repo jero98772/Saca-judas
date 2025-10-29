@@ -1,4 +1,5 @@
 import numpy as np
+from sympy import *
 
 def gauss_simple(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
@@ -548,14 +549,14 @@ A = [
 
 b = [12, 24, -8, 13, -30, 9]
 
-gauss_simple(A, b)
+# gauss_simple(A, b)
 
 a = [1,-4,3,5, 7 ]
 b = [5,4,10,12,-25,12]
 c = [2,2,3,-8,4]
 d = [12, 24, -8, 13, -30, 9]
 
-gaussEliminationTridigonal(a,b,c,d)
+# gaussEliminationTridigonal(a,b,c,d)
 
 
 A = np.array([[1, -2],
@@ -566,3 +567,32 @@ n1 = np.linalg.norm(A, 1)       # norma 1 (máx suma de columnas)
 ninf = np.linalg.norm(A, np.inf)  # norma infinita (máx suma de filas)
 n2 = np.linalg.norm(A, 2)       # norma espectral
 nf = np.linalg.norm(A, 'fro')   # norma de Frobenius
+
+A = [
+    [-1,4,-1,-1],
+    [-1,-1,4,0],
+    [-1,-2,0,4],
+    [4,0,-1,-1]
+]
+
+# print(np.linalg.eigvals(A))
+# print(np.linalg.norm(A, 2))
+
+
+x = Symbol("x")
+
+s1 = -0.6*x**3 -1.3*x**2 -1.7*x 
+
+# print(s1.subs(x,0))
+
+s2 = 2*x**2 -1.3*x**2 -1.7*x 
+
+# print(s2.subs(x,1))
+
+s3 = -1.4*x**3 + 8.9 *x**2 -11.9*x + 3.4
+
+print(s3.subs(x,2))
+
+
+
+

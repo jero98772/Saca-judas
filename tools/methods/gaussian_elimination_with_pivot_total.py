@@ -133,9 +133,19 @@ def gauss_total(A: list, b: list, decimals: int = 6):
     }
 
 
-def print_augmented_matrix(A, b, decimals):
+def print_augmented_matrix(A, b, decimals:int = 6):
     """Print the matrix A with the vector b"""
     for row, bi in zip(A, b):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")
+
+A = [[-1,4,-1,-1],
+    [-1,-1,4,0],
+    [-1,-2,0,4],
+    [4,0,-1,-1]]
+b = [20,60,0,0]
+
+result = gauss_total(A,b) ["solution"]
+print(result)
+
 

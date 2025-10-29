@@ -585,14 +585,30 @@ s1 = -0.6*x**3 -1.3*x**2 -1.7*x
 
 # print(s1.subs(x,0))
 
-s2 = 2*x**2 -1.3*x**2 -1.7*x 
+s2 = 2*x**3 -1.3*x**2 -1.7*x 
 
 # print(s2.subs(x,1))
 
-s3 = -1.4*x**3 + 8.9 *x**2 -11.9*x + 3.4
+s3 = -1.4*x**3 + 8.9*x**2 -11.9*x + 3.4
 
-print(s3.subs(x,2)) 
+# print(s3.subs(x,2))
 
+s1_d1 = diff(s1,x,1)
+s2_d1 = diff(s2,x,1)
+s3_d1 = diff(s3,x,1)
 
+print(s1_d1.subs(x,0))
+print(s2_d1.subs(x,0))
 
+print(s2_d1.subs(x,1))
+print(s3_d1.subs(x,1))
 
+s1_d2 = diff(s1,x,2)
+s2_d2 = diff(s2,x,2)
+s3_d2 = diff(s3,x,2)
+
+print(s1_d2.subs(x,0))
+print(s2_d2.subs(x,0))
+
+print(s2_d2.subs(x,1))
+print(s3_d2.subs(x,1))

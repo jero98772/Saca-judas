@@ -6,94 +6,90 @@ def lu_partial(A: list, b: list, decimals: int = 6):
     n = len(b)
     logs = []
 
-    L = np.eye(n)
-    U = A.copy()
+    # Inicializar matrices
+    L = np.zeros((n, n))
+    U = np.zeros((n, n))
     P = np.eye(n)
 
-    det = np.linalg.det(A)
-    if np.isclose(det, 0):
-        return {
-            "solution": None,
-            "logs": [{
-                "step": "Check",
-                "A": A.round(decimals).tolist(),
-                "b": b.round(decimals).tolist(),
-                "message": "Matrix is not invertible (det ≈ 0)."
-            }]
-        }
-
-    logs.append({
-        "step": "Initial",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
-        "message": f"Initial system. Determinant = {det:.4f}"
-    })
-
-
+    # Pivoteo parcial + eliminación
     for k in range(n):
-
-        max_row = np.argmax(np.abs(U[k:, k])) + k
+        # === Pivoteo parcial ===
+        max_row = np.argmax(np.abs(A[k:, k])) + k
         if max_row != k:
-
-            U[[k, max_row], :] = U[[max_row, k], :]
-
+            A[[k, max_row]] = A[[max_row, k]]
+            P[[k, max_row]] = P[[max_row, k]]
             if k > 0:
                 L[[k, max_row], :k] = L[[max_row, k], :k]
-
-            P[[k, max_row], :] = P[[max_row, k], :]
-
             b[[k, max_row]] = b[[max_row, k]]
 
+        # === Calcular elementos de L y U ===
+        # L[i,k] para i >= k
+        for i in range(k, n):
+            suma = sum(L[i, p] * U[p, k] for p in range(k))
+            L[i, k] = A[i, k] - suma
 
-        for i in range(k+1, n):
-            if np.isclose(U[k, k], 0):
-                factor = 0
-            else:
-                factor = U[i, k] / U[k, k]
-            L[i, k] = factor
-            U[i, k:] -= factor * U[k, k:]
+        # U[k,j] para j >= k
+        for j in range(k, n):
+            if np.isclose(L[k, k], 0):
+                raise ValueError(f"Pivote nulo en fila {k+1}.")
+            suma = sum(L[k, p] * U[p, j] for p in range(k))
+            U[k, j] = (A[k, j] - suma) / L[k, k]
 
         logs.append({
             "step": f"Step {k+1}",
-            "A": U.copy().round(decimals).tolist(),
             "L": L.copy().round(decimals).tolist(),
             "U": U.copy().round(decimals).tolist(),
-            "b": b.copy().round(decimals).tolist(),
-            "message": f"Elimination in column {k+1} complete with partial pivoting."
+            "message": f"Elimination in column {k+1} complete (LU with partial pivoting)."
         })
 
-    #Ly = Pb
-    y = np.zeros(n)
+    # === Sustitución hacia adelante ===
     Pb = np.dot(P, b)
+    y = np.zeros(n)
     for i in range(n):
-        y[i] = Pb[i] - np.dot(L[i, :i], y[:i])
+        suma = np.dot(L[i, :i], y[:i])
+        y[i] = (Pb[i] - suma) / L[i, i]
 
-    logs.append({
-        "step": "Forward Substitution",
-        "y": y.round(decimals).tolist(),
-        "message": "Forward substitution complete (Ly = Pb)."
-    })
-
-    #Ux = y
+    # === Sustitución hacia atrás ===
     x = np.zeros(n)
     for i in reversed(range(n)):
-        if np.isclose(U[i, i], 0):
-            logs.append({
-                "step": "Backward Substitution",
-                "A": U.copy().round(decimals).tolist(),
-                "b": b.copy().round(decimals).tolist(),
-                "message": f"Zero pivot at row {i+1}. Method fails."
-            })
-            return {"solution": None, "logs": logs}
-        x[i] = (y[i] - np.dot(U[i, i+1:], x[i+1:])) / U[i, i]
+        suma = np.dot(U[i, i+1:], x[i+1:])
+        x[i] = y[i] - suma
 
     logs.append({
-        "step": "Backward Substitution",
+        "step": "Result",
         "x": x.round(decimals).tolist(),
-        "message": "Backward substitution complete (Ux = y)."
+        "message": "Solution computed successfully (LU with partial pivoting)."
     })
 
     return {
         "solution": x.round(decimals).tolist(),
+        "L": L.round(decimals),
+        "U": U.round(decimals),
+        "P": P,
         "logs": logs
     }
+
+
+# ======= PRUEBA =======
+A = [[4, -1, -1, 0],
+     [-1, 0, 4, -1],
+     [-1, 4, -1, -1],
+     [-1, -1, -2, 4]]
+
+b = [368.04, 295, 170, 0]
+
+resultado = lu_partial(A, b)
+
+# Mostrar pasos
+for log in resultado["logs"]:
+    print(f"\n=== {log['step']} ===")
+    print(log["message"])
+    
+    if "L" in log:
+        print("\nL =")
+        print(np.array(log["L"]))
+    if "U" in log:
+        print("\nU =")
+        print(np.array(log["U"]))
+    if "x" in log:
+        print("\nx =", np.array(log["x"]))

@@ -5,7 +5,7 @@ def vandermonde_interpolation(x, y):
     y = np.array(y, dtype=float)
 
     # Matriz de Vandermonde (en orden creciente de potencias)
-    V = np.vander(x, N=len(x), increasing=True)
+    V = np.vander(x, N=len(x), increasing=False)
 
     # Resolver el sistema V * coef = y
     coef = np.linalg.solve(V, y)

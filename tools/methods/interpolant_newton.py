@@ -54,9 +54,9 @@ def interpolant_newton_newform(x, diff, decimales=6):
 
     return expr_sym, poly_str
 
-# --- ejemplo de uso con tus datos ---
-x = [1, 1.2, 1.4, 1.6, 1.8, 2]
-y = [0.6747, 0.8491, 1.1214, 1.4921, 1.9607, 2.5258]
+
+x = [-1,1,2,0.6198]
+y = [1,3,1.148,-2]
 
 diff, tabla = divided_differences(x, y)
 print("\n Divided differences table:\n")
@@ -68,3 +68,5 @@ print(f"P(x) = {P_sym}")
 
 print("\nPolinomio en forma Newton (coeficientes b_i):")
 print("Pn(x) =", P_newton_str)
+
+

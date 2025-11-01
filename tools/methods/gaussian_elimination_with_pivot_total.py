@@ -132,6 +132,19 @@ def gauss_total(A: list, b: list, decimals: int = 6):
         "logs": logs
     }
 
+def print_logs(result):
+    for step in result["logs"]:
+        print("=" * 70)
+        print(f"🧮 Paso: {step['step']}")
+        print(f"📜 Mensaje: {step['message']}\n")
+        print_augmented_matrix(step["A"], step["b"], decimals=3)
+        print()
+    print("=" * 70)
+    if result["solution"] is not None:
+        print(f"✅ Solución final: {result['solution']}")
+    else:
+        print("❌ No se encontró solución.")
+
 
 def print_augmented_matrix(A, b, decimals:int = 6):
     """Print the matrix A with the vector b"""
@@ -139,13 +152,17 @@ def print_augmented_matrix(A, b, decimals:int = 6):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")
 
-A = [[-1,4,-1,-1],
-    [-1,-1,4,0],
-    [-1,-2,0,4],
-    [4,0,-1,-1]]
-b = [20,60,0,0]
+A = [[     0,      0,      0,      0,      1.],
+ [  1296,    216,     36,      6,      1.],
+ [ 20736,   1728,    144,     12,      1.],
+ [104976,   5832,    324,     18,      1.],
+ [331776,  13824,    576,     24,      1.]]
 
-result = gauss_total(A,b) ["solution"]
-print(result)
+b= [12, 2.5, -3 , 8, 12]
+
+result = gauss_total(A,b)
+
+print_logs(result)
+
 
 

@@ -41,7 +41,7 @@ function tryImageExtensions(imgElement, imageName, loopIndex) {
 		} else {
 			// No image found with any extension, use random image
 			imgElement.onerror = null; // Remove error handler to avoid infinite loop
-			imgElement.src = `https://picsum.photos/400/200?random=${loopIndex}`;
+			imgElement.src = `/static/img/file.jpeg`;
 		}
 	}
 	

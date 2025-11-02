@@ -152,17 +152,6 @@ def print_augmented_matrix(A, b, decimals:int = 6):
         row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
         print(f"{row_str} | {bi:.{decimals}f}")
 
-A = [[     0,      0,      0,      0,      1.],
- [  1296,    216,     36,      6,      1.],
- [ 20736,   1728,    144,     12,      1.],
- [104976,   5832,    324,     18,      1.],
- [331776,  13824,    576,     24,      1.]]
-
-b= [12, 2.5, -3 , 8, 12]
-
-result = gauss_total(A,b)
-
-print_logs(result)
 
 
 

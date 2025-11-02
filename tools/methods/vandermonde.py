@@ -32,9 +32,3 @@ def vandermonde_interpolation(x, y):
 
     return coef
 
-
-# Datos de ejemplo
-x = [0, 6, 12, 18, 24]
-y = [12, 2.5, -3, 8, 12]
-
-vandermonde_interpolation(x, y)

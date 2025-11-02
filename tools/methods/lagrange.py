@@ -36,11 +36,6 @@ def lagrange_polynomial(x_points, y_points):
     print(f"P(x) = {P_simplified}")
     return P_simplified
 
-x = [-2, -1, 2, 3]
-y = [12.13533528,6.367879441,-4.610943901,2.085536923]
-
-P = lagrange_polynomial(x,y)
-
 # import numpy as np
 
 # def lagrange_interpolation(x_points, y_points, x):

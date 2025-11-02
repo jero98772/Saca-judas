@@ -103,18 +103,3 @@ def cholesky(A: list, b: list, decimals: int = 6):
         "logs": logs
     }
 
-
-#A tiene que ser simetrica
-A = [
-    [7, -2, -2, -1],
-    [-2, 8, -2, -2],
-    [-2, -2, 6, -2],
-    [-1, -2, -2, 10]
-]
-
-b = [1, 1, 1, 1]
-
-resultado = cholesky(A, b)
-print("Solución:", resultado["solution"])
-print("L:\n", np.array(resultado["L"]))
-print("U:\n", np.array(resultado["U"]))

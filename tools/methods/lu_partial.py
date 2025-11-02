@@ -69,27 +69,3 @@ def lu_partial(A: list, b: list, decimals: int = 6):
         "logs": logs
     }
 
-
-# ======= PRUEBA =======
-A = [[4, -1, -1, 0],
-     [-1, 0, 4, -1],
-     [-1, 4, -1, -1],
-     [-1, -1, -2, 4]]
-
-b = [368.04, 295, 170, 0]
-
-resultado = lu_partial(A, b)
-
-# Mostrar pasos
-for log in resultado["logs"]:
-    print(f"\n=== {log['step']} ===")
-    print(log["message"])
-    
-    if "L" in log:
-        print("\nL =")
-        print(np.array(log["L"]))
-    if "U" in log:
-        print("\nU =")
-        print(np.array(log["U"]))
-    if "x" in log:
-        print("\nx =", np.array(log["x"]))

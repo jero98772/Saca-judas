@@ -55,18 +55,4 @@ def interpolant_newton_newform(x, diff, decimales=6):
     return expr_sym, poly_str
 
 
-x = [-1,1,2,0.6198]
-y = [1,3,1.148,-2]
-
-diff, tabla = divided_differences(x, y)
-print("\n Divided differences table:\n")
-print(tabla.to_string(index=False))
-
-P_sym, P_newton_str = interpolant_newton_newform(x, diff)
-print("\nPolinomio (forma simbólica simplificada):")
-print(f"P(x) = {P_sym}")
-
-print("\nPolinomio en forma Newton (coeficientes b_i):")
-print("Pn(x) =", P_newton_str)
-
 

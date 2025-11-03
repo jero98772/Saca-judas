@@ -1,4 +1,3 @@
-
 //Referencias
 const mathField = document.getElementById('function');
 const aInput = document.getElementById("a")
@@ -264,15 +263,22 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             const tbody = document.querySelector("#result-table tbody");
             tbody.innerHTML = ""; // clear table first
 
+            const formatError = (num) => {
+                const exp = num.toExponential(2); // ejemplo: "1.23e-8"
+                const [mant, power] = exp.split('e');
+                return `${(parseFloat(mant) * 0.1).toFixed(2)}e${parseInt(power) + 1}`; // "0.12e-8"
+            };
+
             for (let i = 0; i < data.iterations.length; i++) {
+
                 const row = `
                     <tr>
                         <td>${data.iterations[i]}</td>
-                        <td>${data.a_values[i].toFixed(6)}</td>
-                        <td>${data.roots[i].toFixed(6)}</td>
-                        <td>${data.b_values[i].toFixed(6)}</td>
-                        <td>${data.fxm[i].toFixed(6)}</td>
-                        <td>${data.errors[i].toExponential(3)}</td>
+                        <td>${data.a_values[i].toFixed(3)}</td>
+                        <td>${data.roots[i].toFixed(17)}</td>
+                        <td>${data.b_values[i].toFixed(3)}</td>
+                        <td>${formatError(data.fxm[i])}</td>
+                        <td>${formatError(data.errors[i])}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML("beforeend", row);

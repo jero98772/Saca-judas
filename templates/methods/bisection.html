@@ -15,7 +15,7 @@
                         <div class="input-group mb-3 position-relative">
                             <span class="input-group-text">f(x) =</span>
                             <input type="text" class="form-control" placeholder="exp(-x) + sin(x)" id="function"
-                                value="exp(-x) + sin(x)" name="function">
+                                value="exp(-x) + sin(x)">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false"></button>
                             <ul class="dropdown-menu" id="function-history"></ul>
@@ -30,18 +30,18 @@
                                 aria-describedby="basic-addon3" value="2">
                         </div>
 
-                        <button class="btn btn-outline-success mb-3" type="button" id="previewButton">Ver</button>
+                        <button class="btn btn-outline-success mb-3" type="button" id="previewButton">Preview</button>
 
                         <div class="input-group mb-3">
-                            <span class="input-group-text " id="basic-addon1">Iteraciones maximas</span>
+                            <span class="input-group-text " id="basic-addon1">Maximum iterations</span>
                             <input type="text" class="form-control" placeholder="10000" aria-describedby="basic-addon1"
                                 id="nmax" value="100">
                         </div>
 
                         <div class="input-group mb-3">
-                            <span class="input-group-text" id="basic-addon1">Tolerancia</span>
-                            <input type="text" class="form-control" placeholder="0.0000001"
-                                aria-describedby="basic-addon1" id="tol" value="0.0001">
+                            <span class="input-group-text" id="basic-addon1">Tolerance</span>
+                            <input type="text" class="form-control" placeholder="1e-7"
+                                aria-describedby="basic-addon1" id="tol" value="1e-7">
                         </div>
 
                         <div class="input-group mb-3">
@@ -72,7 +72,7 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Iter</th>
-                                    <th>Middels</th>
+                                    <th>Middles/Roots</th>
                                     <th>f(middles)</th>
                                     <th>Error (E)</th>
                                 </tr>
@@ -91,4 +91,4 @@
 
         </div>
     </div>
-    {% endblock %}
+{% endblock %}

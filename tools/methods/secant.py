@@ -18,6 +18,7 @@ def secant_method(f: str, x0: float, x1: float, tol: float, Nmax: int, lastNrows
                 return {
                     "message": "Division by zero occurred in denominator (f(x1) - f(x0))",
                     "value": x1,
+                    "type": "danger",
                     "history": {
                         "iter": history_iter,
                         "xi": history_x,
@@ -46,6 +47,7 @@ def secant_method(f: str, x0: float, x1: float, tol: float, Nmax: int, lastNrows
                 return {
                     "message": "Tolerance satisfied",
                     "value": x2,
+                    "type": "success",
                     "history": {
                         "iter": history_iter,
                         "xi": history_x,
@@ -61,6 +63,7 @@ def secant_method(f: str, x0: float, x1: float, tol: float, Nmax: int, lastNrows
             return {
                 "message": "Division by zero occurred during secant method calculation",
                 "value": x1,
+                "type":"danger",
                 "history": {
                     "iter": history_iter,
                     "xi": history_x,
@@ -72,6 +75,7 @@ def secant_method(f: str, x0: float, x1: float, tol: float, Nmax: int, lastNrows
     return {
         "message": "Maximum number of iterations exceeded",
         "value": x2,
+        "type":"danger",
         "history": {
             "iter": history_iter,
             "xi": history_x,

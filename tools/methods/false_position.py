@@ -49,7 +49,7 @@ def false_position(f: str, a: float, b: float, nmax: int, last_n_rows: int, tole
                 "fxm": list_fx[-last_n_rows:],
                 "errors": list_abs[-last_n_rows:],
                 "final_root": root,
-                "message": "Converged"
+                "message": "Convergence, tolerance satisfied"
             }
 
         # Update interval

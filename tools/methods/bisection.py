@@ -30,7 +30,7 @@ def bisection(f: str, a: float, b: float, nmax: int, last_n_rows: int, tolerance
                 "roots": list_root[-last_n_rows:],
                 "errors": list_abs[-last_n_rows:],
                 "final_root": middle,
-                "message": "Converged"
+                "message": "Converged, tolerance satisfied"
             }
 
         x_0 = middle

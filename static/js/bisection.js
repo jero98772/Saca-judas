@@ -13,10 +13,10 @@ function pythonPowToJS(expr) {
 
 function getFormValues() {
     const aValue = parseFloat(aInput.value)
-    const bValue = parseFloat(bInput.value) 
-    const nmaxValue = parseInt(nmax.value) 
-    const tolValue = parseFloat(tol.value) 
-    const nrowsValue = parseInt(nrows.value) 
+    const bValue = parseFloat(bInput.value)
+    const nmaxValue = parseInt(nmax.value)
+    const tolValue = parseFloat(tol.value)
+    const nrowsValue = parseInt(nrows.value)
 
     return {
         function: mathField.value || "exp(-x) + sin(x)",
@@ -235,19 +235,37 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             tbody.innerHTML = ""; // clear table first
 
             for (let i = 0; i < data.iterations.length; i++) {
+                const root = data.roots[i];
+                const fValue = math.parse(pythonPowToJS(formValues.function))
+                    .compile()
+                    .evaluate({ x: root });
+                const error = data.errors[i];
+
+                // Formatos personalizados
+                const formatError = (num) => {
+                    const exp = num.toExponential(2); // ejemplo: "1.23e-8"
+                    const [mant, power] = exp.split('e');
+                    return `${(parseFloat(mant) * 0.1).toFixed(2)}e${parseInt(power) + 1}`; // "0.12e-8"
+                };
+
+                const formatRoot = (num) => {
+                    // muestra todos los dígitos significativos razonables
+                    return num.toPrecision(17).replace(/\.?0+$/, '');
+                };
+
+                const formatF = (num) => formatError(num);
+
                 const row = `
                     <tr>
                         <td>${data.iterations[i]}</td>
-                        <td>${data.roots[i].toFixed(6)}</td>
-                        <td>${(math.parse(pythonPowToJS(formValues.function))
-                        .compile()
-                        .evaluate({ x: data.roots[i] })
-                    ).toFixed(6)}</td>
-                        <td>${data.errors[i].toExponential(3)}</td>
+                        <td>${formatRoot(root)}</td>
+                        <td>${formatF(fValue)}</td>
+                        <td>${formatError(error)}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
+
             // Última aproximación
             const lastX = data.final_root;
 

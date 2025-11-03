@@ -33,7 +33,7 @@ const graficar = (data) => {
     const graph = document.getElementById('graph');
 
     graph.innerHTML = "";
-    
+
     functionPlot({
         target: "#graph",
         grid: true,
@@ -42,6 +42,31 @@ const graficar = (data) => {
         data
     });
 }
+
+function showMessage(msg, type = "danger") {
+    const messageBox = document.getElementById("result-message");
+    if (msg) {
+        messageBox.style.display = "block";
+
+        // limpiar clases anteriores
+        messageBox.classList.remove("alert-danger", "alert-success", "alert-info");
+
+        // aplicar la clase segun el tipo
+        if (type === "success") {
+            messageBox.classList.add("alert-success");
+        } else if (type === "info") {
+            messageBox.classList.add("alert-info");
+        } else {
+            messageBox.classList.add("alert-danger");
+        }
+
+        messageBox.textContent = msg;
+    } else {
+        messageBox.style.display = "none";
+        messageBox.textContent = "";
+    }
+}
+
 
 graficar()
 
@@ -54,7 +79,6 @@ document.getElementById("previewButton").addEventListener("click", (event) => {
     const x0 = parseFloat(x0input.value) ?? 1;
     const x1 = parseFloat(x1input.value) ?? 2;
 
-    console.log(x0, x1)
 
     // Evaluar f en los puntos
     const f0 = fcompiled.evaluate({ x: x0 });
@@ -119,18 +143,25 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         .then((data) => {
             console.log("Received data:", data);
 
+            showMessage(data.message, data.type)
+
             const tbody = document.querySelector("#result-table tbody");
             tbody.innerHTML = ""; // clear table first
 
             for (let i = 0; i < data.history.iter.length; i++) {
+                const formatError = (num) => {
+                    const exp = num.toExponential(2); // ejemplo: "1.23e-8"
+                    const [mant, power] = exp.split('e');
+                    return `${(parseFloat(mant) * 0.1).toFixed(2)}e${parseInt(power) + 1}`; // "0.12e-8"
+                };
                 const row = `
-            <tr>
-                <td>${data.history.iter[i]}</td>
-                <td>${data.history.xi[i].toFixed(6)}</td>
-                <td>${data.history["f(xi)"][i].toFixed(6)}</td>
-                <td>${data.history.E[i].toExponential(3)}</td>
-            </tr>
-        `;
+                    <tr>
+                        <td>${data.history.iter[i]}</td>
+                        <td>${data.history.xi[i].toFixed(17)}</td>
+                        <td>${formatError(data.history["f(xi)"][i])}</td>
+                        <td>${formatError(data.history.E[i])}</td>
+                    </tr>
+                `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 

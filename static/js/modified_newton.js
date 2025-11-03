@@ -118,58 +118,63 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
             ...(formValues.derivatedFunction ? { df: formValues.derivatedFunction } : {}),
             ...(formValues.secondDerivate ? { d2f: formValues.secondDerivate } : {}),
         })
-})
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
     })
-    .then((data) => {
-        console.log("Received data:", data);
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            console.log("Received data:", data);
 
-        showMessage(data.message, data.type)
+            showMessage(data.message, data.type)
 
-        const tbody = document.querySelector("#result-table tbody");
-        tbody.innerHTML = "";
+            const tbody = document.querySelector("#result-table tbody");
+            tbody.innerHTML = "";
 
-        for (let i = 0; i < data.historial.iteraciones.length; i++) {
-            const row = `
+            for (let i = 0; i < data.historial.iteraciones.length; i++) {
+                const formatError = (num) => {
+                    const exp = num.toExponential(2); // ejemplo: "1.23e-8"
+                    const [mant, power] = exp.split('e');
+                    return `${(parseFloat(mant) * 0.1).toFixed(2)}e${parseInt(power) + 1}`; // "0.12e-8"
+                };
+                const row = `
                         <tr>
                             <td>${data.historial.iteraciones[i]}</td>
-                            <td>${data.historial.x[i].toFixed(6)}</td>
-                            <td>${data.historial.denominadores[i].toExponential(2)}</td>
-                            <td>${data.historial.errorAbs[i].toExponential(2)}</td>
+                            <td>${data.historial.x[i].toFixed(17)}</td>
+                            <td>${formatError(data.historial.denominadores[i])}</td>
+                            <td>${formatError(data.historial.errorAbs[i])}</td>
                         </tr>
                     `;
-            tbody.insertAdjacentHTML("beforeend", row);
-        }
-
-        if (data.historial.x[data.historial.x.length - 1]) {
-            lastX = data.historial.x[data.historial.x.length - 1]
-        } else {
-            lastX = 100000000000000
-        }
-
-
-        graphData = [
-            {
-                fn: pythonPowToJS(mathField.value)
-            },
-            {
-                points: [
-                    [lastX, -1000],
-                    [lastX, 1000]
-                ],
-                fnType: "points",
-                graphType: "polyline",
-                color: "red"
+                tbody.insertAdjacentHTML("beforeend", row);
             }
-        ]
-        graficar(graphData)
-    })
-    .catch(error => {
-        console.error('Error in calculation:', error);
-        alert('Error en el cálculo. Revisa los valores ingresados.');
-    });
+
+            if (data.historial.x[data.historial.x.length - 1]) {
+                lastX = data.historial.x[data.historial.x.length - 1]
+            } else {
+                lastX = 100000000000000
+            }
+
+
+            graphData = [
+                {
+                    fn: pythonPowToJS(mathField.value)
+                },
+                {
+                    points: [
+                        [lastX, -1000],
+                        [lastX, 1000]
+                    ],
+                    fnType: "points",
+                    graphType: "polyline",
+                    color: "red"
+                }
+            ]
+            graficar(graphData)
+        })
+        .catch(error => {
+            console.error('Error in calculation:', error);
+            alert('Error en el cálculo. Revisa los valores ingresados.');
+        });
 })

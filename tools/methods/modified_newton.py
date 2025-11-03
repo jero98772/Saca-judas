@@ -93,7 +93,7 @@ def newton_multiple_method(
         # Verificar tolerancia
         if abs(func(x1)) < tol:
             return {
-                "message": "Tolerancia satisfecha",
+                "message": "Tolerance satisfied",
                 "value": x1,
                 "type": "success",
                 "historial": {
@@ -107,7 +107,7 @@ def newton_multiple_method(
         x0 = x1
 
     return {
-        "message": "Cantidad de iteraciones superadas",
+        "message": "Number of iterations exceeded",
         "value": x1,
         "type": "info",
         "historial": {

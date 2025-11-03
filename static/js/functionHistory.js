@@ -28,14 +28,13 @@ function actualizarDropdown() {
 function actualizarLocalStorage() {
     const valor = input.value.trim();
     if (!valor) return;
-    console.log(valor)
 
     // Evitar duplicados
     historial = historial.filter(item => item !== valor);
     historial.unshift(valor);
 
     // Mantener solo los 10 más recientes
-    if (historial.length > 10) historial.pop();
+    if (historial.length > 5) historial.pop();
 
     localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial));
     actualizarDropdown();
@@ -58,4 +57,5 @@ document.getElementById("calculation-btn").addEventListener("click", () => {
 
 
 // Cargar historial al inicio
+actualizarLocalStorage()
 actualizarDropdown();

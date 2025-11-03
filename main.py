@@ -112,12 +112,6 @@ async def muller_post(request: Request,
     print(answer)
     return JSONResponse(content=answer)
 
-def serialize_logs(logs):
-    for log in logs:
-        if isinstance(log.get("matrix"), pd.DataFrame):
-            log["matrix"] = log["matrix"].to_html(index=False, classes="gauss-table", border=0)
-    return logs
-
 
 @app.post("/eval/gauss_simple", response_class=JSONResponse)
 async def gauss_simple_post(request: Request):

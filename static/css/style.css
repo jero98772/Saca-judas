@@ -1,7 +1,7 @@
 body {
     margin: 0;
     font-family: 'Courier New', monospace;
-    background: #0f0f23;  
+    background: #0f0f23;
 }
 
 html {
@@ -17,7 +17,7 @@ html {
     justify-content: center;
     min-height: 100vh;
     text-align: center;
-    padding-top: 2rem; 
+    padding-top: 2rem;
     padding-bottom: 2rem;
 }
 
@@ -47,8 +47,8 @@ h1 {
     box-shadow: 0 0 30px #00ff41;
 }
 
-canvas{
-    position: fixed;   
+canvas {
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
@@ -56,25 +56,234 @@ canvas{
 }
 
 .card {
-    height: 350px; /* o el alto que prefieras */
+    height: 350px;
+    /* o el alto que prefieras */
     max-width: 100%;
     display: flex;
     flex-direction: column;
 }
+
 .card-img-top {
-    height: 180px; /* o el alto que prefieras para la imagen */
+    height: 180px;
+    /* o el alto que prefieras para la imagen */
     object-fit: cover;
     width: 100%;
 }
+
 .card-body {
     flex: 1 1 auto;
     overflow: auto;
 }
 
 @media screen and (min-width: 736px) {
-    
+
     #graph-container {
-        height: 50vh; 
+        height: 50vh;
     }
 
 }
+
+.annotations path {
+    stroke: blue;
+    /* color de la línea */
+}
+
+.table-container {
+    max-height: 80vh; /* un poco menos que el alto de la pantalla */
+    overflow-y: auto;  /* activa scroll vertical si se excede */
+}
+
+/* ======================
+   Estilos aislados para la vista Gaussian Elimination
+   Scope: solo dentro de #content (no tocar matrix_grid.css)
+   ====================== */
+
+#content .gauss-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tablas con "recuadros" y spacing */
+#content .gauss-table {
+  border-collapse: separate;       /* spacing entre "recuadros" */
+  border-spacing: 8px;
+  width: 100%;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-family: "Courier New", monospace;
+  font-size: 0.95rem;
+  color: #0f0f23;
+}
+
+/* Cabeceras */
+#content .gauss-table thead th {
+  background-color: #00ff41;
+  color: #0f0f23;
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* Celdas estilo "recuadro" */
+#content .gauss-table td {
+  background: #ffffff;
+  border: 1px solid #00ff41;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 56px;
+  box-shadow: 0 0 4px rgba(0, 255, 65, 0.18);
+}
+
+/* Filas alternas (ligero) */
+#content .gauss-table tbody tr:nth-child(even) td {
+  background: #f3fff3;
+}
+
+/* Ajuste para que las tarjetas (cards) de esta vista no se recorten:
+   esto sólo afecta .card dentro de #content */
+#content .card {
+  height: auto;
+  max-width: 100%;
+}
+
+/* Asegurar scroll en el body de las cards dentro de #content */
+#content .card .card-body {
+  overflow: auto;
+  max-height: 60vh;
+}
+
+/* Solución en tarjetas */
+#content .solution-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+#content .sol-box {
+  background: linear-gradient(180deg, #eaffea 0%, #c8f5c8 100%);
+  border: 1px solid #00ff41;
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 90px;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.18);
+}
+
+#content .sol-label {
+  font-size: 0.85rem;
+  color: #003b00;
+  font-weight: bold;
+}
+
+#content .sol-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #00ff41;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  #content .sol-box { min-width: 70px; padding: 8px; }
+  #content .gauss-table td { padding: 6px 8px; min-width: 44px; }
+}
+
+/* ==== Reglas específicas para la vista Gauss (añadir al final de style.css) ==== */
+
+#content .gauss-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  justify-content: center;   /* centra la tabla horizontalmente */
+  align-items: flex-start;
+  padding: 6px 0;
+}
+
+/* Tablas con "recuadros" y spacing - con más especificidad para evitar overrides */
+#content table.gauss-table {
+  border-collapse: separate !important;
+  border-spacing: 8px !important;
+  width: auto !important;
+  margin: 0 auto !important;      /* centrar la tabla */
+  table-layout: auto !important;
+  font-family: "Courier New", monospace;
+  font-size: 0.95rem;
+  color: #0f0f23;
+}
+
+/* Asegurar que los th y td se comporten como celdas (evitar que sean inline por override) */
+#content table.gauss-table th,
+#content table.gauss-table td {
+  display: table-cell !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+/* Cabeceras */
+#content table.gauss-table thead th {
+  background-color: #00ff41 !important;
+  color: #0f0f23 !important;
+  font-weight: bold !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  text-align: center !important;
+}
+
+/* Celdas estilo "recuadro" */
+#content table.gauss-table td {
+  background: #ffffff !important;
+  border: 1px solid #00ff41 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+  min-width: 56px !important;
+  box-shadow: 0 0 4px rgba(0, 255, 65, 0.18) !important;
+  color: #0f0f23 !important;
+}
+
+/* Filas alternas (ligero) */
+#content table.gauss-table tbody tr:nth-child(even) td {
+  background: #f3fff3 !important;
+}
+
+/* Asegurar que las cards dentro de #content no se recorten */
+#content .card {
+  height: auto !important;
+  max-width: 100%;
+}
+#content .card .card-body {
+  overflow: auto !important;
+  max-height: 60vh !important;
+}
+
+/* Solución en tarjetas (mantener tu look verde) */
+#content .solution-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+#content .sol-box {
+  background: linear-gradient(180deg, #eaffea 0%, #c8f5c8 100%);
+  border: 1px solid #00ff41;
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.18);
+}
+#content .sol-label { font-size: 0.95rem; color: #003b00; font-weight: bold; }
+#content .sol-value { font-size: 1.25rem; font-weight: bold; color: #00ff41; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  #content .sol-box { min-width: 80px; padding: 8px; }
+  #content table.gauss-table td { padding: 6px 8px; min-width: 44px; white-space: normal !important; }
+}
+

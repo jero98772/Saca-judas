@@ -16,6 +16,9 @@
                             <span class="input-group-text">f(x) =</span>
                             <input type="text" class="form-control" placeholder="exp(-x) + sin(x)"
                                 aria-describedby="basic-addon1" id="function" value="exp(-x) + sin(x)">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false"></button>
+                            <ul class="dropdown-menu" id="function-history"></ul>
                         </div>
 
                         <div class="form-check form-switch mb-3 text-start">
@@ -28,25 +31,25 @@
                             <div class="input-group mb-3">
                                 <span class="input-group-text">f'(x) =</span>
                                 <input type="text" class="form-control" placeholder="-exp(-x)+cos(x)"
-                                    aria-describedby="basic-addon1" value="-exp(-x)+cos(x)">
+                                    aria-describedby="basic-addon1" value="-exp(-x)+cos(x)" id="derivateInput">
                             </div>
                         </div>
 
                         <div class="input-group mb-3">
-                            <button class="btn btn-outline-secondary" type="button" id="previewButton">Ver</button>
+                            <button class="btn btn-outline-secondary" type="button" id="previewButton">Initial Aproximation Preview</button>
                             <input type="text" class="form-control" placeholder="x0" id="x0" value="0">
                         </div>
 
                         <div class="input-group mb-3">
-                            <span class="input-group-text" id="basic-addon1">Iteraciones maximas</span>
+                            <span class="input-group-text" id="basic-addon1">Maximum iterations</span>
                             <input type="text" class="form-control" placeholder="10000" aria-describedby="basic-addon1"
                                 id="nmax" value="100">
                         </div>
 
                         <div class="input-group mb-3">
-                            <span class="input-group-text" id="basic-addon1">Tolerancia</span>
-                            <input type="text" class="form-control" placeholder="0.0000001"
-                                aria-describedby="basic-addon1" id="tol" value="0.0001">
+                            <span class="input-group-text" id="basic-addon1">Tolerance</span>
+                            <input type="text" class="form-control" placeholder="1e-7"
+                                aria-describedby="basic-addon1" id="tol" value="1e-7">
                         </div>
 
                         <div class="input-group mb-3">
@@ -70,17 +73,18 @@
             <div class="col-12 col-md-5 mb-md-0 mb-2">
                 <div class="card p-3">
                     <h4>Resultados</h4>
-                    <div class="table-responsive">
+                    <div id="result-message" class="alert alert-info" style="display: none;"></div>
+                    <div class="table-responsive table-container">
                         <table id="result-table" class="table table-striped table-bordered table-hover table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Iteración</th>
-                                    <th>x</th>
-                                    <th>Error Abs</th>
+                                    <th>Iteration</th>
+                                    <th>x<sub>i</sub></th>
+                                    <th>Error (E)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Aquí JS meterá las filas -->
+                                <!-- Rows inserted by JS -->
                             </tbody>
                         </table>
                     </div>
@@ -89,7 +93,7 @@
         </div>
 
         <script src="/static/js/newton.js"></script>
-
+        <script src="/static/js/functionHistory.js"></script>
     </div>
 </div>
 {% endblock %}

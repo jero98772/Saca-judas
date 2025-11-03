@@ -1,134 +1,157 @@
-from __future__ import annotations
-from typing import List, Dict, Any, Tuple
 import numpy as np
 
-def parse_augmented_matrix(text: str) -> np.ndarray:
-    """
-    Convierte texto a matriz aumentada (floats).
-    Soporta separadores por espacio o coma. Una fila por línea.
-    """
-    rows = []
-    for raw in text.strip().splitlines():
-        if not raw.strip():
-            continue
-        parts = [p.strip() for p in raw.replace(",", " ").split()]
-        rows.append([float(p) for p in parts])
-    mat = np.array(rows, dtype=float)
-    # validaciones básicas
-    if mat.ndim != 2:
-        raise ValueError("La matriz debe ser 2D.")
-    n, m = mat.shape
-    if m != n + 1:
-        raise ValueError(f"Para un sistema de {n} ecuaciones, se esperan {n+1} columnas (incluyendo b).")
-    return mat
+def gauss_total(A: list, b: list, decimals: int = 6):
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    logs = []
 
-def eliminacion_gaussiana_pivoteo_total_web(A: np.ndarray) -> Dict[str, Any]:
-    """
-    Ejecuta eliminación gaussiana con pivoteo total sobre la matriz aumentada A (n x (n+1)).
-    Devuelve:
-      - stages: lista de matrices por etapa (cada una como lista de listas redondeada)
-      - swaps: info de intercambios por etapa
-      - x: solución final (ordenada según permutaciones de columnas)
-      - perm_cols: permutación de columnas aplicada (para reconstruir orden original)
-    """
-    A = A.copy()
-    n, m = A.shape
-    if m != n + 1:
-        raise ValueError("La matriz debe ser de tamaño n x (n+1).")
+    if A.shape[0] != A.shape[1]:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.tolist(),
+                "b": b.tolist(),
+                "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
+            }]
+        }
 
-    # Rastrear intercambios
-    perm_rows = list(range(n))
-    perm_cols = list(range(n))
 
-    # Almacenar etapas (matrices y swaps)
-    stages: List[Dict[str, Any]] = []
-    stages.append({
-        "k": 0,
-        "matrix": A.copy(),
-        "swap": {"rows": None, "cols": None},
-        "note": "Matriz inicial"
+    if A.shape[0] != len(b):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.tolist(),
+                "b": b.tolist(),
+                "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
+            }]
+        }
+
+    n = len(b)
+    marks = np.arange(n)
+
+    
+    det = np.linalg.det(A)
+    if np.isclose(det, 0):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": A.round(decimals).tolist(),
+                "b": b.round(decimals).tolist(),
+                "message": "Matrix is not invertible (det ≈ 0)."
+            }]
+        }
+
+    logs.append({
+        "step": "Initial",
+        "A": A.copy().round(decimals).tolist(),
+        "b": b.copy().round(decimals).tolist(),
+        "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    # Eliminación con pivoteo total
     for k in range(n - 1):
-        # Buscar pivote máximo en submatriz A[k:n, k:n]
-        sub = np.abs(A[k:n, k:n])
-        idx = np.unravel_index(np.argmax(sub), sub.shape)
-        i_max = k + idx[0]
-        j_max = k + idx[1]
-        max_val = sub[idx]
 
-        if max_val < 1e-12:
-            raise ValueError("Pivote muy pequeño o cero. Sistema singular o mal condicionado.")
+        submatrix = np.abs(A[k:, k:])
+        p, q = np.unravel_index(np.argmax(submatrix), submatrix.shape)
+        p += k
+        q += k
 
-        swap_info = {"rows": None, "cols": None}
 
-        # Intercambio de filas
-        if i_max != k:
-            A[[k, i_max], :] = A[[i_max, k], :]
-            perm_rows[k], perm_rows[i_max] = perm_rows[i_max], perm_rows[k]
-            swap_info["rows"] = (k, i_max)
+        if np.isclose(A[p, q], 0):
+            return {
+                "solution": None,
+                "logs": logs + [{
+                    "step": f"Iteration {k+1}",
+                    "A": A.copy().round(decimals).tolist(),
+                    "b": b.copy().round(decimals).tolist(),
+                    "message": f"Pivot at position ({p+1},{q+1}) is zero. Method fails."
+                }]
+            }
 
-        # Intercambio de columnas (solo en coeficientes, excluyendo término independiente)
-        if j_max != k:
-            A[:, [k, j_max]] = A[:, [j_max, k]]
-            perm_cols[k], perm_cols[j_max] = perm_cols[j_max], perm_cols[k]
-            swap_info["cols"] = (k, j_max)
 
-        # Eliminación hacia abajo
-        for i in range(k + 1, n):
-            if abs(A[k, k]) > 1e-16:
-                f = A[i, k] / A[k, k]
-                A[i, k:m] = A[i, k:m] - f * A[k, k:m]
+        if q != k:
+            A[:, [k, q]] = A[:, [q, k]]
+            marks[[k, q]] = marks[[q, k]]
 
-        stages.append({
-            "k": k + 1,
-            "matrix": A.copy(),
-            "swap": swap_info,
-            "note": f"Etapa {k+1}"
+        if p != k:
+            A[[k, p], :] = A[[p, k], :]
+            b[[k, p]] = b[[p, k]]
+
+        logs.append({
+            "step": f"Pivot {k+1}",
+            "A": A.copy().round(decimals).tolist(),
+            "b": b.copy().round(decimals).tolist(),
+            "message": f"Swapped column {k+1} ↔ {q+1} and row {k+1} ↔ {p+1} for total pivoting."
         })
 
-    # Sustitución regresiva
-    y = np.zeros(n, dtype=float)
+        for i in range(k + 1, n):
+            if np.isclose(A[i, k], 0):
+                continue
+            m = A[i, k] / A[k, k]
+            A[i, k:] -= m * A[k, k:]
+            b[i] -= m * b[k]
+
+        logs.append({
+            "step": f"Iteration {k+1}",
+            "A": A.copy().round(decimals).tolist(),
+            "b": b.copy().round(decimals).tolist(),
+            "message": f"Elimination at column {k+1} complete."
+        })
+
+
+    x = np.zeros(n)
     for i in range(n - 1, -1, -1):
-        s = float(np.dot(A[i, i+1:n], y[i+1:n])) if i+1 < n else 0.0
-        if abs(A[i, i]) < 1e-16:
-            raise ValueError("Cero en la diagonal durante sustitución regresiva.")
-        y[i] = (A[i, n] - s) / A[i, i]
+        if np.isclose(A[i, i], 0):
+            return {
+                "solution": None,
+                "logs": logs + [{
+                    "step": "Back Substitution",
+                    "A": A.copy().round(decimals).tolist(),
+                    "b": b.copy().round(decimals).tolist(),
+                    "message": f"Zero (or near-zero) pivot at row {i+1}. Method fails."
+                }]
+            }
+        x[i] = (b[i] - np.dot(A[i, i+1:], x[i+1:])) / A[i, i]
 
-    # Reordenar solución a las variables originales según perm_cols
-    x = np.zeros(n, dtype=float)
+
+    x_final = np.zeros(n)
     for i in range(n):
-        x[perm_cols[i]] = y[i]
+        x_final[marks[i]] = x[i]
+
+    logs.append({
+        "step": "Back Substitution",
+        "A": A.copy().round(decimals).tolist(),
+        "b": b.copy().round(decimals).tolist(),
+        "message": "Back substitution complete."
+    })
 
     return {
-        "stages": [ _stage_to_serializable(st) for st in stages ],
-        "solution": x.tolist(),
-        "perm_cols": perm_cols,
-        "perm_rows": perm_rows,
+        "solution": x_final.round(decimals).tolist(),
+        "logs": logs
     }
 
-def _stage_to_serializable(st: Dict[str, Any]) -> Dict[str, Any]:
-    M = st["matrix"]
-    return {
-        "k": st["k"],
-        "note": st["note"],
-        "swap": st["swap"],
-        "matrix": [[float(v) for v in row] for row in M]
-    }
+def print_logs(result):
+    for step in result["logs"]:
+        print("=" * 70)
+        print(f"🧮 Paso: {step['step']}")
+        print(f"📜 Mensaje: {step['message']}\n")
+        print_augmented_matrix(step["A"], step["b"], decimals=3)
+        print()
+    print("=" * 70)
+    if result["solution"] is not None:
+        print(f"✅ Solución final: {result['solution']}")
+    else:
+        print("❌ No se encontró solución.")
 
-def run_gauss_pivote_web(text_matrix: str) -> Dict[str, Any]:
-    """
-    Punto de entrada para la vista web. Recibe el texto de la matriz aumentada.
-    Devuelve contexto para la plantilla: etapas, solución, etc.
-    """
-    A = parse_augmented_matrix(text_matrix)
-    result = eliminacion_gaussiana_pivoteo_total_web(A)
-    return {
-        "n": A.shape[0],
-        "m": A.shape[1],
-        "stages": result["stages"],
-        "solution": result["solution"],
-        "perm_cols": result["perm_cols"],
-        "perm_rows": result["perm_rows"],
-    }
+
+def print_augmented_matrix(A, b, decimals:int = 6):
+    """Print the matrix A with the vector b"""
+    for row, bi in zip(A, b):
+        row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
+        print(f"{row_str} | {bi:.{decimals}f}")
+
+
+
+

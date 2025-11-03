@@ -1,17 +1,61 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div id="content">
+  <div class="container text-center">
+    <div class="row justify-content-center" style="width: 95vw;">
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Gaussian Elimination Simple</h1>
-                </div>
-            </div>
+      <!-- ===== MATRICES, BOTÓN Y DECIMALES ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-4">
+          <h2>Gaussian Elimination (Simple)</h2>
+          <h6>Enter matrix values directly below</h6>
+
+          <div class="mb-3 text-start">
+            <label class="form-label fw-bold">Matrix A</label>
+            <div id="matrixA" class="matrix-grid"></div>
+          </div>
+
+          <div class="mb-3 text-start">
+            <label class="form-label fw-bold">Vector b</label>
+            <div id="matrixB" class="matrix-grid"></div>
+          </div>
+
+          <div class="input-group mb-3">
+            <span class="input-group-text">Decimals</span>
+            <input type="number" id="decimals" class="form-control" value="6" min="0" max="12">
+          </div>
+
+          <button id="calculation-btn" class="btn btn-outline-success mb-3" type="button">
+            Calculate Gaussian Elimination
+          </button>
+
+          <div id="result-message" class="alert" style="display:none;"></div>
         </div>
-    </div>
-</div>
-{% endblock %}
+      </div>
 
+      <!-- ===== ELIMINATION STEPS ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+          <h4>Elimination Steps</h4>
+          <div id="logs-container"></div>
+        </div>
+      </div>
+
+      <!-- ===== SOLUTION ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3">
+          <h4>Solution</h4>
+          <div id="solution-container" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+<script src="/static/js/matrix_grid.js"></script>
+<script src="/static/js/gaussian_elimination_simple.js"></script>
+
+{% endblock %}

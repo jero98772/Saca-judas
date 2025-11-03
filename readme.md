@@ -4,6 +4,8 @@
 
 ---
 
+
+
 ## 🚀 Run Locally
 
 1. Install dependencies:
@@ -87,7 +89,6 @@ uvicorn main:app --reload
 ## 📊 Future Enhancements
 
 - Additional plotting tools
-- More LaTeX-based PDF report exports
 - Internationalization (i18n) support
 
 ---
@@ -99,5 +100,11 @@ uvicorn main:app --reload
 - HTML + CSS
 - MCP + LLMStudio
 - LaTeX
-```
 
+  
+## User Manual & Reports
+- LaTeX Report (https://es.overleaf.com/read/wxmgvzncvzcy#b5ca60).
+- LaTeX User Manual (https://es.overleaf.com/read/gstbxkntfqjd#a5eaaa)
+### Jype1 combination
+
+Just compile inside the folder, no make problems pls

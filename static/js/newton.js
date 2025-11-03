@@ -192,26 +192,31 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         })
         .then((data) => {
             console.log("Received data:", data);
-        
+
             showMessage(data.message, data.type)
 
             const tbody = document.querySelector("#result-table tbody");
             tbody.innerHTML = ""; // limpiar por si acaso
 
             for (let i = 0; i < data.historial.iteraciones.length; i++) {
+                const formatError = (num) => {
+                    const exp = num.toExponential(2); // ejemplo: "1.23e-8"
+                    const [mant, power] = exp.split('e');
+                    return `${(parseFloat(mant) * 0.1).toFixed(2)}e${parseInt(power) + 1}`; // "0.12e-8"
+                };
                 const row = `
                         <tr>
                             <td>${data.historial.iteraciones[i]}</td>
-                            <td>${data.historial.x[i].toFixed(6)}</td>
-                            <td>${data.historial.errorAbs[i].toExponential(3)}</td>
+                            <td>${data.historial.x[i].toFixed(17)}</td>
+                            <td>${formatError(data.historial.errorAbs[i])}</td>
                         </tr>
                     `;
                 tbody.insertAdjacentHTML("beforeend", row);
             }
 
-            if (data.historial.x[data.historial.x.length - 1]){
+            if (data.historial.x[data.historial.x.length - 1]) {
                 lastX = data.historial.x[data.historial.x.length - 1]
-            }else { 
+            } else {
                 lastX = 100000000000000
             }
 
@@ -234,6 +239,6 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
         })
         .catch(error => {
             console.error('Error in calculation:', error);
-            alert('Error en el cálculo. Revisa los valores ingresados.');
+            showMessage(error, "danger");
         });
 })

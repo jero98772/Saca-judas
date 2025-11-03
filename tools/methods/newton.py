@@ -32,7 +32,7 @@ def newton_method(f:str, x0:float, tol:float, Nmax:int, ultimasNfilas:int, df:st
             }
         except ZeroDivisionError:
             return {
-                "message": "Se produjo division por 0, revisar las condiciones de que f' no sea 0 en el intervalo",
+                "message": "Division by 0 occurred, derivate equal to 0",
                 "value": x0,
                 "type":"danger",
                 "historial": {

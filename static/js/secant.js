@@ -187,6 +187,6 @@ document.getElementById("calculation-btn").addEventListener("click", (event) => 
 
         .catch(error => {
             console.error('Error in calculation:', error);
-            alert('Error en el cálculo. Revisa los valores ingresados.');
+            showMessage(error,"danger")
         });
 })

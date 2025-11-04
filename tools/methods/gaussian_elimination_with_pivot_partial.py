@@ -137,14 +137,3 @@ def gauss_partial(A: list, b: list, decimals: int = 6):
         "solution": x.round(decimals).tolist(),
         "logs": logs
     }
-
-
-def print_augmented_matrix(A, b, decimals):
-    """Print the matrix A with the vector b"""
-    for row, bi in zip(A, b):
-        row_str = "  ".join(f"{val:.{decimals}f}" for val in row)
-        print(f"{row_str} | {bi:.{decimals}f}")
-
-
-
-

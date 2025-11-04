@@ -1,16 +1,13 @@
 const MIN_SIZE = 3; 
 
-
 function createMatrixGrid(containerId, rows = 3, cols = 3) {
   const container = document.getElementById(containerId);
   if (!container) return;
-
 
   if (containerId === "matrixA") {
     rows = Math.max(rows, MIN_SIZE);
     cols = Math.max(cols, MIN_SIZE);
   } else if (containerId === "matrixB") {
-
     rows = Math.max(rows, MIN_SIZE);
     cols = Math.max(cols, 1);
   }
@@ -32,7 +29,6 @@ function createMatrixGrid(containerId, rows = 3, cols = 3) {
   container.appendChild(table);
 }
 
-
 function createCellElement(table, containerId) {
   const td = document.createElement("td");
   const input = document.createElement("input");
@@ -51,11 +47,15 @@ function createCellElement(table, containerId) {
     }
 
     const vv = input.value.trim();
-    if (vv !== "" && !/^[-+]?\d*\.?\d*$/.test(vv)) {
-      input.classList.add("is-invalid");
-    } else {
-      input.classList.remove("is-invalid");
-    }
+    if (
+   vv !== "" &&
+   !/^[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?$/.test(vv)
+     ) {
+   input.classList.add("is-invalid");
+   } else {
+   input.classList.remove("is-invalid");
+   }
+
   });
 
   input.addEventListener("keydown", (ev) => {
@@ -67,7 +67,6 @@ function createCellElement(table, containerId) {
   td.appendChild(input);
   return td;
 }
-
 
 function isEmptyValue(inp) {
   const v = (inp.value || "").trim();
@@ -88,28 +87,45 @@ function colIsEmpty(table, colIdx) {
   });
 }
 
-
 function handleKey(e, row, col, table, containerId, inputEl) {
   const rows = table.rows.length;
   const cols = table.rows[0].cells.length;
   const isMatrixA = containerId === "matrixA";
 
+  // === NUEVO: detección de posición del cursor dentro del texto ===
+  const cursorPos = inputEl.selectionStart;
+  const textLength = inputEl.value.length;
+
+  // Si se mueve dentro del texto, no cambiar de celda
+  if (
+    (e.key === "ArrowLeft" && cursorPos > 0) ||
+    (e.key === "ArrowRight" && cursorPos < textLength)
+  ) {
+    return;
+  }
+
+  // ==============================
+  // Navegación entre celdas
+  // ==============================
 
   if (e.key === "ArrowUp" && row > 0 && !(isMatrixA && row === rows - 1)) {
     e.preventDefault();
     table.rows[row - 1].cells[col].querySelector("input").focus();
     return;
   }
+
   if (e.key === "ArrowDown" && row < rows - 1) {
     e.preventDefault();
     table.rows[row + 1].cells[col].querySelector("input").focus();
     return;
   }
+
   if (e.key === "ArrowLeft" && col > 0 && !(isMatrixA && col === cols - 1)) {
     e.preventDefault();
     table.rows[row].cells[col - 1].querySelector("input").focus();
     return;
   }
+
   if (e.key === "ArrowRight" && col < cols - 1) {
     e.preventDefault();
     table.rows[row].cells[col + 1].querySelector("input").focus();
@@ -119,6 +135,9 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
   e.preventDefault();
 
+  // ==============================
+  // Expansión o reducción dinámica
+  // ==============================
 
   if (isMatrixA && ((e.key === "ArrowRight" && col === cols - 1) || (e.key === "ArrowDown" && row === rows - 1))) {
     addRowAndColumn(table);
@@ -131,13 +150,11 @@ function handleKey(e, row, col, table, containerId, inputEl) {
     return;
   }
 
-
   if (isMatrixA && (e.key === "ArrowLeft" || e.key === "ArrowUp")) {
     const lastRowIdx = rows - 1;
     const lastColIdx = cols - 1;
 
     setTimeout(() => {
-
       if (rows > MIN_SIZE && cols > MIN_SIZE && rowIsEmpty(table, lastRowIdx) && colIsEmpty(table, lastColIdx)) {
         if ((e.key === "ArrowLeft" && col === lastColIdx) || (e.key === "ArrowUp" && row === lastRowIdx)) {
           removeRowAndColumn(table);
@@ -152,7 +169,7 @@ function handleKey(e, row, col, table, containerId, inputEl) {
           return;
         }
       }
-      
+
       if (e.key === "ArrowLeft" && col > 0) {
         table.rows[row].cells[col - 1].querySelector("input").focus();
       } else if (e.key === "ArrowUp" && row > 0) {
@@ -162,7 +179,6 @@ function handleKey(e, row, col, table, containerId, inputEl) {
     return;
   }
 
-  
   if (containerId === "matrixB") {
     if (e.key === "ArrowDown" && row === rows - 1) {
       addRow(table);
@@ -186,7 +202,6 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   }
 }
 
-
 function addRow(table) {
   const cols = table.rows[0].cells.length;
   const tr = document.createElement("tr");
@@ -206,7 +221,6 @@ function addRowAndColumn(table) {
 }
 
 function removeRowAndColumn(table) {
- 
   if (table.rows.length <= MIN_SIZE || table.rows[0].cells.length <= MIN_SIZE) return;
 
   table.deleteRow(table.rows.length - 1);
@@ -215,7 +229,6 @@ function removeRowAndColumn(table) {
     table.rows[i].deleteCell(cols - 1);
   }
 }
-
 
 function syncVectorB(forceTrim = false) {
   const A = document.querySelector("#matrixA table");
@@ -232,7 +245,6 @@ function syncVectorB(forceTrim = false) {
 
   while (bTable.rows.length < currentRows) addRow(bTable);
 
-  
   while (bTable.rows.length > currentRows && bTable.rows.length > MIN_SIZE) {
     const lastRow = bTable.rows[bTable.rows.length - 1];
     const anyUser = Array.from(lastRow.querySelectorAll("input")).some(inp => !isEmptyValue(inp));
@@ -240,7 +252,6 @@ function syncVectorB(forceTrim = false) {
     bTable.deleteRow(bTable.rows.length - 1);
   }
 }
-
 
 function getMatrixValues(containerId) {
   const container = document.getElementById(containerId);
@@ -262,7 +273,6 @@ function getVectorValues(containerId) {
     return v === "" ? 0 : parseFloat(v) || 0;
   });
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
   createMatrixGrid("matrixA", 3, 3);

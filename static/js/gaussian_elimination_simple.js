@@ -15,7 +15,7 @@
     inlineStylesInjected = true;
 
     const css = `
-    /* Estilos inyectados dinámicamente para gauss-table (alta prioridad) */
+    /* Dynamically injected styles for gauss-table (high priority) */
     #content .gauss-table-wrapper { display:flex; justify-content:center; align-items:flex-start; padding:6px 0; overflow-x:auto; }
     #content table.gauss-table { border-collapse: separate !important; border-spacing: 8px !important; width: auto !important; margin: 0 auto !important; table-layout: auto !important; font-family: "Courier New", monospace; font-size: 0.95rem; color: #0f0f23 !important; }
     #content table.gauss-table th, #content table.gauss-table td { display: table-cell !important; vertical-align: middle !important; white-space: nowrap !important; border: 1px solid #00ff41 !important; background: #ffffff !important; padding: 8px 12px !important; border-radius: 8px !important; box-shadow: 0 0 4px rgba(0,255,65,0.18) !important; color: #0f0f23 !important; }
@@ -28,20 +28,16 @@
     style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
 
-    // small delay to ensure rules apply if called very early
     setTimeout(() => {}, 0);
   }
 
-  // Forzar class gauss-table y añadir inline table style backup (border-spacing)
   function ensureGaussTableClass(html) {
     if (!html) return html;
     if (!/<table[\s>]/i.test(html)) return html;
 
-    // Add class and inline style to first <table ...>
     return html.replace(/<table([^>]*)>/i, (match, attr) => {
       let newAttr = attr;
 
-      // add/append class
       if (/class\s*=/i.test(attr)) {
         if (!/gauss-table/i.test(attr)) {
           newAttr = newAttr.replace(/class\s*=\s*["']([^"']*)["']/, (m, cls) => {
@@ -52,9 +48,7 @@
         newAttr = ` class="gauss-table" ${newAttr}`;
       }
 
-      // ensure inline style backup contains border-spacing & border-collapse
       if (/style\s*=/i.test(newAttr)) {
-        // if a style exists, append our props if missing
         newAttr = newAttr.replace(/style\s*=\s*["']([^"']*)["']/, (m, s) => {
           let styleStr = s;
           if (!/border-spacing/i.test(styleStr)) styleStr += " border-spacing:8px;";
@@ -77,14 +71,98 @@
   }
   function hideMessage() { if (resultMessage) resultMessage.style.display = "none"; }
 
-  // Escape básico para step/message
   function escapeHtml(unsafe) {
     if (unsafe === null || unsafe === undefined) return "";
     return String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+/**
+ * Validates matrix A and vector b by reading inputs directly from the DOM.
+ * - Rejects if any row of A is completely empty or all zeros.
+ * - Rejects if vector b is missing values or its length doesn't match A.
+ * - Shows clear English messages prompting the user to complete missing entries.
+ */
+function validateMatrixAndVector() {
+  const Acontainer = document.getElementById("matrixA");
+  const bcontainer = document.getElementById("matrixB");
+
+  if (!Acontainer || !bcontainer) {
+    return { valid: false, message: "Internal error: matrix containers not found." };
+  }
+
+  // Get table elements for A and b
+  const tableA = Acontainer.querySelector("table");
+  if (!tableA) return { valid: false, message: "Matrix A is not available." };
+  const rowsA = Array.from(tableA.rows);
+
+  // Validate rows of A
+  for (let i = 0; i < rowsA.length; i++) {
+    const inputs = Array.from(rowsA[i].querySelectorAll("input"));
+    if (inputs.length === 0) continue;
+
+    const valsStr = inputs.map(inp => (inp.value || "").trim());
+
+    // Case 1: Entire row empty
+    const allEmpty = valsStr.every(s => s === "");
+    if (allEmpty) {
+      return { 
+        valid: false, 
+        message: `Row ${i + 1} of matrix A is empty. Please fill in all missing values before running the method.` 
+      };
+    }
+
+    // Convert to numeric values
+    const numericVals = valsStr.map(s => {
+      if (s === "") return NaN;
+      const s2 = s.replace(",", ".");
+      const n = Number(s2);
+      return Number.isFinite(n) ? n : NaN;
+    });
+
+    // Case 2: All values are zero or invalid
+    const hasNonZero = numericVals.some(n => !isNaN(n) && n !== 0);
+    if (!hasNonZero) {
+      return { 
+        valid: false, 
+        message: `Row ${i + 1} of matrix A contains only zeros or invalid values. Please fill in all missing values before running the method.` 
+      };
+    }
+  }
+
+  // Validate vector b
+  const tableB = bcontainer.querySelector("table");
+  if (!tableB) return { valid: false, message: "Vector b is not available." };
+  const rowsB = Array.from(tableB.rows);
+
+  if (rowsB.length !== rowsA.length) {
+    return { valid: false, message: "Vector b does not match the size of matrix A." };
+  }
+
+  for (let i = 0; i < rowsB.length; i++) {
+    const inp = rowsB[i].querySelector("input");
+    const s = inp ? (inp.value || "").trim() : "";
+    if (s === "") {
+      return { 
+        valid: false, 
+        message: `Entry b[${i + 1}] is empty. Please fill in all missing values before running the method.` 
+      };
+    }
+    const s2 = s.replace(",", ".");
+    const n = Number(s2);
+    if (!Number.isFinite(n)) {
+      return { 
+        valid: false, 
+        message: `Entry b[${i + 1}] is not numeric. Please fill in all missing values before running the method.` 
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+
+
   btn.addEventListener("click", async () => {
-    // ensure styles applied once per session
     ensureInlineStyles();
 
     hideMessage();
@@ -95,9 +173,15 @@
     try {
       A = getMatrixValues("matrixA");
       b = getVectorValues("matrixB");
+      const check = validateMatrixAndVector();
+      if (!check.valid) {
+        showMessage(check.message, "danger");
+        return;
+      }
+
     } catch (err) {
-      console.error("Error leyendo matrices:", err);
-      showMessage("Error interno: no se pudo leer las matrices de entrada.", "danger");
+      console.error("Error reading matrices:", err);
+      showMessage("Internal error: unable to read input matrices.", "danger");
       return;
     }
 
@@ -117,8 +201,8 @@
 
       let data;
       try { data = await resp.json(); } catch (err) {
-        console.error("Respuesta inválida del servidor:", err);
-        showMessage("Respuesta inválida del servidor.", "danger");
+        console.error("Invalid server response:", err);
+        showMessage("Invalid response from server.", "danger");
         return;
       }
 
@@ -128,9 +212,8 @@
         return;
       }
 
-      showMessage("Cálculo realizado correctamente.", "success");
+      showMessage("Computation completed successfully.", "success");
 
-      // RENDER LOGS
       if (Array.isArray(data.logs) && logsDiv) {
         logsDiv.innerHTML = "";
         data.logs.forEach((log, idx) => {
@@ -145,7 +228,7 @@
             const prettyB = log.b ? JSON.stringify(log.b, null, 2) : null;
             matrixHtml = `<pre style="white-space:pre-wrap;">${prettyA ? "A = " + prettyA + "\n" : ""}${prettyB ? "b = " + prettyB : ""}</pre>`;
           } else {
-            matrixHtml = "<em>No hay matriz disponible en este paso.</em>";
+            matrixHtml = "<em>No matrix available for this step.</em>";
           }
 
           card.innerHTML = `
@@ -161,7 +244,6 @@
         });
       }
 
-      // RENDER SOLUTION
       if (Array.isArray(data.solution) && solDiv) {
         const values = data.solution.map((v) => {
           const num = Number(v);
@@ -171,7 +253,7 @@
         let html = '<div class="solution-grid">';
         values.forEach((val, idx) => {
           html += `
-            <div class="sol-box" role="group" aria-label="Solución x${idx+1}">
+            <div class="sol-box" role="group" aria-label="Solution x${idx+1}">
               <div class="sol-label">x${idx + 1}</div>
               <div class="sol-value">${escapeHtml(val)}</div>
             </div>
@@ -186,8 +268,8 @@
       }
 
     } catch (err) {
-      console.error("Error en fetch:", err);
-      showMessage("Error en la comunicación con el servidor.", "danger");
+      console.error("Fetch error:", err);
+      showMessage("Communication error with server.", "danger");
     }
   });
 })();

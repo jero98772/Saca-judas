@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -53,6 +54,92 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+#Funciones auxiliares (Por favor no lo toquen que todo expltota)
+# ============================================================
+# FUNCIONES AUXILIARES PARA EL ENDPOINT gauss_simple_post
+# ============================================================
+
+import numpy as np
+import pandas as pd
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+
+
+def to_float_safe(x):
+    if x is None:
+        return None
+    if isinstance(x, (int, float, np.floating, np.integer)):
+        return float(x)
+    s = str(x).strip()
+    if s == "":
+        return None
+    s = s.replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+def df_to_html(df: pd.DataFrame, decimals: int = 6):
+    float_fmt = f"%.{decimals}f"
+    # redondea para evitar representaciones largas y utiliza float_format
+    return df.round(decimals).to_html(index=False, classes="gauss-table", border=0, float_format=float_fmt)
+
+def df_to_json(df: pd.DataFrame):
+    return {"columns": list(df.columns.astype(str)), "rows": df.values.tolist()}
+
+def serialize_value(val, decimals: int = 6):
+    """
+    Serializa DataFrame/Series/ndarray a {'html','json'} o lista/primitivo.
+    Si no es ninguno de esos, devuelve tal cual (serializable).
+    """
+    if isinstance(val, pd.DataFrame):
+        return {"html": df_to_html(val, decimals), "json": df_to_json(val)}
+    if isinstance(val, pd.Series):
+        df = val.to_frame(name=val.name if val.name else "value")
+        return {"html": df_to_html(df, decimals), "json": df_to_json(df)}
+    if isinstance(val, np.ndarray):
+        return val.tolist()
+    # para tipos simples (list, dict, str, int, float) devolvemos tal cual
+    return val
+
+def combine_A_b(log: dict, decimals: int = 6):
+    """
+    Si no existe `matrix` en el log, intenta construirla a partir de A_json y b_json.
+    No sobrescribe si ya existe `matrix` (HTML string).
+    """
+    # Si ya existe matrix en forma HTML o JSON, no tocar
+    if "matrix" in log or "matrix_html" in log or "matrix_json" in log:
+        return
+
+    try:
+        Ajson = log.get("A_json")
+        bjson = log.get("b_json")
+
+        if Ajson and bjson:
+            colsA = Ajson.get("columns", [])
+            rowsA = Ajson.get("rows", [])
+            rowsB = bjson.get("rows", [])
+
+            combined_cols = colsA + ["b"]
+            combined_rows = []
+            max_r = max(len(rowsA), len(rowsB))
+            for i in range(max_r):
+                rowA = rowsA[i] if i < len(rowsA) else [None] * len(colsA)
+                rowB = rowsB[i] if i < len(rowsB) else [None]
+                combined_rows.append(rowA + [rowB[0] if rowB else None])
+
+            df_comb = pd.DataFrame(combined_rows, columns=combined_cols)
+            log["matrix_json"] = {"columns": combined_cols, "rows": combined_rows}
+            log["matrix"] = df_to_html(df_comb, decimals)
+            return
+
+        # si no hay nada con qué construir, dejar placeholder controlado
+        log["matrix_json"] = {"columns": [], "rows": []}
+        log["matrix"] = "<p style='color:gray;font-style:italic;'>No matrix available for this step.</p>"
+    except Exception:
+        log["matrix_json"] = {"columns": [], "rows": []}
+        log["matrix"] = "<p style='color:gray;font-style:italic;'>No matrix available for this step.</p>"
+
 # ===================== VISTAS =====================
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -99,11 +186,14 @@ async def gauss_simple_post(request: Request):
         except Exception:
             return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
 
-        A = data.get("A"); b = data.get("b"); decimals = data.get("decimals", 6)
+        A = data.get("A")
+        b = data.get("b")
+        decimals = data.get("decimals", 6)
 
         if A is None or b is None:
             return JSONResponse(content={"error": "Parameters 'A' and 'b' are required."}, status_code=400)
 
+        # Validaciones básicas
         if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
             return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
         if not (isinstance(b, list) and b):
@@ -113,34 +203,70 @@ async def gauss_simple_post(request: Request):
         if not all(len(row) == cols for row in A):
             return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
 
-        def is_number(x):
-            try:
-                float(x); return True
-            except (TypeError, ValueError):
-                return False
-
+        # Conversión a floats
+        A_conv = []
         for i, row in enumerate(A):
+            row_conv = []
             for j, val in enumerate(row):
-                if not is_number(val):
+                f = to_float_safe(val)
+                if f is None:
                     return JSONResponse(content={"error": f"Non-numeric value at A[{i+1}][{j+1}] → {repr(val)}"}, status_code=400)
+                row_conv.append(f)
+            A_conv.append(row_conv)
+
+        b_conv = []
         for i, val in enumerate(b):
-            if not is_number(val):
+            f = to_float_safe(val)
+            if f is None:
                 return JSONResponse(content={"error": f"Non-numeric value at b[{i+1}] → {repr(val)}"}, status_code=400)
+            b_conv.append(f)
 
         try:
             decimals = int(decimals)
-            if not (0 <= decimals <= 10): raise ValueError
+            if not (0 <= decimals <= 10):
+                raise ValueError
         except (TypeError, ValueError):
             return JSONResponse(content={"error": "Parameter 'decimals' must be an integer between 0 and 10."}, status_code=400)
 
-        result = gauss_simple(A, b, decimals)
+        # Llamada al cálculo (tu función)
+        result = gauss_simple(A_conv, b_conv, decimals)
 
-        for log in result["logs"]:
-            if "matrix" in log and isinstance(log["matrix"], pd.DataFrame):
-                float_fmt = f"%.{decimals}f"
-                log["matrix"] = log["matrix"].to_html(index=False, classes="gauss-table", border=0, float_format=float_fmt)
+        # Serializar logs correctamente
+        for log in result.get("logs", []):
+            # hacemos una copia de las claves porque las modificaremos
+            original_keys = list(log.keys())
+            for k in original_keys:
+                v = log.get(k)
 
-        return JSONResponse(content=result, status_code=200)
+                # serializamos el valor
+                try:
+                    ser = serialize_value(v, decimals)
+                except Exception:
+                    # fallback a str si algo raro
+                    ser = str(v)
+
+                # Si el serializador devolvió dict con html/json
+                if isinstance(ser, dict) and "html" in ser and "json" in ser:
+                    if k == "matrix":
+                        # mantener la clave 'matrix' como HTML (compatibilidad frontend)
+                        log["matrix"] = ser["html"]
+                        log["matrix_json"] = ser["json"]
+                    else:
+                        # para A, b, u otros: crear sufijos y eliminar original
+                        log[f"{k}_html"] = ser["html"]
+                        log[f"{k}_json"] = ser["json"]
+                        # eliminar la clave original para no duplicar
+                        if k in log:
+                            del log[k]
+                else:
+                    # primitives, listas y dicts simples se dejan tal cual (ya JSONable)
+                    log[k] = ser
+
+            # Intentar combinar A_json + b_json en matrix si aún no existe matrix
+            combine_A_b(log, decimals)
+
+        # Responder con jsonable_encoder para asegurar serialización
+        return JSONResponse(content=jsonable_encoder(result), status_code=200)
 
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
@@ -225,7 +351,7 @@ def _validate_vector(name, v):
             return f"Non-numeric value at {name}[{i+1}] → {repr(val)}"
     return None
 
-# ---------- LU con pivoteo parcial ----------
+
 @app.post("/eval/lu_partial", response_class=JSONResponse)
 async def lu_partial_eval(request: Request):
     try:
@@ -243,7 +369,7 @@ async def lu_partial_eval(request: Request):
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
-# ---------- Vandermonde ----------
+
 @app.post("/eval/vandermonde", response_class=JSONResponse)
 async def vandermonde_eval(request: Request):
     try:
@@ -267,7 +393,7 @@ async def vandermonde_eval(request: Request):
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
-# ---------- Trazadores lineales ----------
+
 @app.post("/eval/lineal_tracers", response_class=JSONResponse)
 async def lineal_tracers_eval(request: Request):
     try:
@@ -291,7 +417,7 @@ async def lineal_tracers_eval(request: Request):
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
-# ---------- Cholesky ----------
+
 @app.post("/eval/cholesky", response_class=JSONResponse)
 async def cholesky_eval(request: Request):
     try:

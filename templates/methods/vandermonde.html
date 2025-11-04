@@ -1,17 +1,206 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Vandermonde</h1>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+<div class="container-fluid text-center">
+  <div class="row justify-content-center my-4">
+    <div class="col-11 col-md-10 col-lg-9">
 
+      <!-- Título -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h3 class="m-0">Interpolación por matriz de Vandermonde</h3>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Formulario -->
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Entrada</h5>
+
+              <!-- Tamaño -->
+              <div class="row g-2 align-items-end text-start mb-3">
+                <div class="col-12">
+                  <label class="form-label mb-1">Número de puntos (n)</label>
+                  <input id="nPoints" type="number" class="form-control" min="2" max="12" value="3">
+                </div>
+              </div>
+
+              <!-- Vectores x e y -->
+              <div class="text-start">
+                <label class="form-label">Vector x</label>
+                <div id="vectorXContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="text-start mt-3">
+                <label class="form-label">Vector y</label>
+                <div id="vectorYContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="d-grid gap-2 mt-3">
+                <button id="run" class="btn btn-primary">Calcular</button>
+                <button id="example" class="btn btn-outline-secondary">Rellenar ejemplo</button>
+                <button id="clear" class="btn btn-outline-danger">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Resultado</h5>
+              <div id="alert" class="alert alert-danger d-none"></div>
+
+              <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
+
+              <div id="polinomio"></div>
+              <div id="coeficientes"></div>
+              <div id="matrizV"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(v){
+  if (typeof v === 'number' && isFinite(v)) {
+    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
+  }
+  return v;
+}
+function renderTable(title, matrix){
+  if(!matrix) return '';
+  const isVector = Array.isArray(matrix) && matrix.length && !Array.isArray(matrix[0]);
+  let html = `<div class="mb-3 text-start"><h6 class="mb-2">${title}</h6><div class="table-responsive"><table class="table table-sm table-bordered align-middle"><tbody>`;
+  if(isVector){
+    html += `<tr>${matrix.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`;
+  } else {
+    html += matrix.map(row => `<tr>${row.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`).join('');
+  }
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+function show(el, show=true){ el.classList[show?'remove':'add']('d-none'); }
+function setHTML(el, html){ el.innerHTML = html; }
+
+function buildVectorInputs(n){
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
+  const tbody = document.createElement('tbody');
+  for(let i=0;i<n;i++){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = 'any';
+    inp.className = 'form-control form-control-sm';
+    inp.value = '0';
+    inp.dataset.k = i;
+    td.appendChild(inp);
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+function readVector(container){
+  const v = [];
+  container.querySelectorAll('input').forEach(inp=>{
+    v.push(parseFloat(inp.value || '0'));
+  });
+  return v;
+}
+
+const nPoints = document.getElementById('nPoints');
+const vectorXContainer = document.getElementById('vectorXContainer');
+const vectorYContainer = document.getElementById('vectorYContainer');
+
+const runBtn = document.getElementById('run');
+const clearBtn = document.getElementById('clear');
+const exampleBtn = document.getElementById('example');
+
+const alertBox = document.getElementById('alert');
+const loading = document.getElementById('loading');
+const polinomio = document.getElementById('polinomio');
+const coeficientes = document.getElementById('coeficientes');
+const matrizV = document.getElementById('matrizV');
+
+function rebuildXY(){
+  const n = Math.max(2, Math.min(12, parseInt(nPoints.value || '2', 10)));
+  nPoints.value = n;
+  vectorXContainer.innerHTML = '';
+  vectorYContainer.innerHTML = '';
+  vectorXContainer.appendChild(buildVectorInputs(n));
+  vectorYContainer.appendChild(buildVectorInputs(n));
+}
+nPoints.addEventListener('change', rebuildXY);
+
+exampleBtn.addEventListener('click', ()=>{
+  nPoints.value = 3; rebuildXY();
+  const xv = [-1, 0, 2];
+  const yv = [-1, 1, -1];
+  vectorXContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = xv[i] ?? 0);
+  vectorYContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = yv[i] ?? 0);
+});
+
+clearBtn.addEventListener('click', ()=>{
+  vectorXContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  vectorYContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  setHTML(polinomio,''); setHTML(coeficientes,''); setHTML(matrizV,'');
+  show(alertBox, false);
+});
+
+runBtn.addEventListener('click', async ()=>{
+  setHTML(polinomio,''); setHTML(coeficientes,''); setHTML(matrizV,'');
+  show(alertBox, false); show(loading, true);
+
+  try{
+    const x = readVector(vectorXContainer);
+    const y = readVector(vectorYContainer);
+
+    const res = await fetch('/eval/vandermonde', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ x, y })
+    });
+    const data = await res.json();
+    show(loading, false);
+
+    if(!res.ok || data.error){
+      alertBox.textContent = data.error || 'Error en el cálculo';
+      show(alertBox, true);
+      return;
+    }
+
+    const polyStr = data.polinomio || data.poly_str || data.polynomial || data.poly;
+    if (polyStr){
+      setHTML(polinomio, `<div class="text-start mb-3"><h6 class="mb-2">Polinomio interpolante</h6><div class="alert alert-info">${polyStr}</div></div>`);
+    }
+
+    const coeffs = data.coeficientes || data.coef || data.coeff || data.a;
+    if (coeffs){
+      setHTML(coeficientes, renderTable('Coeficientes (a0, a1, ..., a_{n-1})', coeffs));
+    }
+
+    const V = data.V || data.vandermonde || data.matriz;
+    if (V){
+      setHTML(matrizV, renderTable('Matriz de Vandermonde (potencias crecientes)', V));
+    }
+
+  }catch(err){
+    show(loading, false);
+    alertBox.textContent = 'Error inesperado: ' + (err?.message || err);
+    show(alertBox, true);
+  }
+});
+
+rebuildXY();
+</script>
+{% endblock %}

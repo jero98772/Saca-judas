@@ -1,17 +1,211 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Lineal Tracers</h1>
-                </div>
-            </div>
+<div class="container-fluid text-center">
+  <div class="row justify-content-center my-4">
+    <div class="col-11 col-md-10 col-lg-9">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h3 class="m-0">Trazadores lineales</h3>
         </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Formulario -->
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Entrada</h5>
+
+              <div class="row g-2 align-items-end text-start mb-3">
+                <div class="col-12">
+                  <label class="form-label mb-1">Número de puntos (n ≥ 2)</label>
+                  <input id="nPoints" type="number" class="form-control" min="2" max="20" value="4">
+                </div>
+              </div>
+
+              <div class="text-start">
+                <label class="form-label">Vector x (estrictamente creciente)</label>
+                <div id="vectorXContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="text-start mt-3">
+                <label class="form-label">Vector y</label>
+                <div id="vectorYContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="d-grid gap-2 mt-3">
+                <button id="run" class="btn btn-primary">Calcular</button>
+                <button id="example" class="btn btn-outline-secondary">Rellenar ejemplo</button>
+                <button id="clear" class="btn btn-outline-danger">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Resultado</h5>
+              <div id="alert" class="alert alert-danger d-none"></div>
+              <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
+
+              <div id="ecuaciones" class="text-start"></div>
+              <div id="tablaTramos" class="text-start"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>
+
+<script>
+function fmt(v){
+  if (typeof v === 'number' && isFinite(v)) {
+    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
+  }
+  return v;
+}
+function renderTable(title, rows, headers){
+  let h = `<div class="mb-3"><h6 class="mb-2">${title}</h6><div class="table-responsive"><table class="table table-sm table-bordered align-middle"><thead><tr>`;
+  headers.forEach(th => h += `<th>${th}</th>`);
+  h += `</tr></thead><tbody>`;
+  rows.forEach(r => {
+    h += `<tr>${r.map(c => `<td>${fmt(c)}</td>`).join('')}</tr>`;
+  });
+  h += `</tbody></table></div></div>`;
+  return h;
+}
+function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
+function setHTML(el, html){ el.innerHTML = html; }
+
+function buildVectorInputs(n, defaults){
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
+  const tbody = document.createElement('tbody');
+  for(let i=0;i<n;i++){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = 'any';
+    inp.className = 'form-control form-control-sm';
+    inp.value = (defaults && defaults[i] !== undefined) ? defaults[i] : '0';
+    inp.dataset.k = i;
+    td.appendChild(inp);
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+function readVector(container){
+  const v = [];
+  container.querySelectorAll('input').forEach(inp=>{
+    v.push(parseFloat(inp.value || '0'));
+  });
+  return v;
+}
+
+const nPoints = document.getElementById('nPoints');
+const vectorXContainer = document.getElementById('vectorXContainer');
+const vectorYContainer = document.getElementById('vectorYContainer');
+
+const runBtn = document.getElementById('run');
+const clearBtn = document.getElementById('clear');
+const exampleBtn = document.getElementById('example');
+
+const alertBox = document.getElementById('alert');
+const loading = document.getElementById('loading');
+const ecuaciones = document.getElementById('ecuaciones');
+const tablaTramos = document.getElementById('tablaTramos');
+
+function rebuild(){
+  const n = Math.max(2, Math.min(20, parseInt(nPoints.value || '2', 10)));
+  nPoints.value = n;
+  vectorXContainer.innerHTML = '';
+  vectorYContainer.innerHTML = '';
+  vectorXContainer.appendChild(buildVectorInputs(n));
+  vectorYContainer.appendChild(buildVectorInputs(n));
+}
+nPoints.addEventListener('change', rebuild);
+
+/* ejemplo */
+exampleBtn.addEventListener('click', ()=>{
+  const xs = [0, 1, 2, 4];
+  const ys = [0, 1, 4, 2];
+  nPoints.value = xs.length; rebuild();
+  vectorXContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = xs[i]);
+  vectorYContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = ys[i]);
+});
+
+/* limpiar */
+clearBtn.addEventListener('click', ()=>{
+  vectorXContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  vectorYContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  setHTML(ecuaciones,''); setHTML(tablaTramos,'');
+  show(alertBox, false);
+});
+
+runBtn.addEventListener('click', async ()=>{
+  setHTML(ecuaciones,''); setHTML(tablaTramos,'');
+  show(alertBox, false); show(loading, true);
+
+  try{
+    const x = readVector(vectorXContainer);
+    const y = readVector(vectorYContainer);
+
+    // validación simple de x estrictamente creciente
+    for(let i=0;i<x.length-1;i++){
+      if (x[i+1] - x[i] === 0){
+        show(loading, false);
+        alertBox.textContent = 'x tiene valores repetidos; deben ser estrictamente crecientes.';
+        show(alertBox, true);
+        return;
+      }
+    }
+
+    const res = await fetch('/eval/lineal_tracers', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ x, y })
+    });
+    const data = await res.json();
+    show(loading, false);
+
+    if(!res.ok || data.error){
+      alertBox.textContent = data.error || 'Error en el cálculo';
+      show(alertBox, true);
+      return;
+    }
+
+    // ecuaciones
+    if (Array.isArray(data.ecuaciones) && data.ecuaciones.length){
+      const html = `<div class="mb-3"><h6 class="mb-2">Ecuaciones por tramo</h6><ul class="list-group">` +
+        data.ecuaciones.map(s => `<li class="list-group-item">${s}</li>`).join('') +
+        `</ul></div>`;
+      setHTML(ecuaciones, html);
+    }
+
+    // tabla tramos
+    if (Array.isArray(data.tramos) && data.tramos.length){
+      const rows = data.tramos.map(t => [t.intervalo?.[0], t.intervalo?.[1], t.pendiente, t.intercepto]);
+      setHTML(tablaTramos, renderTable('Tabla de tramos', rows, ['xi', 'xi+1', 'm', 'b']));
+    }
+
+  }catch(err){
+    show(loading, false);
+    alertBox.textContent = 'Error inesperado: ' + (err?.message || err);
+    show(alertBox, true);
+  }
+});
+
+rebuild();
+</script>
 {% endblock %}
+
 

@@ -1,17 +1,278 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Jacobi</h1>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+<div class="container-fluid text-center">
+  <div class="row justify-content-center my-4">
+    <div class="col-11 col-md-10 col-lg-9">
 
+      <div class="card mb-3">
+        <div class="card-body">
+          <h3 class="m-0">Método de Jacobi</h3>
+          <small class="text-muted">Requiere A con diagonal no nula y (preferible) diagonal dominante.</small>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Formulario -->
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Entrada</h5>
+
+              <div class="row g-2 text-start mb-3">
+                <div class="col-4">
+                  <label class="form-label mb-1">n</label>
+                  <input id="sizeN" type="number" class="form-control" min="2" max="20" value="3">
+                </div>
+                <div class="col-4">
+                  <label class="form-label mb-1">tol</label>
+                  <input id="tol" type="number" step="any" class="form-control" value="1e-7">
+                </div>
+                <div class="col-4">
+                  <label class="form-label mb-1">nmax</label>
+                  <input id="nmax" type="number" class="form-control" min="1" value="100">
+                </div>
+              </div>
+
+              <div class="row g-2 text-start mb-3">
+                <div class="col-12">
+                  <label class="form-label mb-1">Norma</label>
+                  <select id="norma" class="form-select">
+                    <option value="inf" selected>∞</option>
+                    <option value="2">2</option>
+                    <option value="1">1</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="text-start">
+                <label class="form-label">Matriz A (n×n)</label>
+                <div id="matrixAContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="text-start mt-3">
+                <label class="form-label">Vector b (n)</label>
+                <div id="vectorBContainer" class="table-responsive"></div>
+              </div>
+
+              <div class="text-start mt-3">
+                <label class="form-label">Vector inicial x₀ (n)</label>
+                <div id="vectorX0Container" class="table-responsive"></div>
+              </div>
+
+              <div class="d-grid gap-2 mt-3">
+                <button id="run" class="btn btn-primary">Calcular</button>
+                <button id="example" class="btn btn-outline-secondary">Ejemplo</button>
+                <button id="clear" class="btn btn-outline-danger">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="mb-3">Resultado</h5>
+              <div id="alert" class="alert alert-danger d-none"></div>
+              <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
+
+              <div id="solucion"></div>
+              <div id="tablaIter"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(v){
+  if (typeof v === 'number' && isFinite(v)) {
+    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
+  }
+  return v;
+}
+function renderTable(title, matrix, headers){
+  const isVector = Array.isArray(matrix) && matrix.length && !Array.isArray(matrix[0]);
+  let html = `<div class="mb-3 text-start"><h6 class="mb-2">${title}</h6><div class="table-responsive"><table class="table table-sm table-bordered align-middle">`;
+  if(headers && headers.length) html += `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>`;
+  html += `<tbody>`;
+  if(isVector){
+    html += `<tr>${matrix.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`;
+  } else if (Array.isArray(matrix)){
+    html += matrix.map(row => `<tr>${row.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`).join('');
+  }
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
+function setHTML(el, html){ el.innerHTML = html; }
+
+function buildMatrixInputs(n){
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
+  const tbody = document.createElement('tbody');
+  for(let i=0;i<n;i++){
+    const tr = document.createElement('tr');
+    for(let j=0;j<n;j++){
+      const td = document.createElement('td');
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.step = 'any';
+      inp.className = 'form-control form-control-sm';
+      inp.value = (i === j) ? '4' : '1'; // valores cómodos por defecto
+      td.appendChild(inp); tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+function buildVectorInputs(n, def=0){
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
+  const tbody = document.createElement('tbody');
+  for(let i=0;i<n;i++){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.step = 'any';
+    inp.className = 'form-control form-control-sm';
+    inp.value = String(def);
+    td.appendChild(inp); tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+function readMatrix(container){
+  const rows = [];
+  container.querySelectorAll('tr').forEach(tr=>{
+    const row = [];
+    tr.querySelectorAll('input').forEach(inp=> row.push(parseFloat(inp.value || '0')));
+    rows.push(row);
+  });
+  return rows;
+}
+function readVector(container){
+  const v = [];
+  container.querySelectorAll('input').forEach(inp=> v.push(parseFloat(inp.value || '0')));
+  return v;
+}
+
+const sizeN = document.getElementById('sizeN');
+const tol = document.getElementById('tol');
+const nmax = document.getElementById('nmax');
+const norma = document.getElementById('norma');
+
+const matrixAContainer = document.getElementById('matrixAContainer');
+const vectorBContainer = document.getElementById('vectorBContainer');
+const vectorX0Container = document.getElementById('vectorX0Container');
+
+const runBtn = document.getElementById('run');
+const clearBtn = document.getElementById('clear');
+const exampleBtn = document.getElementById('example');
+
+const alertBox = document.getElementById('alert');
+const loading = document.getElementById('loading');
+const solucion = document.getElementById('solucion');
+const tablaIter = document.getElementById('tablaIter');
+
+function rebuild(){
+  const n = Math.max(2, Math.min(20, parseInt(sizeN.value || '2', 10)));
+  sizeN.value = n;
+  matrixAContainer.innerHTML = '';
+  vectorBContainer.innerHTML = '';
+  vectorX0Container.innerHTML = '';
+  matrixAContainer.appendChild(buildMatrixInputs(n));
+  vectorBContainer.appendChild(buildVectorInputs(n, 1));
+  vectorX0Container.appendChild(buildVectorInputs(n, 0));
+}
+sizeN.addEventListener('change', rebuild);
+
+/* ejemplo */
+exampleBtn.addEventListener('click', ()=>{
+  const A = [
+    [4, 1, 1],
+    [1, 3, 0],
+    [1, 0, 2]
+  ];
+  const b = [1, 2, 3];
+  const x0 = [0, 0, 0];
+  sizeN.value = 3; rebuild();
+  matrixAContainer.querySelectorAll('tr').forEach((tr,i)=>{
+    tr.querySelectorAll('input').forEach((inp,j)=> inp.value = A[i][j]);
+  });
+  vectorBContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = b[i]);
+  vectorX0Container.querySelectorAll('input').forEach((inp,i)=> inp.value = x0[i]);
+  tol.value = '1e-7'; nmax.value = '100'; norma.value = 'inf';
+});
+
+/* limpiar */
+clearBtn.addEventListener('click', ()=>{
+  matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  vectorX0Container.querySelectorAll('input').forEach(inp=> inp.value = '0');
+  setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false);
+});
+
+/* calcular */
+runBtn.addEventListener('click', async ()=>{
+  setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false); show(loading, true);
+  try{
+    const A = readMatrix(matrixAContainer);
+    const b = readVector(vectorBContainer);
+    const x0 = readVector(vectorX0Container);
+    const body = {
+      A, b, x0,
+      tol: parseFloat(tol.value || '1e-7'),
+      nmax: parseInt(nmax.value || '100', 10),
+      norma: norma.value || 'inf',
+    };
+
+    const res = await fetch('/eval/jacobi', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    show(loading, false);
+
+    if(!res.ok || data.error){
+      alertBox.textContent = data.error || 'Error en el cálculo';
+      show(alertBox, true);
+      return;
+    }
+
+    if (data.x) setHTML(solucion, renderTable('Solución x', data.x));
+    // soporta keys alternatives: iterations/history/logs/tabla
+    const hist = data.iterations || data.history || data.logs || data.tabla;
+    if (Array.isArray(hist) && hist.length){
+      // armar filas: k | x1 ... xn | error
+      const rows = hist.map(item=>{
+        const k = item.k ?? item[0] ?? '';
+        const xv = item.x ?? (Array.isArray(item) ? item.slice(1, -1) : []);
+        const err = (item.error ?? (Array.isArray(item) ? item.slice(-1)[0] : null));
+        return [k, ...(xv ?? []), err];
+      });
+      const headers = ['k'];
+      const n = (rows[0]?.length || 2) - 2;
+      for(let i=0;i<n;i++) headers.push(`x${i+1}`);
+      headers.push('error');
+      setHTML(tablaIter, renderTable('Iteraciones', rows, headers));
+    }
+
+  }catch(err){
+    show(loading, false);
+    alertBox.textContent = 'Error inesperado: ' + (err?.message || err);
+    show(alertBox, true);
+  }
+});
+
+/* inicia */
+rebuild();
+</script>
+{% endblock %}

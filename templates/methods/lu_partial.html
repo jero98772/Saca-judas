@@ -8,8 +8,7 @@
       <!-- Título -->
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="m-0">Descomposición de Cholesky</h3>
-          <small class="text-muted">A debe ser simétrica definida positiva (SDP).</small>
+          <h3 class="m-0">LU con pivoteo parcial</h3>
         </div>
       </div>
 
@@ -20,29 +19,44 @@
             <div class="card-body">
               <h5 class="mb-3">Entrada</h5>
 
-              <!-- Dimensión (cuadrada) -->
+              <!-- Dimensiones -->
               <div class="row g-2 align-items-end text-start mb-3">
-                <div class="col-12">
-                  <label class="form-label mb-1">Tamaño (n × n)</label>
-                  <input id="sizeN" type="number" class="form-control" min="1" max="12" value="3">
+                <div class="col-6">
+                  <label class="form-label mb-1">Filas (A)</label>
+                  <input id="rowsA" type="number" class="form-control" min="1" max="12" value="3">
+                </div>
+                <div class="col-6">
+                  <label class="form-label mb-1">Columnas (A)</label>
+                  <input id="colsA" type="number" class="form-control" min="1" max="12" value="3">
+                </div>
+                <div class="col-12 form-check mt-2">
+                  <input class="form-check-input" type="checkbox" id="syncB" checked>
+                  <label class="form-check-label" for="syncB">
+                    Ajustar tamaño de b a las filas de A
+                  </label>
                 </div>
               </div>
 
               <!-- Matriz A -->
               <div class="text-start">
-                <label class="form-label">Matriz A (n × n)</label>
+                <label class="form-label">Matriz A</label>
                 <div id="matrixAContainer" class="table-responsive"></div>
               </div>
 
               <!-- Vector b -->
               <div class="text-start mt-3">
-                <label class="form-label">Vector b (n)</label>
-                <div id="vectorBContainer" class="table-responsive"></div>
+                <div class="d-flex align-items-center justify-content-between">
+                  <label class="form-label m-0">Vector b</label>
+                  <div id="lenBWrap" class="ms-2">
+                    <input id="lenB" type="number" class="form-control form-control-sm" min="1" max="12" value="3" style="width: 90px;">
+                  </div>
+                </div>
+                <div id="vectorBContainer" class="table-responsive mt-1"></div>
               </div>
 
               <div class="d-grid gap-2 mt-3">
                 <button id="run" class="btn btn-primary">Calcular</button>
-                <button id="example" class="btn btn-outline-secondary">Rellenar ejemplo SDP</button>
+                <button id="example" class="btn btn-outline-secondary">Rellenar ejemplo</button>
                 <button id="clear" class="btn btn-outline-danger">Limpiar</button>
               </div>
             </div>
@@ -55,15 +69,15 @@
             <div class="card-body">
               <h5 class="mb-3">Resultado</h5>
               <div id="alert" class="alert alert-danger d-none"></div>
+
               <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
 
               <div id="solucion"></div>
               <div id="matrices"></div>
-              <div id="otros"></div>
+              <div id="etapas"></div>
             </div>
           </div>
         </div>
-
       </div>
 
     </div>
@@ -71,6 +85,7 @@
 </div>
 
 <script>
+/* ===== helpers con el mismo estilo de tus páginas ===== */
 function fmt(v){
   if (typeof v === 'number' && isFinite(v)) {
     return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
@@ -89,23 +104,26 @@ function renderTable(title, matrix){
   html += `</tbody></table></div></div>`;
   return html;
 }
-function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
+function show(el, show=true){ el.classList[show?'remove':'add']('d-none'); }
 function setHTML(el, html){ el.innerHTML = html; }
 
-function buildMatrixInputs(n){
+/* ===== construcción dinámica de entradas ===== */
+function buildMatrixInputs(rows, cols){
   const table = document.createElement('table');
   table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
-  for(let i=0;i<n;i++){
+
+  for(let i=0;i<rows;i++){
     const tr = document.createElement('tr');
-    for(let j=0;j<n;j++){
+    for(let j=0;j<cols;j++){
       const td = document.createElement('td');
       const inp = document.createElement('input');
       inp.type = 'number';
       inp.step = 'any';
       inp.className = 'form-control form-control-sm';
-      inp.value = (i===j) ? '1' : '0';
-      inp.dataset.i = i; inp.dataset.j = j;
+      inp.value = '0';
+      inp.dataset.i = i;
+      inp.dataset.j = j;
       td.appendChild(inp);
       tr.appendChild(td);
     }
@@ -114,10 +132,12 @@ function buildMatrixInputs(n){
   table.appendChild(tbody);
   return table;
 }
+
 function buildVectorInputs(n){
   const table = document.createElement('table');
   table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
+
   for(let i=0;i<n;i++){
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -134,6 +154,7 @@ function buildVectorInputs(n){
   table.appendChild(tbody);
   return table;
 }
+
 function readMatrix(container){
   const rows = [];
   container.querySelectorAll('tr').forEach(tr=>{
@@ -153,7 +174,13 @@ function readVector(container){
   return v;
 }
 
-const sizeN = document.getElementById('sizeN');
+/* ===== referencias ===== */
+const rowsA = document.getElementById('rowsA');
+const colsA = document.getElementById('colsA');
+const lenB  = document.getElementById('lenB');
+const lenBWrap = document.getElementById('lenBWrap');
+const syncB = document.getElementById('syncB');
+
 const matrixAContainer = document.getElementById('matrixAContainer');
 const vectorBContainer = document.getElementById('vectorBContainer');
 
@@ -165,53 +192,76 @@ const alertBox = document.getElementById('alert');
 const loading = document.getElementById('loading');
 const solucion = document.getElementById('solucion');
 const matrices = document.getElementById('matrices');
-const otros = document.getElementById('otros');
+const etapas = document.getElementById('etapas');
 
-function rebuild(){
-  const n = Math.max(1, Math.min(12, parseInt(sizeN.value || '1', 10)));
-  sizeN.value = n;
+/* ===== estado inicial ===== */
+function rebuildA(){
+  const r = Math.max(1, Math.min(12, parseInt(rowsA.value || '1', 10)));
+  const c = Math.max(1, Math.min(12, parseInt(colsA.value || '1', 10)));
+  rowsA.value = r; colsA.value = c;
+
   matrixAContainer.innerHTML = '';
+  matrixAContainer.appendChild(buildMatrixInputs(r, c));
+
+  if(syncB.checked){
+    lenB.value = r;
+    rebuildB();
+  }
+}
+function rebuildB(){
+  const n = Math.max(1, Math.min(12, parseInt(lenB.value || '1', 10)));
+  lenB.value = n;
   vectorBContainer.innerHTML = '';
-  matrixAContainer.appendChild(buildMatrixInputs(n));
   vectorBContainer.appendChild(buildVectorInputs(n));
 }
-sizeN.addEventListener('change', rebuild);
 
-/* ejemplo SDP */
+rowsA.addEventListener('change', rebuildA);
+colsA.addEventListener('change', rebuildA);
+lenB.addEventListener('change', rebuildB);
+syncB.addEventListener('change', ()=>{
+  lenBWrap.style.display = syncB.checked ? 'none' : 'block';
+  if(syncB.checked){
+    lenB.value = rowsA.value;
+    rebuildB();
+  }
+});
+
+/* ejemplo rápido */
 exampleBtn.addEventListener('click', ()=>{
-  const A = [
-    [4, 1, 1],
-    [1, 3, 0],
-    [1, 0, 2]
+  rowsA.value = 3; colsA.value = 3; rebuildA();
+  // valores ejemplo:
+  const vals = [
+    [2, 1, -1],
+    [-3, -1, 2],
+    [-2, 1, 2]
   ];
-  const b = [1, 2, 3];
-  sizeN.value = 3; rebuild();
   matrixAContainer.querySelectorAll('tr').forEach((tr,i)=>{
     tr.querySelectorAll('input').forEach((inp,j)=>{
-      inp.value = (A[i]?.[j] ?? 0);
+      inp.value = vals[i]?.[j] ?? 0;
     });
   });
-  vectorBContainer.querySelectorAll('input').forEach((inp,k)=> inp.value = (b[k] ?? 0));
+  const bvals = [8, -11, -3];
+  vectorBContainer.querySelectorAll('input').forEach((inp,k)=> inp.value = bvals[k] ?? 0);
 });
 
 /* limpiar */
 clearBtn.addEventListener('click', ()=>{
   matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
   vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  setHTML(solucion,''); setHTML(matrices,''); setHTML(otros,'');
+  setHTML(solucion,''); setHTML(matrices,''); setHTML(etapas,'');
   show(alertBox, false);
 });
 
 /* calcular */
 runBtn.addEventListener('click', async ()=>{
-  setHTML(solucion,''); setHTML(matrices,''); setHTML(otros,'');
+  setHTML(solucion,''); setHTML(matrices,''); setHTML(etapas,'');
   show(alertBox, false); show(loading, true);
 
   try{
     const A = readMatrix(matrixAContainer);
     const b = readVector(vectorBContainer);
 
-    const res = await fetch('/eval/cholesky', {
+    const res = await fetch('/eval/lu_partial', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ A, b })
@@ -225,19 +275,18 @@ runBtn.addEventListener('click', async ()=>{
       return;
     }
 
-    // Solución y
+    // Solución
     if (data.x) setHTML(solucion, renderTable('Solución x', data.x));
-    let extras = '';
-    if (data.y) extras += renderTable('Vector intermedio y (Ly=b)', data.y);
-    setHTML(otros, extras);
 
-    // Matrices L y Lᵗ
+    // Matrices
     let mHTML = '';
     if (data.L) mHTML += renderTable('Matriz L', data.L);
-    if (data.Lt) mHTML += renderTable('Matriz Lᵗ', data.Lt);
+    if (data.U) mHTML += renderTable('Matriz U', data.U);
+    if (data.P) mHTML += renderTable('Matriz de Permutación P', data.P);
+    if (data.aumentada_final) mHTML += renderTable('Aumentada final [U | y]', data.aumentada_final);
     setHTML(matrices, mHTML);
 
-    // Etapas (si vienen)
+    // Etapas
     if (Array.isArray(data.etapas) && data.etapas.length){
       let eHTML = '<div class="text-start"><h6 class="mb-2">Etapas</h6>';
       data.etapas.forEach((step, i) => {
@@ -245,7 +294,7 @@ runBtn.addEventListener('click', async ()=>{
         if (M) eHTML += renderTable(`Etapa ${i+1}`, M);
       });
       eHTML += '</div>';
-      matrices.insertAdjacentHTML('beforeend', eHTML);
+      setHTML(etapas, eHTML);
     }
 
   }catch(err){
@@ -255,9 +304,8 @@ runBtn.addEventListener('click', async ()=>{
   }
 });
 
-/* inicia con n=3 */
-rebuild();
+/* inicia con 3x3 y b de 3 */
+rebuildA();
+lenBWrap.style.display = syncB.checked ? 'none' : 'block';
 </script>
 {% endblock %}
-
-

@@ -1,78 +1,128 @@
 import numpy as np
+import pandas as pd
 
 def crout(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
-    n = len(b)
     logs = []
 
-    L = np.zeros((n, n))       
-    U = np.eye(n)              
+    # --- Shape checks ---
+    if A.shape[0] != A.shape[1]:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]
+                ).round(decimals),
+                "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
+            }]
+        }
 
+    if A.shape[0] != len(b):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]
+                ).round(decimals),
+                "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
+            }]
+        }
+
+    n = len(b)
     det = np.linalg.det(A)
+    tolerance = 1e-10
+
     if np.isclose(det, 0):
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.round(decimals).tolist(),
-                "b": b.round(decimals).tolist(),
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                ).round(decimals),
                 "message": "Matrix is not invertible (det ≈ 0)."
             }]
         }
 
+    elif abs(det) < tolerance:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                ).round(decimals),
+                "message": f"det(A) ≈ {det:.2e}. The system is ill-conditioned and may present numerical instability."
+            }]
+        }
+
+    # --- Initialization ---
     logs.append({
         "step": "Initial",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(
+            np.column_stack((A, b)),
+            columns=[f"x{i+1}" for i in range(n)] + ["b"]
+        ).round(decimals),
         "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    
+    # --- Crout Factorization ---
+    L = np.zeros((n, n))
+    U = np.eye(n)
+
     for j in range(n):
-      
         for i in range(j, n):
             L[i, j] = A[i, j] - np.sum(L[i, :j] * U[:j, j])
-        
-        
-        for i in range(j+1, n):
+
+        for i in range(j + 1, n):
             if np.isclose(L[j, j], 0):
-                logs.append({
-                    "step": f"Step {j+1}",
-                    "message": f"Zero pivot at L[{j},{j}]. Method fails."
-                })
-                return {"solution": None, "logs": logs}
-            U[j, i] = (A[j, i] - np.sum(L[j, :j] * U[:  j, i])) / L[j, j]
+                return {
+                    "solution": None,
+                    "logs": logs + [{
+                        "step": f"Step {j+1}",
+                        "matrix": pd.DataFrame(
+                            np.column_stack((A, b)),
+                            columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                        ).round(decimals),
+                        "message": f"Zero pivot at L[{j},{j}]. Method fails."
+                    }]
+                }
+            U[j, i] = (A[j, i] - np.sum(L[j, :j] * U[:j, i])) / L[j, j]
 
         logs.append({
             "step": f"Step {j+1}",
-            "A": A.copy().round(decimals).tolist(),
-            "L": L.copy().round(decimals).tolist(),
-            "U": U.copy().round(decimals).tolist(),
-            "b": b.copy().round(decimals).tolist(),
+            "L": pd.DataFrame(L).round(decimals),
+            "U": pd.DataFrame(U).round(decimals),
             "message": f"Column {j+1} processed."
         })
 
-
+    # --- Forward substitution ---
     y = np.zeros(n)
     for i in range(n):
         y[i] = b[i] - np.dot(L[i, :i], y[:i])
-    
+
     logs.append({
         "step": "Forward Substitution",
-        "y": y.round(decimals).tolist(),
-        "message": "Forward substitution complete (Ly = b)."
+        "message": "Forward substitution complete (Ly = b).",
+        "y": pd.Series(y.round(decimals))
     })
 
-    #Ux = y
+    # --- Backward substitution ---
     x = np.zeros(n)
     for i in reversed(range(n)):
         x[i] = y[i] - np.dot(U[i, i+1:], x[i+1:])
-    
+
     logs.append({
         "step": "Backward Substitution",
-        "x": x.round(decimals).tolist(),
-        "message": "Backward substitution complete (Ux = y)."
+        "message": "Backward substitution complete (Ux = y).",
+        "x": pd.Series(x.round(decimals))
     })
 
     return {

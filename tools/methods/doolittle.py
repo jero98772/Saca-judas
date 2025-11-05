@@ -1,68 +1,141 @@
 import numpy as np
+import pandas as pd
 
-def solve_triangular(T, b, lower=True):
-    """
-    Solve triangular system Tx = b.
-    """
+def doolittle(A: list, b: list, decimals: int = 6):
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    logs = []
+
+    # --- Shape checks ---
+    if A.shape[0] != A.shape[1]:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]
+                ).round(decimals),
+                "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
+            }]
+        }
+
+    if A.shape[0] != len(b):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]
+                ).round(decimals),
+                "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
+            }]
+        }
+
     n = len(b)
-    x = np.zeros(n)
-    
-    if lower:
-        # Forward substitution for lower triangular matrix
-        for i in range(n):
-            x[i] = (b[i] - np.dot(T[i, :i], x[:i])) / T[i, i]
-    else:
-        # Backward substitution for upper triangular matrix
-        for i in range(n-1, -1, -1):
-            x[i] = (b[i] - np.dot(T[i, i+1:], x[i+1:])) / T[i, i]
-    
-    return x
+    det = np.linalg.det(A)
+    tolerance = 1e-10
 
-def doolittle(A, b):
-    """
-    Solve Ax = b using Doolittle decomposition with JSON-compatible output.
-    
-    Parameters:
-    A: coefficient matrix
-    b: right-hand side vector
-    
-    Returns:
-    dict: JSON-compatible result with message, value (solution), and historial
-    """
-    try:
-        # Perform Doolittle decomposition
-        L, U = doolittle(A)
-        
-        # Solve Ly = b (forward substitution)
-        y = solve_triangular(L, b, lower=True)
-        
-        # Solve Ux = y (backward substitution)
-        x = solve_triangular(U, y, lower=False)
-        
-        # Calculate residual
-        residual = np.linalg.norm(np.dot(A, x) - b)
-        
-        # For direct methods, we don't have iteration history like iterative methods
-        # So we'll create a simplified historial structure
-        historial = {
-            "x": [x.tolist()],  # Only the final solution
-            "errorAbs": [residual],  # Only the final residual
-            "iteraciones": [1]  # Just one "iteration" for direct method
-        }
-        
+    if np.isclose(det, 0):
         return {
-            "message": "Solución encontrada",
-            "value": x.tolist(),
-            "historial": historial
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                ).round(decimals),
+                "message": "Matrix is not invertible (det ≈ 0)."
+            }]
         }
-    
-    except Exception as e:
+
+    elif abs(det) < tolerance:
         return {
-            "message": f"Error al resolver el sistema: {str(e)}",
-            "value": None,
-            "historial": {
-                "x": [],
-                "errorAbs": [],
-                "iteraciones": []
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(
+                    np.column_stack((A, b)),
+                    columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                ).round(decimals),
+                "message": f"det(A) ≈ {det:.2e}. The system is ill-conditioned and may present numerical instability."
+            }]
+        }
+
+    # --- Initialization ---
+    logs.append({
+        "step": "Initial",
+        "matrix": pd.DataFrame(
+            np.column_stack((A, b)),
+            columns=[f"x{i+1}" for i in range(n)] + ["b"]
+        ).round(decimals),
+        "message": f"Initial system. Determinant = {det:.4f}"
+    })
+
+    # --- Doolittle Factorization ---
+    L = np.eye(n)
+    U = np.zeros((n, n))
+
+    for j in range(n):
+        # --- Upper matrix U ---
+        for k in range(j, n):
+            U[j, k] = A[j, k] - np.sum(L[j, :j] * U[:j, k])
+
+        # --- Lower matrix L ---
+        for i in range(j + 1, n):
+            if np.isclose(U[j, j], 0):
+                return {
+                    "solution": None,
+                    "logs": logs + [{
+                        "step": f"Step {j+1}",
+                        "matrix": pd.DataFrame(
+                            np.column_stack((A, b)),
+                            columns=[f"x{i+1}" for i in range(n)] + ["b"]
+                        ).round(decimals),
+                        "message": f"Zero pivot at U[{j},{j}]. Method fails."
+                    }]
+                }
+            L[i, j] = (A[i, j] - np.sum(L[i, :j] * U[:j, j])) / U[j, j]
+
+        logs.append({
+            "step": f"Step {j+1}",
+            "L": pd.DataFrame(L).round(decimals),
+            "U": pd.DataFrame(U).round(decimals),
+            "message": f"Column {j+1} processed."
+        })
+
+    # --- Forward substitution ---
+    y = np.zeros(n)
+    for i in range(n):
+        y[i] = b[i] - np.dot(L[i, :i], y[:i])
+
+    logs.append({
+        "step": "Forward Substitution",
+        "message": "Forward substitution complete (Ly = b).",
+        "y": pd.Series(y.round(decimals))
+    })
+
+    # --- Backward substitution ---
+    x = np.zeros(n)
+    for i in reversed(range(n)):
+        if np.isclose(U[i, i], 0):
+            return {
+                "solution": None,
+                "logs": logs + [{
+                    "step": "Backward Substitution",
+                    "message": f"Zero pivot at U[{i},{i}]. Method fails."
+                }]
             }
-        }
+        x[i] = (y[i] - np.dot(U[i, i+1:], x[i+1:])) / U[i, i]
+
+    logs.append({
+        "step": "Backward Substitution",
+        "message": "Backward substitution complete (Ux = y).",
+        "x": pd.Series(x.round(decimals))
+    })
+
+    return {
+        "solution": x.round(decimals).tolist(),
+        "logs": logs
+    }

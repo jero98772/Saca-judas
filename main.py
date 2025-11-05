@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-import html as html_lib
+
 import pandas as pd
 import numpy as np
 from typing import Dict, Callable, Optional
@@ -13,11 +13,9 @@ import json
 
 from tools.tools import get_function_names 
 from tools.sympyUtilities import (
-    validate_math_function, derivateLatex, latex_to_sympy_str,
     latex_to_callable_function, derivatePythonExpr
 )
-from tools.numeric_methods import *
-from tools.llm_tools import chat_answer
+
 
 # ===================== Ecuaciones no lineales =====================
 from tools.methods.newton import newton_method_controller
@@ -259,10 +257,10 @@ async def gauss_simple_post(request: Request):
                         if k in log:
                             del log[k]
                 else:
-                    # primitives, listas y dicts simples se dejan tal cual (ya JSONable)
+                    
                     log[k] = ser
 
-            # Intentar combinar A_json + b_json en matrix si aún no existe matrix
+            
             combine_A_b(log, decimals)
 
         # Responder con jsonable_encoder para asegurar serialización

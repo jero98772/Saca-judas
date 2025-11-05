@@ -53,7 +53,7 @@ def crout(A: list, b: list, decimals: int = 6):
             "message": f"Column {j+1} processed."
         })
 
-    #Ly = b
+
     y = np.zeros(n)
     for i in range(n):
         y[i] = b[i] - np.dot(L[i, :i], y[:i])

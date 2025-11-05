@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def gauss_partial(A: list, b: list, decimals: int = 6):
     A = np.array(A, dtype=float)
@@ -10,126 +11,120 @@ def gauss_partial(A: list, b: list, decimals: int = 6):
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.tolist(),
-                "b": b.tolist(),
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]).round(decimals),
                 "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
             }]
         }
-
 
     if A.shape[0] != len(b):
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.tolist(),
-                "b": b.tolist(),
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(A.shape[1])] + ["b"]).round(decimals),
                 "message": f"The size of vector b ({len(b)}) does not match the number of rows in A ({A.shape[0]})."
             }]
-        } 
+        }
 
     n = len(b)
     det = np.linalg.det(A)
-    if np.isclose(det, 0):
+    tolerance = 1e-10
+
+    if det == 0:
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.round(decimals).tolist(),
-                "b": b.round(decimals).tolist(),
-                "message": "det(A) ≈ 0, solutions can be unstable by higher divisions."
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": "det(A) = 0. The matrix is singular. The system may have no unique solution or no solution at all."
             }]
         }
 
+    elif abs(det) < tolerance:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"det(A) ≈ {det:.2e}, the system is ill-conditioned and may present numerical instability."
+            }]
+        }
+
+    # --- Initial system log ---
     logs.append({
         "step": "Initial",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(np.column_stack((A, b)),
+                               columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
         "message": f"Initial system. Determinant = {det:.4f}"
     })
 
+    # --- Gaussian elimination with partial pivoting ---
     for k in range(n - 1):
-
-      
         max_row = np.argmax(np.abs(A[k:, k])) + k
 
-        if np.allclose(A[k:, k], 0):
-            return {
-                "solution": None,
-                "logs": logs + [{
-                    "step": f"Iteration {k+1}",
-                    "A": A.copy().round(decimals).tolist(),
-                    "b": b.copy().round(decimals).tolist(),
-                    "message": f"All entries in column {k+1} from row {k+1} down are zero. Method fails."
-                }]
-            }
-
-
         if np.isclose(A[max_row, k], 0):
-            return {
-                "solution": None,
-                "logs": logs + [{
-                    "step": f"Iteration {k+1}",
-                    "A": A.copy().round(decimals).tolist(),
-                    "b": b.copy().round(decimals).tolist(),
-                    "message": f"No non-zero pivot found in column {k+1}. Method fails."
-                }]
-            }
-
+            logs.append({
+                "step": f"Iteration {k+1}",
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"No non-zero pivot found in column {k+1}. Method fails."
+            })
+            return {"solution": None, "logs": logs}
 
         if max_row != k:
             A[[k, max_row]] = A[[max_row, k]]
             b[[k, max_row]] = b[[max_row, k]]
             logs.append({
                 "step": f"Pivot {k+1}",
-                "A": A.copy().round(decimals).tolist(),
-                "b": b.copy().round(decimals).tolist(),
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
                 "message": f"Rows {k+1} and {max_row+1} swapped for partial pivoting."
             })
 
-
-        if np.allclose(A[k+1:, k], 0):
+        pivot = A[k, k]
+        if abs(pivot) < 1e-7:
             logs.append({
                 "step": f"Iteration {k+1}",
-                "A": A.copy().round(decimals).tolist(),
-                "b": b.copy().round(decimals).tolist(),
-                "message": f"Column {k+1} below pivot already zeros. Skipping elimination."
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"Warning: Pivot at row {k+1} is very small ({pivot:.2e}). Numerical instability may occur."
             })
-            continue
-
 
         for i in range(k + 1, n):
             if np.isclose(A[i, k], 0):
                 continue
-            m = A[i, k] / A[k, k]
-            A[i, k:] = A[i, k:] - m * A[k, k:]
-            b[i] = b[i] - m * b[k]
+            m = A[i, k] / pivot
+            A[i, k:] -= m * A[k, k:]
+            b[i] -= m * b[k]
 
         logs.append({
             "step": f"Iteration {k+1}",
-            "A": A.copy().round(decimals).tolist(),
-            "b": b.copy().round(decimals).tolist(),
+            "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                   columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
             "message": f"Elimination at column {k+1} complete."
         })
 
+    # --- Back substitution ---
     x = np.zeros(n)
     for i in range(n - 1, -1, -1):
         if np.isclose(A[i, i], 0):
-            return {
-                "solution": None,
-                "logs": logs + [{
-                    "step": "Back Substitution",
-                    "A": A.copy().round(decimals).tolist(),
-                    "b": b.copy().round(decimals).tolist(),
-                    "message": f"Zero (or near-zero) pivot at row {i+1}. Method fails."
-                }]
-            }
+            logs.append({
+                "step": "Back Substitution",
+                "matrix": pd.DataFrame(np.column_stack((A, b)),
+                                       columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
+                "message": f"Zero (or near-zero) pivot at row {i+1}. Method fails."
+            })
+            return {"solution": None, "logs": logs}
         x[i] = (b[i] - np.dot(A[i, i+1:], x[i+1:])) / A[i, i]
 
     logs.append({
         "step": "Back Substitution",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(np.column_stack((A, b)),
+                               columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
         "message": "Back substitution complete."
     })
 

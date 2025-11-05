@@ -15,39 +15,31 @@
     inlineStylesInjected = true;
 
     const css = `
-    /* Dynamically injected styles for gauss-table (high priority) */
-    #content .gauss-table-wrapper { display:flex; justify-content:center; align-items:flex-start; padding:6px 0; overflow-x:auto; }
-    #content table.gauss-table { border-collapse: separate !important; border-spacing: 8px !important; width: auto !important; margin: 0 auto !important; table-layout: auto !important; font-family: "Courier New", monospace; font-size: 0.95rem; color: #0f0f23 !important; }
-    #content table.gauss-table th, #content table.gauss-table td { display: table-cell !important; vertical-align: middle !important; white-space: nowrap !important; border: 1px solid #00ff41 !important; background: #ffffff !important; padding: 8px 12px !important; border-radius: 8px !important; box-shadow: 0 0 4px rgba(0,255,65,0.18) !important; color: #0f0f23 !important; }
-    #content table.gauss-table thead th { background-color: #00ff41 !important; color: #0f0f23 !important; font-weight: bold !important; padding: 6px 10px !important; border-radius: 6px !important; text-align: center !important; }
-    #content table.gauss-table tbody tr:nth-child(even) td { background: #f3fff3 !important; }
+      /* Dynamically injected styles for gauss-table */
+      #content .gauss-table-wrapper { display:flex; justify-content:center; align-items:flex-start; padding:6px 0; overflow-x:auto; }
+      #content table.gauss-table { border-collapse: separate !important; border-spacing: 8px !important; width: auto !important; margin: 0 auto !important; table-layout: auto !important; font-family: "Courier New", monospace; font-size: 0.95rem; color: #0f0f23 !important; }
+      #content table.gauss-table th, #content table.gauss-table td { display: table-cell !important; vertical-align: middle !important; white-space: nowrap !important; border: 1px solid #00ff41 !important; background: #ffffff !important; padding: 8px 12px !important; border-radius: 8px !important; box-shadow: 0 0 4px rgba(0,255,65,0.18) !important; color: #0f0f23 !important; }
+      #content table.gauss-table thead th { background-color: #00ff41 !important; color: #0f0f23 !important; font-weight: bold !important; padding: 6px 10px !important; border-radius: 6px !important; text-align: center !important; }
+      #content table.gauss-table tbody tr:nth-child(even) td { background: #f3fff3 !important; }
     `;
-
     const style = document.createElement("style");
     style.id = "gauss-inline-styles";
     style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
-
-    setTimeout(() => {}, 0);
   }
 
   function ensureGaussTableClass(html) {
     if (!html) return html;
     if (!/<table[\s>]/i.test(html)) return html;
-
     return html.replace(/<table([^>]*)>/i, (match, attr) => {
       let newAttr = attr;
-
       if (/class\s*=/i.test(attr)) {
         if (!/gauss-table/i.test(attr)) {
-          newAttr = newAttr.replace(/class\s*=\s*["']([^"']*)["']/, (m, cls) => {
-            return `class="${(cls + " gauss-table").trim()}"`;
-          });
+          newAttr = newAttr.replace(/class\s*=\s*["']([^"']*)["']/, (m, cls) => `class="${(cls + " gauss-table").trim()}"`);
         }
       } else {
         newAttr = ` class="gauss-table" ${newAttr}`;
       }
-
       if (/style\s*=/i.test(newAttr)) {
         newAttr = newAttr.replace(/style\s*=\s*["']([^"']*)["']/, (m, s) => {
           let styleStr = s;
@@ -58,7 +50,6 @@
       } else {
         newAttr = `${newAttr} style="border-spacing:8px; border-collapse:separate;"`;
       }
-
       return `<table${newAttr}>`;
     });
   }
@@ -73,98 +64,34 @@
 
   function escapeHtml(unsafe) {
     if (unsafe === null || unsafe === undefined) return "";
-    return String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-/**
- * Validates matrix A and vector b by reading inputs directly from the DOM.
- * - Rejects if any row of A is completely empty or all zeros.
- * - Rejects if vector b is missing values or its length doesn't match A.
- * - Shows clear English messages prompting the user to complete missing entries.
- */
-function validateMatrixAndVector() {
-  const Acontainer = document.getElementById("matrixA");
-  const bcontainer = document.getElementById("matrixB");
-
-  if (!Acontainer || !bcontainer) {
-    return { valid: false, message: "Internal error: matrix containers not found." };
+  function getMatrixValues(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll("input")).reduce((arr, input) => {
+      const row = input.dataset.row;
+      const col = input.dataset.col;
+      if (!arr[row]) arr[row] = [];
+      arr[row][col] = input.value;
+      return arr;
+    }, []);
   }
 
-  // Get table elements for A and b
-  const tableA = Acontainer.querySelector("table");
-  if (!tableA) return { valid: false, message: "Matrix A is not available." };
-  const rowsA = Array.from(tableA.rows);
-
-  // Validate rows of A
-  for (let i = 0; i < rowsA.length; i++) {
-    const inputs = Array.from(rowsA[i].querySelectorAll("input"));
-    if (inputs.length === 0) continue;
-
-    const valsStr = inputs.map(inp => (inp.value || "").trim());
-
-    // Case 1: Entire row empty
-    const allEmpty = valsStr.every(s => s === "");
-    if (allEmpty) {
-      return { 
-        valid: false, 
-        message: `Row ${i + 1} of matrix A is empty. Please fill in all missing values before running the method.` 
-      };
-    }
-
-    // Convert to numeric values
-    const numericVals = valsStr.map(s => {
-      if (s === "") return NaN;
-      const s2 = s.replace(",", ".");
-      const n = Number(s2);
-      return Number.isFinite(n) ? n : NaN;
-    });
-
-    // Case 2: All values are zero or invalid
-    const hasNonZero = numericVals.some(n => !isNaN(n) && n !== 0);
-    if (!hasNonZero) {
-      return { 
-        valid: false, 
-        message: `Row ${i + 1} of matrix A contains only zeros or invalid values. Please fill in all missing values before running the method.` 
-      };
-    }
+  function getVectorValues(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll("input")).map(input => input.value);
   }
-
-  // Validate vector b
-  const tableB = bcontainer.querySelector("table");
-  if (!tableB) return { valid: false, message: "Vector b is not available." };
-  const rowsB = Array.from(tableB.rows);
-
-  if (rowsB.length !== rowsA.length) {
-    return { valid: false, message: "Vector b does not match the size of matrix A." };
-  }
-
-  for (let i = 0; i < rowsB.length; i++) {
-    const inp = rowsB[i].querySelector("input");
-    const s = inp ? (inp.value || "").trim() : "";
-    if (s === "") {
-      return { 
-        valid: false, 
-        message: `Entry b[${i + 1}] is empty. Please fill in all missing values before running the method.` 
-      };
-    }
-    const s2 = s.replace(",", ".");
-    const n = Number(s2);
-    if (!Number.isFinite(n)) {
-      return { 
-        valid: false, 
-        message: `Entry b[${i + 1}] is not numeric. Please fill in all missing values before running the method.` 
-      };
-    }
-  }
-
-  return { valid: true };
-}
-
-
 
   btn.addEventListener("click", async () => {
     ensureInlineStyles();
-
     hideMessage();
     if (logsDiv) logsDiv.innerHTML = "";
     if (solDiv) solDiv.style.display = "none";
@@ -173,12 +100,6 @@ function validateMatrixAndVector() {
     try {
       A = getMatrixValues("matrixA");
       b = getVectorValues("matrixB");
-      const check = validateMatrixAndVector();
-      if (!check.valid) {
-        showMessage(check.message, "danger");
-        return;
-      }
-
     } catch (err) {
       console.error("Error reading matrices:", err);
       showMessage("Internal error: unable to read input matrices.", "danger");
@@ -193,7 +114,7 @@ function validateMatrixAndVector() {
     }
 
     try {
-      const resp = await fetch("/eval/gauss_simple", {
+      const resp = await fetch("/eval/gauss_partial", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ A, b, decimals }),

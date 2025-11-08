@@ -49,16 +49,16 @@ from tools.methods.jacobi import compute_jacobi
 
 # Definición de categorías de métodos numéricos
 METHOD_CATEGORIES = {
-    'ecuaciones_no_lineales': [
+    'Solution_of_Nonlinear_Equations': [
         'newton', 'modified_newton', 'bisection', 'secant',
         'false_position', 'incremental_search', 'fixed_point'
     ],
-    'sistemas_ecuaciones': [
+    'Solution_of_linear_system_equations': [
         'gaussian_elimination_simple', 'gaussian_elimination_with_pivot_partial',
-        'gaussian_elimination_with_pivot_total', 'lu_simple', 'crout',
+        'gaussian_elimination_with_pivot_total', 'lu_simple', 'lu_partial','crout',
         'doolittle', 'gauss_seidel', 'SOR', 'cholesky', 'jacobi'
     ],
-    'interpolacion': [
+    'Interpolation': [
         'vandermonde', 'lineal_tracers', 'newton_interpolation',
         'lagrange'
     ]
@@ -165,10 +165,10 @@ async def options(request: Request):
     function_names = get_function_names("tools/methods")
     # Organizar métodos por categorías
     categorized_methods = {
-        'todos': function_names,
-        'ecuaciones_no_lineales': [m for m in function_names if m in METHOD_CATEGORIES['ecuaciones_no_lineales']],
-        'sistemas_ecuaciones': [m for m in function_names if m in METHOD_CATEGORIES['sistemas_ecuaciones']],
-        'interpolacion': [m for m in function_names if m in METHOD_CATEGORIES['interpolacion']]
+        'All': function_names,
+        'Solution_of_Nonlinear_Equations': [m for m in function_names if m in METHOD_CATEGORIES['Solution_of_Nonlinear_Equations']],
+        'Solution_of_linear_system_equations': [m for m in function_names if m in METHOD_CATEGORIES['Solution_of_linear_system_equations']],
+        'Interpolation': [m for m in function_names if m in METHOD_CATEGORIES['Interpolation']]
     }
     return templates.TemplateResponse(
         "options.html",

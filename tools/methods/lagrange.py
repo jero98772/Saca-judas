@@ -81,8 +81,3 @@ def lagrange_interpolation(x_points, y_points):
                 "iteraciones": []
             }
         }
-
-x = [1,2,3]
-y = [1,8,27]
-
-print(lagrange_interpolation(x,y))

@@ -272,7 +272,7 @@ async def gauss_simple_post(request: Request):
 @app.post("/eval/gauss_partial", response_class=JSONResponse)
 async def gauss_partial_post(request: Request):
     try:
-        # Intentar obtener JSON del cuerpo
+    
         try:
             data = await request.json()
         except Exception:
@@ -288,7 +288,7 @@ async def gauss_partial_post(request: Request):
                 status_code=400
             )
 
-        # Validaciones básicas de estructura
+
         if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
             return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
         if not (isinstance(b, list) and b):
@@ -298,7 +298,7 @@ async def gauss_partial_post(request: Request):
         if not all(len(row) == cols for row in A):
             return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
 
-        # Conversión segura a float
+
         A_conv = []
         for i, row in enumerate(A):
             row_conv = []
@@ -322,7 +322,7 @@ async def gauss_partial_post(request: Request):
                 )
             b_conv.append(f)
 
-        # Validación de decimales
+     
         try:
             decimals = int(decimals)
             if not (0 <= decimals <= 10):
@@ -330,10 +330,10 @@ async def gauss_partial_post(request: Request):
         except (TypeError, ValueError):
             return JSONResponse(content={"error": "Parameter 'decimals' must be an integer between 0 and 10."}, status_code=400)
 
-        # --- Llamada a la función principal ---
+       
         result = gauss_partial(A_conv, b_conv, decimals)
 
-        # --- Serialización de logs para el frontend ---
+       
         for log in result.get("logs", []):
             original_keys = list(log.keys())
             for k in original_keys:
@@ -356,13 +356,109 @@ async def gauss_partial_post(request: Request):
                 else:
                     log[k] = ser
 
-            # Intentar combinar A_json + b_json si no hay matrix
+          
             combine_A_b(log, decimals)
 
         return JSONResponse(content=jsonable_encoder(result), status_code=200)
 
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/crout", response_class=JSONResponse)
+async def crout_post(request: Request):
+    try:
+        # Parse JSON safely
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
+
+        A = data.get("A")
+        b = data.get("b")
+        decimals = data.get("decimals", 6)
+
+        # Check required parameters
+        if A is None or b is None:
+            return JSONResponse(
+                content={"error": "Parameters 'A' and 'b' are required."},
+                status_code=400
+            )
+
+        # Validate matrix A and vector b structure
+        if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
+            return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
+        if not (isinstance(b, list) and b):
+            return JSONResponse(content={"error": "Vector 'b' must be a non-empty list."}, status_code=400)
+
+        cols = len(A[0])
+        if not all(len(row) == cols for row in A):
+            return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
+
+        # Convert to float safely
+        A_conv = []
+        for i, row in enumerate(A):
+            row_conv = []
+            for j, val in enumerate(row):
+                f = to_float_safe(val)
+                if f is None:
+                    return JSONResponse(
+                        content={"error": f"Non-numeric value at A[{i+1}][{j+1}] → {repr(val)}"},
+                        status_code=400
+                    )
+                row_conv.append(f)
+            A_conv.append(row_conv)
+
+        b_conv = []
+        for i, val in enumerate(b):
+            f = to_float_safe(val)
+            if f is None:
+                return JSONResponse(
+                    content={"error": f"Non-numeric value at b[{i+1}] → {repr(val)}"},
+                    status_code=400
+                )
+            b_conv.append(f)
+
+        # Validate decimals
+        try:
+            decimals = int(decimals)
+            if not (0 <= decimals <= 10):
+                raise ValueError
+        except (TypeError, ValueError):
+            return JSONResponse(content={"error": "Parameter 'decimals' must be an integer between 0 and 10."}, status_code=400)
+
+        # Compute Crout decomposition result
+        result = crout(A_conv, b_conv, decimals)
+
+        # Serialize DataFrames and combine A|b for visualization
+        for log in result.get("logs", []):
+            original_keys = list(log.keys())
+            for k in original_keys:
+                v = log.get(k)
+
+                try:
+                    ser = serialize_value(v, decimals)
+                except Exception:
+                    ser = str(v)
+
+                if isinstance(ser, dict) and "html" in ser and "json" in ser:
+                    if k == "matrix":
+                        log["matrix"] = ser["html"]
+                        log["matrix_json"] = ser["json"]
+                    else:
+                        log[f"{k}_html"] = ser["html"]
+                        log[f"{k}_json"] = ser["json"]
+                        if k in log:
+                            del log[k]
+                else:
+                    log[k] = ser
+
+            combine_A_b(log, decimals)
+
+        return JSONResponse(content=jsonable_encoder(result), status_code=200)
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+
 
 
 @app.post("/eval/incremental_search")
@@ -391,19 +487,7 @@ async def secant_method_post(request: Request, function: str = Form(...), x0: fl
     answer = secant_method_controller(function=function, x0=x0, x1=x1, Nmax=Nmax, tol=tol, nrows=nrows)
     return JSONResponse(content=answer)
 
-# ========== (Opcional) Muller: descomenta si tienes el import disponible ==========
-# @app.post("/eval/muller", response_class=HTMLResponse)
-# async def muller_post(request: Request,
-#                       function: str = Form(...),
-#                       p0: float = Form(...),
-#                       p1: float = Form(...),
-#                       p2: float = Form(...),
-#                       nmax: int = Form(...),
-#                       tolerance: float = Form(...),
-#                       last_n_rows: int = Form(...)):
-#     answer = muller_controller(function=function, p0=p0, p1=p1, p2=p2,
-#                                nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
-#     return JSONResponse(content=answer)
+
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_recive(request: Request):
@@ -418,7 +502,7 @@ async def chat(request: Request):
     full_response = chat_answer(messages)
     return {"response": full_response}
 
-# ===================== NUEVOS ENDPOINTS /eval (estilo gauss_simple_post) =====================
+
 def _is_number(x):
     try:
         float(x); return True
@@ -531,7 +615,7 @@ async def cholesky_eval(request: Request):
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
-# ---------- Jacobi ----------
+
 @app.post("/eval/jacobi", response_class=JSONResponse)
 async def jacobi_eval(request: Request):
     try:
@@ -565,12 +649,3 @@ async def jacobi_eval(request: Request):
 async def not_found(request: Request, exc: StarletteHTTPException):
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-# @app.on_event("startup")
-# async def startup_event():
-#     start_jvm()
-
-# @app.on_event("shutdown")
-# async def shutdown_event():
-#     if jpype.isJVMStarted():
-#         jpype.shutdownJVM()
-#         print("JVM shutdown successfully")

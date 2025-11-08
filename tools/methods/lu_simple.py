@@ -1,80 +1,130 @@
 import numpy as np
+import pandas as pd
 
 def lu_simple(A: list, b: list, decimals: int = 6):
+    """
+    LU Factorization using simple (no) pivoting.
+    Returns:
+        solution -> vector x
+        logs     -> detailed logs with matrices and messages
+    """
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
-    n = len(b)
     logs = []
 
-    L = np.eye(n)
-    U = A.copy()
+    # --- Validations ---
+    if A.shape[0] != A.shape[1]:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
+                "message": f"Matrix A must be square. Received {A.shape[0]}x{A.shape[1]}."
+            }]
+        }
 
+    if A.shape[0] != len(b):
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
+                "message": f"Vector b size ({len(b)}) does not match matrix A rows ({A.shape[0]})."
+            }]
+        }
+
+    n = len(b)
     det = np.linalg.det(A)
+    tolerance = 1e-10
+
     if np.isclose(det, 0):
         return {
             "solution": None,
             "logs": [{
                 "step": "Check",
-                "A": A.round(decimals).tolist(),
-                "b": b.round(decimals).tolist(),
-                "message": "Matrix is not invertible (det ≈ 0)."
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
+                "message": "det(A) ≈ 0. Matrix is singular or nearly singular."
+            }]
+        }
+
+    elif abs(det) < tolerance:
+        return {
+            "solution": None,
+            "logs": [{
+                "step": "Check",
+                "A": pd.DataFrame(A).round(decimals),
+                "b": pd.Series(b).round(decimals),
+                "message": f"det(A) ≈ {det:.2e}. The system may be ill-conditioned."
             }]
         }
 
     logs.append({
         "step": "Initial",
-        "A": A.copy().round(decimals).tolist(),
-        "b": b.copy().round(decimals).tolist(),
+        "matrix": pd.DataFrame(np.column_stack((A, b)),
+                               columns=[f"x{i+1}" for i in range(n)] + ["b"]).round(decimals),
         "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    for k in range(n):
+    # --- Initialization ---
+    L = np.eye(n)
+    U = A.copy()
+
+    # --- LU Factorization (no pivoting) ---
+    for k in range(n - 1):
+        pivot = U[k, k]
+
+        if np.isclose(pivot, 0):
+            logs.append({
+                "step": f"Iteration {k+1}",
+                "U": pd.DataFrame(U).round(decimals),
+                "L": pd.DataFrame(L).round(decimals),
+                "message": f"Zero pivot at row {k+1}. Method fails (no pivoting allowed)."
+            })
+            return {"solution": None, "logs": logs}
+
+        # Compute multipliers and eliminate
         for i in range(k + 1, n):
-            if np.isclose(U[k, k], 0):
-                factor = 0
-            else:
-                factor = U[i, k] / U[k, k]
-            L[i, k] = factor
-            U[i, k:] -= factor * U[k, k:]
-            A[i, k:] = U[i, k:]  
+            L[i, k] = U[i, k] / pivot
+            U[i, k:] -= L[i, k] * U[k, k:]
+            U[i, k] = 0  # Clean lower elements explicitly
 
         logs.append({
-            "step": f"Step {k+1}",
-            "A": A.copy().round(decimals).tolist(),
-            "L": L.copy().round(decimals).tolist(),
-            "U": U.copy().round(decimals).tolist(),
-            "b": b.copy().round(decimals).tolist(),
-            "message": f"Elimination in column {k+1} complete."
+            "step": f"Iteration {k+1}",
+            "U": pd.DataFrame(U).round(decimals),
+            "L": pd.DataFrame(L).round(decimals),
+            "message": f"Elimination at column {k+1} complete."
         })
 
-    #Ly = b
+    # --- Forward substitution: Ly = b ---
     y = np.zeros(n)
     for i in range(n):
         y[i] = b[i] - np.dot(L[i, :i], y[:i])
 
     logs.append({
         "step": "Forward Substitution",
-        "y": y.round(decimals).tolist(),
-        "message": "Forward substitution complete (Ly = b)."
+        "message": "Forward substitution complete (Ly = b).",
+        "y": pd.Series(y.round(decimals))
     })
 
-    #Ux = y
+    # --- Backward substitution: Ux = y ---
     x = np.zeros(n)
     for i in reversed(range(n)):
         if np.isclose(U[i, i], 0):
             logs.append({
                 "step": "Backward Substitution",
-                "A": A.copy().round(decimals).tolist(),
-                "b": b.copy().round(decimals).tolist(),
-                "message": f"Zero pivot at row {i+1}. Method fails."
+                "U": pd.DataFrame(U).round(decimals),
+                "message": f"Zero pivot at row {i+1}. Cannot solve."
             })
             return {"solution": None, "logs": logs}
         x[i] = (y[i] - np.dot(U[i, i+1:], x[i+1:])) / U[i, i]
 
     logs.append({
         "step": "Backward Substitution",
-        "x": x.round(decimals).tolist(),
-        "message": "Backward substitution complete (Ux = y)."
+        "message": "Backward substitution complete (Ux = y).",
+        "x": pd.Series(x.round(decimals))
     })
 
     return {

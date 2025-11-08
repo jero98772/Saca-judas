@@ -178,6 +178,7 @@ async def bisection_post(request: Request, function: str = Form(...), a: float =
 
 @app.post("/eval/gauss_simple", response_class=JSONResponse)
 async def gauss_simple_post(request: Request):
+    print("llego")
     try:
         try:
             data = await request.json()

@@ -1,4 +1,4 @@
-const MIN_SIZE = 3; 
+const MIN_SIZE = 3;
 
 function createMatrixGrid(containerId, rows = 3, cols = 3) {
   const container = document.getElementById(containerId);
@@ -34,8 +34,8 @@ function createCellElement(table, containerId) {
   const input = document.createElement("input");
   input.type = "text";
   input.className = "matrix-input form-control form-control-sm text-center";
-  input.value = "";                   
-  input.placeholder = "0";            
+  input.value = "0";
+  input.placeholder = "0";
   input.setAttribute("data-user", "0");
 
   input.addEventListener("input", () => {
@@ -48,13 +48,13 @@ function createCellElement(table, containerId) {
 
     const vv = input.value.trim();
     if (
-   vv !== "" &&
-   !/^[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?$/.test(vv)
-     ) {
-   input.classList.add("is-invalid");
-   } else {
-   input.classList.remove("is-invalid");
-   }
+      vv !== "" &&
+      !/^[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?$/.test(vv)
+    ) {
+      input.classList.add("is-invalid");
+    } else {
+      input.classList.remove("is-invalid");
+    }
 
   });
 

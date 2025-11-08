@@ -2,8 +2,46 @@
 {% block content %}
 <div id="content">
 	<div class="container">
-		<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
-			{% for i in function_names %}
+		<!-- Buscador -->
+		<div class="search-container mb-4">
+			<div class="input-group">
+				<input type="text" id="methodSearch" class="form-control" placeholder="Buscar método...">
+				<button class="btn btn-primary" type="button" id="clearSearch">
+					<i class="fas fa-times"></i>
+				</button>
+			</div>
+		</div>
+
+		<!-- Navegación por categorías -->
+		<ul class="nav nav-tabs mb-4" id="methodTabs" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button class="nav-link active" id="todos-tab" data-bs-toggle="tab" data-bs-target="#todos" type="button">
+					Todos los métodos
+				</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="ecuaciones-tab" data-bs-toggle="tab" data-bs-target="#ecuaciones_no_lineales" type="button">
+					Ecuaciones no lineales
+				</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="sistemas-tab" data-bs-toggle="tab" data-bs-target="#sistemas_ecuaciones" type="button">
+					Sistemas de ecuaciones
+				</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="interpolacion-tab" data-bs-toggle="tab" data-bs-target="#interpolacion" type="button">
+					Interpolación
+				</button>
+			</li>
+		</ul>
+
+		<!-- Contenido de las pestañas -->
+		<div class="tab-content">
+			<!-- Todos los métodos -->
+			<div class="tab-pane fade show active" id="todos" role="tabpanel">
+				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
+					{% for i in categories['todos'] %}
 			<div class="col">
 				<div class="card text-bg-dark shadow-sm">
 					<img class="card-img-top animated-img" width="100%" alt="{{ i }}" 
@@ -19,14 +57,106 @@
 				</div>
 			</div>
 			{% endfor %}
-			<a href="javascript:history.back()" class="btn btn-primary btn-lg floating-back-btn" title="Volver atrás">
-				← Volver
-			</a>
+				</div>
+			</div>
+
+			<!-- Ecuaciones no lineales -->
+			<div class="tab-pane fade" id="ecuaciones_no_lineales" role="tabpanel">
+				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
+					{% for i in categories['ecuaciones_no_lineales'] %}
+					<div class="col method-item">
+						<div class="card text-bg-dark shadow-sm">
+							<img class="card-img-top animated-img" width="100%" alt="{{ i }}" 
+								 src="/static/img/{{ i }}.gif"
+								 onerror="tryImageExtensions(this, '{{ i }}', {{ loop.index }})">
+							<div class="card-body d-flex flex-column">
+								<h5 class="card-title mb-2">{{ i }}</h5>
+								<div class="d-flex justify-content-between align-items-center">
+									<a href="/calculations/{{ i }}" class="btn btn-primary mt-auto">Usar</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+
+			<!-- Sistemas de ecuaciones -->
+			<div class="tab-pane fade" id="sistemas_ecuaciones" role="tabpanel">
+				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
+					{% for i in categories['sistemas_ecuaciones'] %}
+					<div class="col method-item">
+						<div class="card text-bg-dark shadow-sm">
+							<img class="card-img-top animated-img" width="100%" alt="{{ i }}" 
+								 src="/static/img/{{ i }}.gif"
+								 onerror="tryImageExtensions(this, '{{ i }}', {{ loop.index }})">
+							<div class="card-body d-flex flex-column">
+								<h5 class="card-title mb-2">{{ i }}</h5>
+								<div class="d-flex justify-content-between align-items-center">
+									<a href="/calculations/{{ i }}" class="btn btn-primary mt-auto">Usar</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+
+			<!-- Interpolación -->
+			<div class="tab-pane fade" id="interpolacion" role="tabpanel">
+				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 justify-content-center">
+					{% for i in categories['interpolacion'] %}
+					<div class="col method-item">
+						<div class="card text-bg-dark shadow-sm">
+							<img class="card-img-top animated-img" width="100%" alt="{{ i }}" 
+								 src="/static/img/{{ i }}.gif"
+								 onerror="tryImageExtensions(this, '{{ i }}', {{ loop.index }})">
+							<div class="card-body d-flex flex-column">
+								<h5 class="card-title mb-2">{{ i }}</h5>
+								<div class="d-flex justify-content-between align-items-center">
+									<a href="/calculations/{{ i }}" class="btn btn-primary mt-auto">Usar</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
 		</div>
+
+		<a href="javascript:history.back()" class="btn btn-primary btn-lg floating-back-btn" title="Volver atrás">
+			← Volver
+		</a>
 	</div>
 </div>
 
 <script>
+// Funcionalidad del buscador
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('methodSearch');
+    const clearButton = document.getElementById('clearSearch');
+    const methodItems = document.querySelectorAll('.method-item, .col');
+
+    function filterMethods() {
+        const searchTerm = searchInput.value.toLowerCase();
+        methodItems.forEach(item => {
+            const title = item.querySelector('.card-title').textContent.toLowerCase();
+            if (title.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterMethods);
+    
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        filterMethods();
+    });
+});
+
 function tryImageExtensions(imgElement, imageName, loopIndex) {
 	const extensions = ['png', 'svg', 'jpg', 'jpeg', 'webp'];
 	let currentIndex = 0;

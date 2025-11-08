@@ -47,6 +47,23 @@ from tools.methods.jacobi import compute_jacobi
 # Si reactivas Muller, descomenta el import y el endpoint más abajo
 # from tools.java_methods.muller.Muller import muller_controller
 
+# Definición de categorías de métodos numéricos
+METHOD_CATEGORIES = {
+    'ecuaciones_no_lineales': [
+        'newton', 'modified_newton', 'bisection', 'secant',
+        'false_position', 'incremental_search', 'fixed_point'
+    ],
+    'sistemas_ecuaciones': [
+        'gaussian_elimination_simple', 'gaussian_elimination_with_pivot_partial',
+        'gaussian_elimination_with_pivot_total', 'lu_simple', 'crout',
+        'doolittle', 'gauss_seidel', 'SOR', 'cholesky', 'jacobi'
+    ],
+    'interpolacion': [
+        'vandermonde', 'lineal_tracers', 'newton_interpolation',
+        'lagrange'
+    ]
+}
+
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -146,7 +163,21 @@ async def index(request: Request):
 @app.get("/options", response_class=HTMLResponse)
 async def options(request: Request):
     function_names = get_function_names("tools/methods")
-    return templates.TemplateResponse("options.html", {"request": request, "function_names": function_names})
+    # Organizar métodos por categorías
+    categorized_methods = {
+        'todos': function_names,
+        'ecuaciones_no_lineales': [m for m in function_names if m in METHOD_CATEGORIES['ecuaciones_no_lineales']],
+        'sistemas_ecuaciones': [m for m in function_names if m in METHOD_CATEGORIES['sistemas_ecuaciones']],
+        'interpolacion': [m for m in function_names if m in METHOD_CATEGORIES['interpolacion']]
+    }
+    return templates.TemplateResponse(
+        "options.html",
+        {
+            "request": request,
+            "function_names": function_names,
+            "categories": categorized_methods
+        }
+    )
 
 @app.get("/calculations/{method_name}", response_class=HTMLResponse)
 async def method_page(request: Request, method_name: str):

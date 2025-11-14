@@ -56,7 +56,7 @@ def _vandermonde_matrix(x: List[float], n: Optional[int] = None) -> np.ndarray:
     x_arr = np.array(x, dtype=float)
     if n is None:
         n = len(x_arr)
-    return np.vander(x_arr, N=n, increasing=False)  # [1, x, x^2, ...]
+    return np.vander(x_arr, N=n, increasing=True)  # [1, x, x^2, ...]
 
 def _poly_to_string(coeffs: np.ndarray, var: str = "x", decimals: int = 6) -> str:
     terms = []

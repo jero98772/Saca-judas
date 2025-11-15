@@ -1,14 +1,14 @@
 # tools/methods/jacobi.py
 # -*- coding: utf-8 -*-
 """
-Método de Jacobi — usa TU implementación si existe
-(p. ej. tools/methods/jacobi_mio.py) y la envuelve para retornar un dict JSON-friendly.
+Jacobi Method — tries to use YOUR implementation if available
+(e.g. tools/methods/jacobi_mio.py) and wraps it to return a JSON-friendly dict.
 
-Exporta:
+Exports:
 - compute_jacobi(A, b, x0, tol=1e-7, nmax=100, norma="inf") -> dict:
   {
-    "x": [...],                         # solución aproximada
-    "iterations": [                    # historial (si está disponible o generado)
+    "x": [...],                          # approximate solution
+    "iterations": [                     # history (if available or auto-generated)
         {"k": 0, "x": [...], "error": e0},
         {"k": 1, "x": [...], "error": e1},
         ...
@@ -24,7 +24,7 @@ import numpy as np
 import importlib
 import inspect
 
-# ====== Intentamos usar tu módulo y nombres comunes ======
+# ====== Try to use user's module and common names ======
 CANDIDATE_MODULES = [
     "tools.methods.jacobi_mio",
     "jacobi_mio",
@@ -54,7 +54,7 @@ def _get_first_callable(mod, names) -> Optional[Callable]:
             return fn
     return None
 
-# ===== utilidades =====
+# ===== utilities =====
 def _to_list(v: np.ndarray):
     return [float(x) for x in np.array(v, dtype=float).ravel()]
 
@@ -67,14 +67,14 @@ def _vec_norm(v: np.ndarray, norma: str = "inf") -> float:
 
 def _jacobi_fallback(A: np.ndarray, b: np.ndarray, x0: np.ndarray,
                      tol: float, nmax: int, norma: str) -> Dict[str, Any]:
-    """Implementación estándar de Jacobi con historial."""
+    """Standard Jacobi implementation with history."""
     A = A.astype(float)
     b = b.astype(float)
     x = x0.astype(float).copy()
 
     D = np.diag(np.diag(A))
     if np.any(np.abs(np.diag(D)) < 1e-15):
-        raise ValueError("Jacobi: hay ceros en la diagonal de A.")
+        raise ValueError("Jacobi: zero detected on the diagonal of A.")
 
     R = A - D
     D_inv = np.diag(1.0 / np.diag(D))
@@ -93,12 +93,12 @@ def _jacobi_fallback(A: np.ndarray, b: np.ndarray, x0: np.ndarray,
 def _normalize_user_output(out, A: np.ndarray, b: np.ndarray, x0: np.ndarray,
                            tol: float, nmax: int, norma: str) -> Dict[str, Any]:
     """
-    Acepta varias formas de retorno de TU función:
-      - dict con claves tipo: x / solution, iterations / history / logs
-      - tuplas: (x,), (x, history), etc.
-      - solo x -> genero historial con fallback (1 pasada más) para errores
+    Accepts different user-function output formats:
+      - dict with keys such as: x / solution; iterations / history / logs
+      - tuples: (x,), (x, history), etc.
+      - vector only → auto-generate history using fallback
     """
-    # 1) Si es dict
+    # 1) If dict
     if isinstance(out, dict):
         x = out.get("x") or out.get("solution") or out.get("sol") or out.get("raiz")
         it = out.get("iterations") or out.get("history") or out.get("logs") or out.get("tabla")
@@ -106,7 +106,7 @@ def _normalize_user_output(out, A: np.ndarray, b: np.ndarray, x0: np.ndarray,
         if x is not None:
             res["x"] = _to_list(np.array(x, dtype=float))
         if isinstance(it, list):
-            # normalizar elementos del historial
+            # normalize history entries
             hist = []
             for idx, row in enumerate(it):
                 if isinstance(row, dict):
@@ -116,7 +116,7 @@ def _normalize_user_output(out, A: np.ndarray, b: np.ndarray, x0: np.ndarray,
                     hist.append({"k": int(k), "x": _to_list(np.array(xk, dtype=float)) if xk is not None else None,
                                  "error": float(err) if err is not None else None})
                 else:
-                    # fila tipo [k, x1, x2, ..., err]
+                    # row of type [k, x1, x2, ..., err]
                     arr = np.array(row, dtype=float).ravel()
                     if arr.size >= 2:
                         k = int(arr[0])
@@ -128,44 +128,41 @@ def _normalize_user_output(out, A: np.ndarray, b: np.ndarray, x0: np.ndarray,
         if "x" in res and "iterations" in res:
             return res
         if "x" in res and "iterations" not in res:
-            # generar un historial mínimo alrededor de la solución para mostrar error relativo
             return _jacobi_fallback(A, b, x0, tol, nmax, norma)
 
-    # 2) Si es tupla/lista
+    # 2) If tuple/list
     if isinstance(out, (list, tuple)):
         if len(out) >= 2:
             x = np.array(out[0], dtype=float)
             hist = out[1]
             res = {"x": _to_list(x)}
             if isinstance(hist, list):
-                # intentar normalizar igual que arriba
                 res["iterations"] = _jacobi_fallback(A, b, x0, tol, nmax, norma)["iterations"]
             return res
         elif len(out) == 1:
             x = np.array(out[0], dtype=float)
-            # generar historial
             return _jacobi_fallback(A, b, x0, tol, nmax, norma)
 
-    # 3) Si es solo un vector/ndarray
+    # 3) If only a vector/ndarray
     if isinstance(out, np.ndarray) or (isinstance(out, list) and out and isinstance(out[0], (int, float))):
         x = np.array(out, dtype=float)
         return _jacobi_fallback(A, b, x, tol, nmax, norma)
 
-    # 4) No se pudo normalizar → correr fallback completo
+    # 4) Could not normalize → full fallback
     return _jacobi_fallback(A, b, x0, tol, nmax, norma)
 
-# ===== API principal =====
+# ===== Main API =====
 def compute_jacobi(A: List[List[float]], b: List[float], x0: List[float],
                    tol: float = 1e-7, nmax: int = 100, norma: str = "inf") -> Dict[str, Any]:
     if not isinstance(A, list) or not A or not all(isinstance(r, list) for r in A):
-        raise ValueError("A debe ser una lista de listas no vacía.")
+        raise ValueError("A must be a non-empty list of lists.")
     n = len(A)
     if any(len(r) != n for r in A):
-        raise ValueError("A debe ser cuadrada.")
+        raise ValueError("A must be square.")
     if not isinstance(b, list) or len(b) != n:
-        raise ValueError("b debe tener longitud n.")
+        raise ValueError("b must have length n.")
     if not isinstance(x0, list) or len(x0) != n:
-        raise ValueError("x0 debe tener longitud n.")
+        raise ValueError("x0 must have length n.")
 
     A_np = np.array(A, dtype=float)
     b_np = np.array(b, dtype=float)
@@ -174,12 +171,12 @@ def compute_jacobi(A: List[List[float]], b: List[float], x0: List[float],
     nmax = int(nmax)
     norma = str(norma or "inf")
 
-    # 1) intenta usar TU módulo
+    # 1) Try user's module first
     user_mod = _import_first(CANDIDATE_MODULES)
     user_fn = _get_first_callable(user_mod, JACOBI_FUNC_NAMES) if user_mod else None
 
     if user_fn:
-        # Firmas comunes: (A,b,x0,tol,nmax,norma) | (A,b,x0,tol,nmax) | (A,b,x0) | (A,b,tol,nmax) | (A,b)
+        # Common signatures: (A,b,x0,tol,nmax,norma) | (A,b,x0,tol,nmax) | (A,b,x0) | (A,b,tol,nmax) | (A,b)
         tries = [
             (A_np, b_np, x0_np, tol, nmax, norma),
             (A_np, b_np, x0_np, tol, nmax),
@@ -193,13 +190,11 @@ def compute_jacobi(A: List[List[float]], b: List[float], x0: List[float],
                 return _normalize_user_output(out, A_np, b_np, x0_np, tol, nmax, norma)
             except Exception:
                 continue
-        # si nada funcionó, fallback
         return _jacobi_fallback(A_np, b_np, x0_np, tol, nmax, norma)
 
-    # 2) fallback si no hay tu módulo
     return _jacobi_fallback(A_np, b_np, x0_np, tol, nmax, norma)
 
-# ---- compat con main antiguos ----
+# ---- compatibility with older entrypoints ----
 def jacobi(A: List[List[float]], b: List[float], x0: List[float],
            tol: float = 1e-7, nmax: int = 100, norma: str = "inf"):
     return compute_jacobi(A, b, x0, tol, nmax, norma)

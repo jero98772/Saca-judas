@@ -7,17 +7,17 @@
 
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="m-0">Método de Jacobi</h3>
-          <small class="text-muted">Requiere A con diagonal no nula y (preferible) diagonal dominante.</small>
+          <h3 class="m-0">Jacobi Method</h3>
+          <small class="text-muted">Requires A with non-zero diagonal and (preferably) diagonal dominance.</small>
         </div>
       </div>
 
       <div class="row g-3">
-        <!-- Formulario -->
+        <!-- Form -->
         <div class="col-lg-5">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="mb-3">Entrada</h5>
+              <h5 class="mb-3">Input</h5>
 
               <div class="row g-2 text-start mb-3">
                 <div class="col-4">
@@ -36,7 +36,7 @@
 
               <div class="row g-2 text-start mb-3">
                 <div class="col-12">
-                  <label class="form-label mb-1">Norma</label>
+                  <label class="form-label mb-1">Norm</label>
                   <select id="norma" class="form-select">
                     <option value="inf" selected>∞</option>
                     <option value="2">2</option>
@@ -46,7 +46,7 @@
               </div>
 
               <div class="text-start">
-                <label class="form-label">Matriz A (n×n)</label>
+                <label class="form-label">Matrix A (n×n)</label>
                 <div id="matrixAContainer" class="table-responsive"></div>
               </div>
 
@@ -56,26 +56,26 @@
               </div>
 
               <div class="text-start mt-3">
-                <label class="form-label">Vector inicial x₀ (n)</label>
+                <label class="form-label">Initial vector x₀ (n)</label>
                 <div id="vectorX0Container" class="table-responsive"></div>
               </div>
 
               <div class="d-grid gap-2 mt-3">
-                <button id="run" class="btn btn-primary">Calcular</button>
-                <button id="example" class="btn btn-outline-secondary">Ejemplo</button>
-                <button id="clear" class="btn btn-outline-danger">Limpiar</button>
+                <button id="run" class="btn btn-primary">Compute</button>
+                <button id="example" class="btn btn-outline-secondary">Example</button>
+                <button id="clear" class="btn btn-outline-danger">Clear</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Resultados -->
+        <!-- Results -->
         <div class="col-lg-7">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="mb-3">Resultado</h5>
+              <h5 class="mb-3">Result</h5>
               <div id="alert" class="alert alert-danger d-none"></div>
-              <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
+              <div id="loading" class="d-none text-muted mb-2">Computing…</div>
 
               <div id="solucion"></div>
               <div id="tablaIter"></div>
@@ -123,7 +123,7 @@ function buildMatrixInputs(n){
       const inp = document.createElement('input');
       inp.type = 'number'; inp.step = 'any';
       inp.className = 'form-control form-control-sm';
-      inp.value = (i === j) ? '4' : '1'; // valores cómodos por defecto
+      inp.value = (i === j) ? '4' : '1';
       td.appendChild(inp); tr.appendChild(td);
     }
     tbody.appendChild(tr);
@@ -193,7 +193,7 @@ function rebuild(){
 }
 sizeN.addEventListener('change', rebuild);
 
-/* ejemplo */
+/* example */
 exampleBtn.addEventListener('click', ()=>{
   const A = [
     [4, 1, 1],
@@ -211,7 +211,7 @@ exampleBtn.addEventListener('click', ()=>{
   tol.value = '1e-7'; nmax.value = '100'; norma.value = 'inf';
 });
 
-/* limpiar */
+/* clear */
 clearBtn.addEventListener('click', ()=>{
   matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
   vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
@@ -219,7 +219,7 @@ clearBtn.addEventListener('click', ()=>{
   setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false);
 });
 
-/* calcular */
+/* compute */
 runBtn.addEventListener('click', async ()=>{
   setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false); show(loading, true);
   try{
@@ -242,16 +242,15 @@ runBtn.addEventListener('click', async ()=>{
     show(loading, false);
 
     if(!res.ok || data.error){
-      alertBox.textContent = data.error || 'Error en el cálculo';
+      alertBox.textContent = data.error || 'Computation error';
       show(alertBox, true);
       return;
     }
 
-    if (data.x) setHTML(solucion, renderTable('Solución x', data.x));
-    // soporta keys alternatives: iterations/history/logs/tabla
+    if (data.x) setHTML(solucion, renderTable('Solution x', data.x));
+
     const hist = data.iterations || data.history || data.logs || data.tabla;
     if (Array.isArray(hist) && hist.length){
-      // armar filas: k | x1 ... xn | error
       const rows = hist.map(item=>{
         const k = item.k ?? item[0] ?? '';
         const xv = item.x ?? (Array.isArray(item) ? item.slice(1, -1) : []);
@@ -262,17 +261,17 @@ runBtn.addEventListener('click', async ()=>{
       const n = (rows[0]?.length || 2) - 2;
       for(let i=0;i<n;i++) headers.push(`x${i+1}`);
       headers.push('error');
-      setHTML(tablaIter, renderTable('Iteraciones', rows, headers));
+      setHTML(tablaIter, renderTable('Iterations', rows, headers));
     }
 
   }catch(err){
     show(loading, false);
-    alertBox.textContent = 'Error inesperado: ' + (err?.message || err);
+    alertBox.textContent = 'Unexpected error: ' + (err?.message || err);
     show(alertBox, true);
   }
 });
 
-/* inicia */
+/* init */
 rebuild();
 </script>
 {% endblock %}

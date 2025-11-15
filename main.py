@@ -769,6 +769,35 @@ async def jacobi_eval(request: Request):
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+    
+@app.post("/eval/gauss_seidel", response_class=JSONResponse)
+async def gauss_seidel_eval(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
+
+        A = data.get("A"); b = data.get("b"); x0 = data.get("x0")
+        tol = data.get("tol", 1e-7); nmax = data.get("nmax", 100); norma = data.get("norma", "inf")
+
+        err = _validate_matrix(A) or _validate_vector("b", b) or _validate_vector("x0", x0)
+        if err: return JSONResponse({"error": err}, status_code=400)
+
+        try:
+            tol = float(tol); nmax = int(nmax)
+            if norma not in ("inf", "2", "1"): norma = "inf"
+        except Exception:
+            return JSONResponse({"error": "Invalid 'tol', 'nmax' or 'norma'."}, status_code=400)
+
+        if len(A) != len(A[0]) or len(A) != len(b) or len(A) != len(x0):
+            return JSONResponse({"error": "A must be square and size(A) must match len(b) and len(x0)."}, status_code=400)
+
+        result = compute_jacobi(A, b, x0, tol=tol, nmax=nmax, norma=norma)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
 # ===================== 404 =====================
 @app.exception_handler(404)

@@ -142,6 +142,7 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   if (isMatrixA && ((e.key === "ArrowRight" && col === cols - 1) || (e.key === "ArrowDown" && row === rows - 1))) {
     addRowAndColumn(table);
     syncVectorB(false);
+    syncVectorX(false);
     setTimeout(() => {
       const targetRow = (e.key === "ArrowDown") ? Math.min(row + 1, table.rows.length - 1) : row;
       const targetCol = (e.key === "ArrowRight") ? Math.min(col + 1, table.rows[0].cells.length - 1) : col;
@@ -159,6 +160,7 @@ function handleKey(e, row, col, table, containerId, inputEl) {
         if ((e.key === "ArrowLeft" && col === lastColIdx) || (e.key === "ArrowUp" && row === lastRowIdx)) {
           removeRowAndColumn(table);
           syncVectorB(true);
+          syncVectorX(true);
           setTimeout(() => {
             const newRows = table.rows.length;
             const newCols = table.rows[0].cells.length;
@@ -253,6 +255,29 @@ function syncVectorB(forceTrim = false) {
   }
 }
 
+function syncVectorX(forceTrim = false) {
+  const A = document.querySelector("#matrixA table");
+  if (!A) return;
+  const xContainer = document.getElementById("matrixX");
+  if (!xContainer) return;
+  const currentRows = A.rows.length;
+
+  let xTable = xContainer.querySelector("table");
+  if (!xTable) {
+    createMatrixGrid("matrixX", Math.max(currentRows, MIN_SIZE), 1);
+    return;
+  }
+
+  while (xTable.rows.length < currentRows) addRow(xTable);
+
+  while (xTable.rows.length > currentRows && xTable.rows.length > MIN_SIZE) {
+    const lastRow = xTable.rows[xTable.rows.length - 1];
+    const anyUser = Array.from(lastRow.querySelectorAll("input")).some(inp => !isEmptyValue(inp));
+    if (anyUser) break;
+    xTable.deleteRow(xTable.rows.length - 1);
+  }
+}
+
 function getMatrixValues(containerId) {
   const container = document.getElementById(containerId);
   const rows = Array.from(container.querySelectorAll("tr"));
@@ -277,4 +302,5 @@ function getVectorValues(containerId) {
 document.addEventListener("DOMContentLoaded", () => {
   createMatrixGrid("matrixA", 3, 3);
   createMatrixGrid("matrixB", 3, 1);
+  createMatrixGrid("matrixX", 3, 1);
 });

@@ -302,6 +302,100 @@ async def gauss_simple_post(request: Request):
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
     
 @app.post("/eval/gauss_partial", response_class=JSONResponse)
+async def gauss_total_post(request: Request):
+    try:
+    
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
+
+        A = data.get("A")
+        b = data.get("b")
+        decimals = data.get("decimals", 6)
+
+        if A is None or b is None:
+            return JSONResponse(
+                content={"error": "Parameters 'A' and 'b' are required."},
+                status_code=400
+            )
+
+
+        if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
+            return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
+        if not (isinstance(b, list) and b):
+            return JSONResponse(content={"error": "Vector 'b' must be a non-empty list."}, status_code=400)
+
+        cols = len(A[0])
+        if not all(len(row) == cols for row in A):
+            return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
+
+
+        A_conv = []
+        for i, row in enumerate(A):
+            row_conv = []
+            for j, val in enumerate(row):
+                f = to_float_safe(val)
+                if f is None:
+                    return JSONResponse(
+                        content={"error": f"Non-numeric value at A[{i+1}][{j+1}] → {repr(val)}"},
+                        status_code=400
+                    )
+                row_conv.append(f)
+            A_conv.append(row_conv)
+
+        b_conv = []
+        for i, val in enumerate(b):
+            f = to_float_safe(val)
+            if f is None:
+                return JSONResponse(
+                    content={"error": f"Non-numeric value at b[{i+1}] → {repr(val)}"},
+                    status_code=400
+                )
+            b_conv.append(f)
+
+     
+        try:
+            decimals = int(decimals)
+            if not (0 <= decimals <= 10):
+                raise ValueError
+        except (TypeError, ValueError):
+            return JSONResponse(content={"error": "Parameter 'decimals' must be an integer between 0 and 10."}, status_code=400)
+
+       
+        result = gauss_total(A_conv, b_conv, decimals)
+
+       
+        for log in result.get("logs", []):
+            original_keys = list(log.keys())
+            for k in original_keys:
+                v = log.get(k)
+                try:
+                    ser = serialize_value(v, decimals)
+                except Exception:
+                    ser = str(v)
+
+                if isinstance(ser, dict) and "html" in ser and "json" in ser:
+                    if k == "matrix":
+                        log["matrix"] = ser["html"]
+                        log["matrix_json"] = ser["json"]
+                    else:
+                        log[f"{k}_html"] = ser["html"]
+                        log[f"{k}_json"] = ser["json"]
+                        if k in log:
+                            del log[k]
+                else:
+                    log[k] = ser
+
+          
+            combine_A_b(log, decimals)
+
+        return JSONResponse(content=jsonable_encoder(result), status_code=200)
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/gauss_total", response_class=JSONResponse)
 async def gauss_partial_post(request: Request):
     try:
     

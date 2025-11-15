@@ -280,7 +280,7 @@
         values.forEach((val, idx) => {
           html += `
             <div class="sol-box" role="group" aria-label="Solution x${idx+1}">
-              <div class="sol-label">x${idx + 1}</div>
+              <div class="sol-label">x<sub>${idx + 1}</sub></div>
               <div class="sol-value">${escapeHtml(val)}</div>
             </div>
           `;

@@ -179,7 +179,7 @@ btn.addEventListener("click", async () => {
       let html = '<div class="solution-grid">';
       values.forEach((val, idx) => {
         html += `
-            <div class="sol-box" role="group" aria-label="Solution x<sub>${idx + 1}</sub>">
+            <div class="sol-box" role="group" aria-label="Solution x">
               <div class="sol-label">x<sub>${idx + 1}</sub></div>
               <div class="sol-value">${escapeHtml(val)}</div>
             </div>

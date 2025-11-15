@@ -1,143 +1,66 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div id="content">
+  <div class="container text-center">
+    <div class="row justify-content-center">
 
-<style>
-  .bring-to-front { position: relative; z-index: 10; }
-  :root {
-    --green: #0b7d2e;
-    --neon: rgba(0,255,128,0.35);
-    --card-bg: #ffffff;
-  }
-  .glow-card{
-    background: var(--card-bg);
-    border-radius: 16px;
-    box-shadow:
-      0 14px 28px rgba(0,0,0,0.20),
-      0 0 0 2px rgba(255,255,255,0.6),
-      0 0 24px var(--neon);
-    padding: 22px;
-  }
-  .glow-title{
-    font-size: 2rem;
-    font-weight: 800;
-    color: #111;
-    text-shadow:
-      0 0 8px rgba(0,255,128,0.25),
-      0 0 18px rgba(0,255,128,0.15);
-    margin-bottom: 12px;
-    letter-spacing: .2px;
-  }
-  .btn-newton{
-    background: var(--green);
-    color: #fff;
-    border: none; border-radius: 12px;
-    font-weight: 800; letter-spacing: .3px;
-    width: 100%; padding: 12px 14px;
-    box-shadow:
-      inset 0 0 0 3px rgba(0,255,128,0.18),
-      0 10px 22px rgba(0,128,0,0.35),
-      0 0 18px var(--neon);
-    transition: transform .06s ease, filter .15s ease, box-shadow .15s ease;
-  }
-  .btn-newton:hover{ filter: brightness(1.06); }
-  .btn-newton:active{ transform: translateY(1px); }
+      <!-- ===== MATRICES, BOTÓN Y DECIMALES ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card text-center p-4">
+          <h2>Gaussian Elimination (with total pivot)</h2>
+          <h6>Enter matrix values directly below</h6>
 
-  .panel-white{
-    background:#fff; border-radius:16px;
-    box-shadow: 0 10px 22px rgba(0,0,0,0.15);
-  }
-  .table-slim td, .table-slim th{ padding:.35rem .5rem; }
-  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  .swap-badge{ font-size:.85rem; }
-</style>
-<script src="/js/gaussian_elimination_with_pivot_total.js"></script>
-
-
-<div class="container-fluid mt-4 bring-to-front">
-  <div class="row g-4">
-    <!-- Columna izquierda: entrada -->
-    <div class="col-12 col-lg-4">
-      <div class="glow-card h-100">
-        <h2 class="glow-title">Gaussian Elimination<br>with Total Pivoting</h2>
-        <p class="text-muted" style="margin-top:-6px">
-          Paste the <strong>augmented matrix</strong> (n × (n+1)). One row per line.
-          Values can be separated by spaces or commas.
-        </p>
-
-        <!-- IMPORTANT: this posts to /eval/gauss_pivote -->
-        <form method="post" action="/eval/gauss_pivote">
-          <div class="mb-3">
-            <label for="matrix" class="form-label">Augmented matrix</label>
-            <textarea class="form-control mono" id="matrix" name="matrix" rows="8"
-              placeholder="2,  1,  -1,   8
--3, -1,   2, -11
--2,  1,   2,  -3">{% if form is defined and form.matrix %}{{ form.matrix }}{% endif %}</textarea>
-            <div class="form-text">Example: 3×3 system with b in the last column.</div>
-          </div>
-          <button class="btn-newton">Compute</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Columna derecha: resultados -->
-    <div class="col-12 col-lg-8">
-      {% if result is defined and result %}
-      <div class="row g-4">
-        <!-- Solución -->
-        <div class="col-12">
-          <div class="panel-white p-3">
-            <h5 class="mb-3">Solution</h5>
+          <div class="mb-3 text-center">
             <div class="row">
-              {% for val in result.solution %}
-              <div class="col-6 col-md-3">
-                <strong>x{{ loop.index0 }}</strong>: {{ '%.6f'|format(val) }}
+              <div class="col">
+                <label class="form-label fw-bold">Matrix A</label>
+                <br>
+                <div id="matrixA" class="matrix-grid"></div>
               </div>
-              {% endfor %}
-            </div>
-            <div class="mt-2 text-muted">
-              <span class="mono">perm_cols = {{ result.perm_cols }}</span>
-              <span class="mono ms-3">perm_rows = {{ result.perm_rows }}</span>
+              <div class="col">
+                <label class="form-label fw-bold">Vector b</label>
+                <br>
+                <div id="matrixB" class="matrix-grid"></div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Etapas -->
-        <div class="col-12">
-          <div class="panel-white p-3">
-            <h5 class="mb-3">Stages</h5>
-            {% for st in result.stages %}
-              <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between">
-                  <div><strong>{{ st.note }}</strong> (k={{ st.k }})</div>
-                  {% if st.swap.rows or st.swap.cols %}
-                  <span class="badge bg-success-subtle text-success-emphasis swap-badge">
-                    {% if st.swap.rows %} rows: {{ st.swap.rows }} {% endif %}
-                    {% if st.swap.cols %} {% if st.swap.rows %}|{% endif %} cols: {{ st.swap.cols }} {% endif %}
-                  </span>
-                  {% endif %}
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-sm table-striped align-middle table-slim mono mb-0">
-                    <tbody>
-                      {% for r in st.matrix %}
-                      <tr>
-                        {% for v in r %}
-                        <td>{{ '%.6f'|format(v) }}</td>
-                        {% endfor %}
-                      </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            {% endfor %}
+          <div class="input-group mb-3">
+            <span class="input-group-text">Decimals</span>
+            <input type="number" id="decimals" class="form-control" value="6" min="0" max="12">
           </div>
+
+          <button id="calculation-btn" class="btn btn-outline-success mb-3" type="button">
+            Calculate
+          </button>
+
+          <div id="result-message" class="alert" style="display:none;"></div>
         </div>
       </div>
-      {% endif %}
+
+      <!-- ===== ELIMINATION STEPS ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+          <h4>Elimination Steps</h4>
+          <div id="logs-container"></div>
+        </div>
+      </div>
+
+      <!-- ===== SOLUTION ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3">
+          <h4>Solution</h4>
+          <div id="solution-container" style="display:none;"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+<script src="/static/js/matrix_grid.js"></script>
+<script src="/static/js/gaussian_elimination_with_pivot_total.js"></script>
 
 {% endblock %}

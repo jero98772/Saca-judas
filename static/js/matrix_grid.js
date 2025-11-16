@@ -1,5 +1,183 @@
 const MIN_SIZE = 3;
 
+// ===================== HISTORIAL DE MATRICES =====================
+const MATRIX_HISTORY_KEY = "matrix_history";
+const MAX_HISTORY_ITEMS = 10;
+
+function saveMatrixToHistory() {
+  const A = getMatrixValues("matrixA");
+  const b = getVectorValues("matrixB");
+  const x0 = getVectorValues("matrixX");
+
+  const timestamp = new Date().toLocaleString();
+  const historyItem = {
+    id: Date.now(),
+    timestamp,
+    matrixA: A,
+    vectorB: b,
+    vectorX: x0
+  };
+
+  let history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
+  history.unshift(historyItem);
+
+  // Mantener solo los últimos MAX_HISTORY_ITEMS
+  if (history.length > MAX_HISTORY_ITEMS) {
+    history = history.slice(0, MAX_HISTORY_ITEMS);
+  }
+
+  localStorage.setItem(MATRIX_HISTORY_KEY, JSON.stringify(history));
+  updateHistoryUI();
+}
+
+function loadMatrixFromHistory(id) {
+  const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
+  const item = history.find(h => h.id === id);
+
+  if (!item) {
+    console.error("Historial no encontrado");
+    return;
+  }
+
+  // Cargar Matrix A
+  const matrixAContainer = document.getElementById("matrixA");
+  if (matrixAContainer) {
+    createMatrixGrid("matrixA", item.matrixA.length, item.matrixA[0].length);
+    const inputs = matrixAContainer.querySelectorAll("input");
+    let index = 0;
+    item.matrixA.forEach(row => {
+      row.forEach(value => {
+        if (inputs[index]) {
+          inputs[index].value = value;
+          inputs[index].setAttribute("data-user", value !== 0 ? "1" : "0");
+        }
+        index++;
+      });
+    });
+  }
+
+  // Cargar Vector B
+  const matrixBContainer = document.getElementById("matrixB");
+  if (matrixBContainer) {
+    createMatrixGrid("matrixB", item.vectorB.length, 1);
+    const inputs = matrixBContainer.querySelectorAll("input");
+    item.vectorB.forEach((value, index) => {
+      if (inputs[index]) {
+        inputs[index].value = value;
+        inputs[index].setAttribute("data-user", value !== 0 ? "1" : "0");
+      }
+    });
+  }
+
+  // Cargar Vector X (aproximación inicial)
+  const matrixXContainer = document.getElementById("matrixX");
+  if (matrixXContainer) {
+    createMatrixGrid("matrixX", item.vectorX.length, 1);
+    const inputs = matrixXContainer.querySelectorAll("input");
+    item.vectorX.forEach((value, index) => {
+      if (inputs[index]) {
+        inputs[index].value = value;
+        inputs[index].setAttribute("data-user", value !== 0 ? "1" : "0");
+      }
+    });
+  }
+
+  // Cerrar modal si existe
+  const modal = document.getElementById("historyModal");
+  if (modal) {
+    const bsModal = bootstrap.Modal.getInstance(modal);
+    if (bsModal) bsModal.hide();
+  }
+}
+
+function deleteHistoryItem(id) {
+  let history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
+  history = history.filter(h => h.id !== id);
+  localStorage.setItem(MATRIX_HISTORY_KEY, JSON.stringify(history));
+  updateHistoryUI();
+}
+
+function clearAllHistory() {
+  if (confirm("¿Estás seguro de que deseas eliminar todo el historial?")) {
+    localStorage.removeItem(MATRIX_HISTORY_KEY);
+    updateHistoryUI();
+  }
+}
+
+function updateHistoryUI() {
+  const historyList = document.getElementById("historyList");
+  if (!historyList) return;
+
+  const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
+
+  if (history.length === 0) {
+    historyList.innerHTML = '<p class="text-muted">Sin historial guardado</p>';
+    return;
+  }
+
+  let html = '<div class="list-group">';
+  history.forEach(item => {
+    const dims = `${item.matrixA.length}x${item.matrixA[0]?.length || 0}`;
+    html += `
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted">${item.timestamp}</small>
+          <br>
+          <strong>Matriz ${dims}</strong>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-success" onclick="loadMatrixFromHistory(${item.id})">
+            Cargar
+          </button>
+          <button class="btn btn-danger" onclick="deleteHistoryItem(${item.id})">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  historyList.innerHTML = html;
+}
+
+function createHistoryModal() {
+  // Verificar si el modal ya existe
+  if (document.getElementById("historyModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "historyModal";
+  modal.className = "modal fade";
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Historial de Matrices</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="historyList"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-danger" onclick="clearAllHistory()">Limpiar Todo</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  updateHistoryUI();
+}
+
+function showHistoryModal() {
+  if (!document.getElementById("historyModal")) {
+    createHistoryModal();
+  }
+  const modal = new bootstrap.Modal(document.getElementById("historyModal"));
+  modal.show();
+}
+
+// ===================== FIN HISTORIAL DE MATRICES =====================
 function createMatrixGrid(containerId, rows = 3, cols = 3) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -303,4 +481,23 @@ document.addEventListener("DOMContentLoaded", () => {
   createMatrixGrid("matrixA", 3, 3);
   createMatrixGrid("matrixB", 3, 1);
   createMatrixGrid("matrixX", 3, 1);
+
+  // Crear botones de historial si no existen
+  const calcBtn = document.getElementById("calculation-btn");
+  if (calcBtn && calcBtn.parentElement) {
+    const historyContainer = document.createElement("div");
+    historyContainer.className = "mt-3 d-flex gap-2";
+    historyContainer.innerHTML = `
+      <button type="button" class="btn btn-info" onclick="showHistoryModal()" title="Ver historial de matrices">
+        <i class="fas fa-history"></i> Historial
+      </button>
+      <button type="button" class="btn btn-success" onclick="saveMatrixToHistory()" title="Guardar matriz actual">
+        <i class="fas fa-save"></i> Guardar
+      </button>
+    `;
+    calcBtn.parentElement.appendChild(historyContainer);
+  }
+
+  // Inicializar UI del historial
+  updateHistoryUI();
 });

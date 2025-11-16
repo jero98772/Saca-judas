@@ -2,7 +2,18 @@ const btn = document.getElementById("calculation-btn");
 const resultMessage = document.getElementById("result-message");
 const logsDiv = document.getElementById("logs-container");
 const solDiv = document.getElementById("solution-container");
+const tol = document.getElementById("tol")
+const nmax = document.getElementById("nmax")
+const normaBtn = document.getElementById("normaBtn")
+const opts = document.querySelectorAll(".dropdown-item")
+let norma = "inf"
 
+opts.forEach((opt) => {
+    opt.addEventListener('click', () => {
+        norma = opt.getAttribute("data-value")
+        normaBtn.textContent = `Norm (${opt.innerHTML})`
+    })
+})
 
 
 let inlineStylesInjected = false;
@@ -81,7 +92,7 @@ function getMatrixValues(containerId) {
 
     celdas.forEach((input, index) => {
         row.push(input.value)
-        if ((index + 1) % 3 === 0) {
+        if ((index + 1) % Math.sqrt(celdas.length) === 0) {
             matrix.push(row)
             row = []
         }
@@ -118,12 +129,6 @@ btn.addEventListener("click", async () => {
         return;
     }
 
-    const body = {
-        A, b, x0,
-        tol: parseFloat(tol.value || '1e-7'),
-        nmax: parseInt(nmax.value || '100', 10),
-        norma: norma.value || 'inf',
-    };
 
     const decimalsInput = document.getElementById("decimals");
     let decimals = 6;
@@ -131,12 +136,19 @@ btn.addEventListener("click", async () => {
         decimals = parseInt(decimalsInput.value, 10);
         if (!Number.isInteger(decimals) || decimals < 0) decimals = 6;
     }
+    const body = {
+        A, b, x0,
+        tol: parseFloat(tol.value || '1e-7'),
+        nmax: parseInt(nmax.value || '100', 10),
+        norma: norma || 'inf',
+        decimales: decimals
+    };
 
     try {
         const resp = await fetch("/eval/gauss_seidel", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ A, b, decimals }),
+            body: JSON.stringify(body),
         });
 
         let data;
@@ -154,35 +166,76 @@ btn.addEventListener("click", async () => {
 
         showMessage("Computation completed successfully.", "success");
 
+        console.log(data)
+
+
         if (Array.isArray(data.logs) && logsDiv) {
             logsDiv.innerHTML = "";
+
             data.logs.forEach((log, idx) => {
                 const card = document.createElement("div");
                 card.className = "card mb-3 shadow-sm";
 
-                let matrixHtml = "";
-                if (log.matrix) {
-                    matrixHtml = ensureGaussTableClass(String(log.matrix));
-                } else if (log.A || log.b) {
-                    const prettyA = log.A ? JSON.stringify(log.A, null, 2) : null;
-                    const prettyB = log.b ? JSON.stringify(log.b, null, 2) : null;
-                    matrixHtml = `<pre style="white-space:pre-wrap;">${prettyA ? "A = " + prettyA + "\n" : ""}${prettyB ? "b = " + prettyB : ""}</pre>`;
-                } else {
-                    matrixHtml = "<em>No matrix available for this step.</em>";
+                let contentHtml = "";
+
+                Object.keys(log).forEach(key => {
+                    if (key === "step") return;
+                    if (key === "error") return; // Skip error, será mostrado en el título
+
+                    const value = log[key];
+
+                    // Si es vector o matriz → tabla estilizada
+                    if (Array.isArray(value)) {
+                        // Verificar si es un vector (array de números) o una matriz (array de arrays)
+                        const isVector = !Array.isArray(value[0]);
+                        
+                        const tableHtml = renderAsTable(value);
+                        
+                        // No mostrar la etiqueta "x:" para el vector x
+                        const displayKey = (key === 'x' || isVector) ? '' : escapeHtml(key);
+                        const labelHtml = displayKey ? `<b>${displayKey}:</b>` : '';
+                        
+                        contentHtml += `
+                            <div class="mb-3">
+                                ${labelHtml}
+                                ${tableHtml}
+                            </div>
+                        `;
+                    }
+
+                    // Texto / números / mensajes
+                    else {
+                        contentHtml += `
+                            <p><b>${escapeHtml(key)}:</b> ${escapeHtml(String(value))}</p>
+                        `;
+                    }
+                });
+
+                // Construir el título con error
+                let stepTitle = escapeHtml(log.step || `Step ${idx + 1}`);
+                if (log.error) {
+                    stepTitle += ` - Error: ${escapeHtml(formatScientificError(log.error))}`;
                 }
 
+                // Crear botón de copiar para el título
+                const copyBtnInHeader = `<button class="btn btn-sm btn-secundary" onclick="copyIterationToClipboard(${idx})" style="margin-right: 10px;">📋 Copiar</button>`;
+
                 card.innerHTML = `
-            <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
-            <div class="card-body">
-              <div class="gauss-table-wrapper">
-                ${matrixHtml}
-              </div>
-            </div>
-          `;
+                    <div class="card-header bg-light d-flex align-items-center justify-content-between">
+                        <div style="display: flex; align-items: center;">
+                            ${copyBtnInHeader}
+                            <b>${stepTitle}</b>
+                        </div>
+                    </div>
+                    <div class="card-body iteration-data-${idx}">
+                        ${contentHtml}
+                    </div>
+                `;
 
                 logsDiv.appendChild(card);
             });
         }
+
 
         if (Array.isArray(data.solution) && solDiv) {
             const values = data.solution.map((v) => {
@@ -192,6 +245,8 @@ btn.addEventListener("click", async () => {
 
             let html = '<div class="solution-grid">';
             values.forEach((val, idx) => {
+                // Obtener el error si existe
+                
                 html += `
             <div class="sol-box" role="group" aria-label="Solution x">
               <div class="sol-label">x<sub>${idx + 1}</sub></div>
@@ -201,8 +256,11 @@ btn.addEventListener("click", async () => {
             });
             html += '</div>';
 
+            // Agregar botón de copiar
+            const copyBtn = `<button class="btn btn-sm btn-primary mt-3" onclick="copySolutionToClipboard()">📋 Copiar Solución</button>`;
+
             solDiv.style.display = "block";
-            solDiv.innerHTML = html;
+            solDiv.innerHTML = html + copyBtn;
         } else if (solDiv) {
             solDiv.style.display = "none";
         }
@@ -213,3 +271,152 @@ btn.addEventListener("click", async () => {
     }
 });
 
+function renderAsTable(arr) {
+    if (!Array.isArray(arr)) return "";
+
+    // Si es vector → convertirlo en matriz 1xN
+    const matrix = Array.isArray(arr[0]) ? arr : [arr];
+
+    let html = `
+    <div class="gauss-table-wrapper">
+    <table class="dataframe gauss-table" style="border-spacing:8px; border-collapse:separate;">
+        <thead>
+            <tr>
+    `;
+
+    html += `
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    matrix.forEach(row => {
+        html += `<tr>`;
+        row.forEach(cell => {
+            html += `<td>${Number(cell).toFixed(6)}</td>`;
+        });
+        html += `</tr>`;
+    });
+
+    html += `
+        </tbody>
+    </table>
+    </div>`;
+
+    return html;
+}
+
+function formatScientificError(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return String(value);
+    
+    // Convertir a notación científica con 2 decimales
+    return num.toExponential(2);
+}
+
+function copyTableToClipboard(button) {
+    // Encontrar la tabla más cercana
+    const table = button.closest('.mb-3').querySelector('table');
+    if (!table) return;
+
+    let text = '';
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td, th');
+        const rowText = Array.from(cells).map(cell => cell.textContent.trim()).join('\t');
+        text += rowText + '\n';
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+        // Cambiar el texto del botón temporalmente
+        const originalText = button.textContent;
+        button.textContent = '✓ Copiado';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-primary');
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-primary');
+        }, 2000);
+    }).catch(() => {
+        alert('Error al copiar al portapapeles');
+    });
+}
+
+function copyIterationToClipboard(iterationIdx) {
+    // Obtener el contenido de la iteración
+    const iterationBody = document.querySelector(`.iteration-data-${iterationIdx}`);
+    if (!iterationBody) return;
+
+    let text = '';
+    
+    // Obtener todas las tablas de la iteración
+    const tables = iterationBody.querySelectorAll('table');
+    tables.forEach((table, tableIdx) => {
+        if (tableIdx > 0) text += '\n';
+        
+        // Obtener la etiqueta de la tabla (si existe)
+        const label = table.closest('.mb-3').querySelector('b');
+        if (label) text += label.textContent + ':\n';
+        
+        // Copiar contenido de la tabla
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td, th');
+            const rowText = Array.from(cells).map(cell => cell.textContent.trim()).join('\t');
+            text += rowText + '\n';
+        });
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+        // Encontrar el botón en el header y cambiar su estado
+        const button = iterationBody.closest('.card').querySelector('.card-header button');
+        if (button) {
+            const originalText = button.textContent;
+            button.textContent = '✓ Copiado';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-primary');
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            }, 2000);
+        }
+    }).catch(() => {
+        alert('Error al copiar al portapapeles');
+    });
+}
+
+function copySolutionToClipboard() {
+    // Obtener todos los valores de la solución
+    const solBoxes = document.querySelectorAll('.sol-box');
+    let text = ""
+    
+    solBoxes.forEach((box) => {
+
+        const value = box.querySelector('.sol-value').textContent.trim();
+
+        text += `${value}\n`;
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+        // Cambiar el texto del botón temporalmente
+        const button = document.querySelector('#solution-container button');
+        if (button) {
+            const originalText = button.textContent;
+            button.textContent = '✓ Copiado';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-primary');
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            }, 2000);
+        }
+    }).catch(() => {
+        alert('Error al copiar al portapapeles');
+    });
+}

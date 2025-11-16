@@ -78,7 +78,7 @@ function getMatrixValues(containerId) {
   
   celdas.forEach((input, index) => {
     row.push(input.value)
-    if((index + 1) % 3 === 0){
+    if((index + 1) % Math.sqrt(celdas.length) === 0){
       matrix.push(row)
       row = []
     }

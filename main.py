@@ -776,25 +776,28 @@ async def gauss_seidel_eval(request: Request):
     try:
         try:
             data = await request.json()
+            print(data)
         except Exception:
             return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
 
         A = data.get("A"); b = data.get("b"); x0 = data.get("x0")
-        tol = data.get("tol", 1e-7); nmax = data.get("nmax", 100); norma = data.get("norma", "inf")
-
+        tol = data.get("tol", 1e-7); 
+        nmax = data.get("nmax", 100); 
+        norma = data.get("norma", "inf")
+        decimals = data.get("decimales")
         err = _validate_matrix(A) or _validate_vector("b", b) or _validate_vector("x0", x0)
         if err: return JSONResponse({"error": err}, status_code=400)
 
         try:
-            tol = float(tol); nmax = int(nmax)
+            tol = float(tol); nmax = int(nmax); decimals=int(decimals)
             if norma not in ("inf", "2", "1"): norma = "inf"
         except Exception:
-            return JSONResponse({"error": "Invalid 'tol', 'nmax' or 'norma'."}, status_code=400)
+            return JSONResponse({"error": "Invalid 'tol', 'nmax', 'decimals' or 'norma'."}, status_code=400)
 
         if len(A) != len(A[0]) or len(A) != len(b) or len(A) != len(x0):
             return JSONResponse({"error": "A must be square and size(A) must match len(b) and len(x0)."}, status_code=400)
 
-        result = compute_jacobi(A, b, x0, tol=tol, nmax=nmax, norma=norma)
+        result = gauss_seidel(A=A, b=b, tolerance=tol, x_0=x0,n_max=nmax, decimals=decimals ,norma=norma)
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)

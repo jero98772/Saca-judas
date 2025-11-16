@@ -75,6 +75,10 @@ canvas {
     overflow: auto;
 }
 
+#cool-card{
+  opacity: 0.2 !important;
+}
+
 @media screen and (min-width: 736px) {
 
     #graph-container {

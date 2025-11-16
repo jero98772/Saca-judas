@@ -209,7 +209,6 @@ async def bisection_post(request: Request, function: str = Form(...), a: float =
 
 @app.post("/eval/gauss_simple", response_class=JSONResponse)
 async def gauss_simple_post(request: Request):
-    print("llego")
     try:
         try:
             data = await request.json()
@@ -620,14 +619,6 @@ async def chat_recive(request: Request):
     function_names = get_function_names("tools/numeric_methods.py")
     return templates.TemplateResponse("chat.html", {"request": request, "function_names": function_names})
 
-@app.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    messages = data.get("messages", [])
-    # Evitamos usar un 'client' no definido; usamos tu helper:
-    full_response = chat_answer(messages)
-    return {"response": full_response}
-
 
 def _is_number(x):
     try:
@@ -776,7 +767,6 @@ async def gauss_seidel_eval(request: Request):
     try:
         try:
             data = await request.json()
-            print(data)
         except Exception:
             return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
 
@@ -798,6 +788,39 @@ async def gauss_seidel_eval(request: Request):
             return JSONResponse({"error": "A must be square and size(A) must match len(b) and len(x0)."}, status_code=400)
 
         result = gauss_seidel(A=A, b=b, tolerance=tol, x_0=x0,n_max=nmax, decimals=decimals ,norma=norma)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/SOR", response_class=JSONResponse)
+async def gauss_seidel_eval(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
+
+        A = data.get("A"); b = data.get("b"); x0 = data.get("x0")
+        tol = data.get("tol", 1e-7); 
+        nmax = data.get("nmax", 100); 
+        norma = data.get("norma", "inf")
+        omega = data.get("omega", 1)
+
+        
+        err = _validate_matrix(A) or _validate_vector("b", b) or _validate_vector("x0", x0)
+        
+        if err: return JSONResponse({"error": err}, status_code=400)
+
+        try:
+            tol = float(tol); nmax = int(nmax); omega=float(omega)
+            if norma not in ("inf", "2", "1"): norma = "inf"
+        except Exception:
+            return JSONResponse({"error": "Invalid 'tol', 'nmax', or 'norma'."}, status_code=400)
+
+        if len(A) != len(A[0]) or len(A) != len(b) or len(A) != len(x0):
+            return JSONResponse({"error": "A must be square and size(A) must match len(b) and len(x0)."}, status_code=400)
+
+        result = sor(A=A, b=b, omega=omega, tolerance=tol, x_0=x0,n_max=nmax,norma=norma)
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)

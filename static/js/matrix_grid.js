@@ -501,3 +501,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Inicializar UI del historial
   updateHistoryUI();
 });
+
+//Cargar matriz ejemplo
+document.addEventListener("DOMContentLoaded", () => {
+  localStorage.setItem(MATRIX_HISTORY_KEY,'[{"id":1763342023377,"timestamp":"16/11/2025, 20:13:43","matrixA":[["4","-1","0","3"],["1","15.5","3","8"],["0","-1.3","-4","1.1"],["14","5","-2","30"]],"vectorB":["1","1","1","1"],"vectorX":["0","0","0","0"]}]')
+})

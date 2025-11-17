@@ -43,6 +43,7 @@ from tools.methods.vandermonde import compute_vandermonde
 from tools.methods.lineal_tracers import compute_trazadores_lineales
 from tools.methods.cholesky import compute_cholesky
 from tools.methods.jacobi import compute_jacobi
+from tools.methods.newton_interpolation import newton_interpolant_object 
 
 # Si reactivas Muller, descomenta el import y el endpoint más abajo
 # from tools.java_methods.muller.Muller import muller_controller
@@ -687,6 +688,32 @@ async def vandermonde_eval(request: Request):
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/newton_interpolant", response_class=JSONResponse)
+async def newton_interpolant(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
+
+        x = data.get("x"); y = data.get("y")
+        if not (isinstance(x, list) and isinstance(y, list) and len(x) == len(y) and len(x) > 0):
+            return JSONResponse({"error": "x and y must be non-empty lists of the same length."}, status_code=400)
+        for i, v in enumerate(x):
+            if not _is_number(v):
+                return JSONResponse({"error": f"Non-numeric value at x[{i+1}] → {repr(v)}"}, status_code=400)
+        for i, v in enumerate(y):
+            if not _is_number(v):
+                return JSONResponse({"error": f"Non-numeric value at y[{i+1}] → {repr(v)}"}, status_code=400)
+
+        result = newton_interpolant_object(x, y)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+    
+
 
 
 @app.post("/eval/lineal_tracers", response_class=JSONResponse)

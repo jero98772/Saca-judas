@@ -137,7 +137,7 @@ btn.addEventListener("click", async () => {
       showMessage(errMsg, "danger");
       return;
     }
-
+    console.log(data)
     showMessage("Computation completed successfully.", "success");
 
     if (Array.isArray(data.logs) && logsDiv) {

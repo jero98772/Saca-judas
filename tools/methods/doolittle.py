@@ -6,7 +6,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
     b = np.array(b, dtype=float)
     logs = []
 
-    # --- Shape checks ---
+
     if A.shape[0] != A.shape[1]:
         return {
             "solution": None,
@@ -63,7 +63,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
             }]
         }
 
-    # --- Initialization ---
+
     logs.append({
         "step": "Initial",
         "matrix": pd.DataFrame(
@@ -73,16 +73,16 @@ def doolittle(A: list, b: list, decimals: int = 6):
         "message": f"Initial system. Determinant = {det:.4f}"
     })
 
-    # --- Doolittle Factorization ---
+
     L = np.eye(n)
     U = np.zeros((n, n))
 
     for j in range(n):
-        # --- Upper matrix U ---
+
         for k in range(j, n):
             U[j, k] = A[j, k] - np.sum(L[j, :j] * U[:j, k])
 
-        # --- Lower matrix L ---
+
         for i in range(j + 1, n):
             if np.isclose(U[j, j], 0):
                 return {
@@ -105,7 +105,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
             "message": f"Column {j+1} processed."
         })
 
-    # --- Forward substitution ---
+
     y = np.zeros(n)
     for i in range(n):
         y[i] = b[i] - np.dot(L[i, :i], y[:i])
@@ -116,7 +116,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
         "y": pd.Series(y.round(decimals))
     })
 
-    # --- Backward substitution ---
+
     x = np.zeros(n)
     for i in reversed(range(n)):
         if np.isclose(U[i, i], 0):

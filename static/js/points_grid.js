@@ -1,13 +1,7 @@
-// points_grid.js
-// ===============================
-// Genera una tabla de dos columnas expandible hacia abajo,
-// con validación numérica estricta (incluye notación científica estilo Python)
-// ===============================
-
-const MIN_ROWS = 1;
+const MIN_ROWS = 4;
 const FIXED_COLS = 2;
 
-function createPointsGrid(containerId, rows = 3) {
+function createPointsGrid(containerId, rows = 2) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -48,32 +42,21 @@ function createCellElement(table) {
   return td;
 }
 
-// ============================
-// 🔒 Restringir caracteres permitidos
-// ============================
 function restrictKey(e) {
-  // Permitir navegación y edición básica
   const allowedKeys = [
     "Backspace", "Delete", "ArrowLeft", "ArrowRight",
     "ArrowUp", "ArrowDown", "Tab", "Home", "End", "Enter"
   ];
   if (allowedKeys.includes(e.key)) return;
 
-  // Permitir: dígitos, signos +-, punto ., y e/E para notación científica
   const validPattern = /^[0-9eE.+-]$/;
-
   if (!validPattern.test(e.key)) {
     e.preventDefault();
   }
 }
 
-// ============================
-// ✅ Validar formato numérico
-// ============================
 function validateInput(input) {
   const v = input.value.trim();
-
-  // Acepta números normales y notación científica tipo Python (1e-4, -3E10, etc.)
   const numRegex = /^[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?$/;
 
   if (v === "") {
@@ -88,30 +71,22 @@ function validateInput(input) {
   }
 }
 
-// ============================
-// 🧹 Utilidades
-// ============================
 function isEmptyValue(inp) {
   const v = (inp.value || "").trim();
-  if (v === "") return true;
-  const n = Number(v);
-  return isNaN(n) || n === 0;
+  return v === "";
 }
 
+// TRUE si TODA la fila está vacía
 function rowIsEmpty(table, rowIdx) {
   const inputs = table.rows[rowIdx].querySelectorAll("input");
   return Array.from(inputs).every(isEmptyValue);
 }
 
-// ============================
-// ⬆️⬇️ Navegación y expansión dinámica
-// ============================
 function handleKey(e, row, col, table) {
   const rows = table.rows.length;
   const cursorPos = e.target.selectionStart;
   const textLength = e.target.value.length;
 
-  // Evita moverse dentro del texto
   if (
     (e.key === "ArrowLeft" && cursorPos > 0) ||
     (e.key === "ArrowRight" && cursorPos < textLength)
@@ -119,49 +94,75 @@ function handleKey(e, row, col, table) {
     return;
   }
 
-  // Movimiento lateral entre las dos columnas
+  // LEFT
   if (e.key === "ArrowLeft" && col > 0) {
     e.preventDefault();
     table.rows[row].cells[col - 1].querySelector("input").focus();
     return;
   }
 
+  // RIGHT
   if (e.key === "ArrowRight" && col < FIXED_COLS - 1) {
     e.preventDefault();
     table.rows[row].cells[col + 1].querySelector("input").focus();
     return;
   }
 
-  // Movimiento vertical con expansión/contracción
+  // UP
   if (e.key === "ArrowUp") {
     e.preventDefault();
+
+    if (row === rows - 1 && rows > MIN_ROWS && rowIsEmpty(table, row)) {
+      table.deleteRow(row);
+      const newIdx = Math.max(0, row - 1);
+      table.rows[newIdx].cells[col].querySelector("input").focus();
+      return;
+    }
+
     if (row > 0) {
       table.rows[row - 1].cells[col].querySelector("input").focus();
-    } else if (rows > MIN_ROWS && rowIsEmpty(table, rows - 1)) {
-      table.deleteRow(rows - 1);
-      const newIdx = Math.max(0, rows - 2);
-      table.rows[newIdx].cells[col].querySelector("input").focus();
     }
     return;
   }
 
+  // DOWN
   if (e.key === "ArrowDown") {
     e.preventDefault();
+
     if (row < rows - 1) {
       table.rows[row + 1].cells[col].querySelector("input").focus();
-    } else {
-      addRow(table);
-      setTimeout(() => {
-        table.rows[row + 1].cells[col].querySelector("input").focus();
-      }, 0);
+      return;
     }
+
+    addRow(table);
+
+    setTimeout(() => {
+      const newRows = table.rows.length;
+      const targetRow = Math.min(newRows - 1, row + 1);
+      table.rows[targetRow].cells[col].querySelector("input").focus();
+    }, 0);
+    return;
+  }
+
+  // ENTER → igual que ArrowDown
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    if (row < rows - 1) {
+      table.rows[row + 1].cells[col].querySelector("input").focus();
+      return;
+    }
+
+    addRow(table);
+    setTimeout(() => {
+      const newRows = table.rows.length;
+      const targetRow = Math.min(newRows - 1, row + 1);
+      table.rows[targetRow].cells[col].querySelector("input").focus();
+    }, 0);
     return;
   }
 }
 
-// ============================
-// ➕ Agregar fila
-// ============================
 function addRow(table) {
   const tr = document.createElement("tr");
   for (let j = 0; j < FIXED_COLS; j++) {
@@ -170,23 +171,33 @@ function addRow(table) {
   table.appendChild(tr);
 }
 
-// ============================
-// 📤 Obtener valores
-// ============================
 function getPointsValues(containerId) {
   const container = document.getElementById(containerId);
+  if (!container) return { x: [], y: [] };
+
   const rows = Array.from(container.querySelectorAll("tr"));
-  return rows.map((row) =>
-    Array.from(row.querySelectorAll("input")).map((cell) => {
-      const v = cell.value.trim();
-      return v === "" ? 0 : parseFloat(v) || 0;
-    })
-  );
+  const xs = [];
+  const ys = [];
+
+  rows.forEach((row) => {
+    const inputs = row.querySelectorAll("input");
+    if (inputs.length < 2) return;
+
+    const xStr = inputs[0].value.trim();
+    const yStr = inputs[1].value.trim();
+
+    if (xStr === "" && yStr === "") return;
+
+    const xv = xStr === "" ? NaN : Number(xStr);
+    const yv = yStr === "" ? NaN : Number(yStr);
+
+    xs.push(xv);
+    ys.push(yv);
+  });
+
+  return { x: xs, y: ys };
 }
 
-// ============================
-// 🚀 Inicialización automática
-// ============================
 document.addEventListener("DOMContentLoaded", () => {
   createPointsGrid("pointsGrid", 3);
 });

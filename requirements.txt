@@ -10,3 +10,4 @@ lark
 matplotlib
 jpype1
 pandas
+logging

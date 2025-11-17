@@ -1,12 +1,3 @@
-# tools/methods/fixed_point.py
-# ---------------------------------------------------------------
-# Fixed-Point method for the web with a small visual refresh:
-# - Same public API: compile_expr, d_numeric, make_newton_g_from_f,
-#   fixed_point_full, run_fixed_point_web
-# - Logic is unchanged; only the plot styling is improved
-#   (dotted grid, subtle “cobweb” of iterations, clean labels).
-# ---------------------------------------------------------------
-
 from __future__ import annotations
 from typing import Callable, Tuple, Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -56,14 +47,14 @@ def compile_expr(expr_str: str) -> Tuple[Callable[[float], float], str]:
 
     return f, s
 
-# === Central numerical derivative: f'(x) ≈ (f(x+h)-f(x-h))/(2h) ===
+
 def d_numeric(f: Callable[[float], float], h: float = 1e-6) -> Callable[[float], float]:
     """Simple and robust numerical derivative (central difference)."""
     def df(x: float) -> float:
         return (f(x + h) - f(x - h)) / (2.0 * h)
     return df
 
-# === Build g(x) from f(x) via one Newton step ===
+
 def make_newton_g_from_f(f: Callable[[float], float], h: float = 1e-6) -> Callable[[float], float]:
     """
     If user provides f(x) but not g(x), generate:
@@ -117,7 +108,6 @@ def fixed_point_full(
 
     return rows, xi
 
-# === Web layer: prepare data for the template (same contract) ===
 @dataclass
 class PFStep:
     """Lightweight container per iteration to feed the view."""

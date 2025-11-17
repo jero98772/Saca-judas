@@ -5,74 +5,75 @@
   <div class="row justify-content-center my-4">
     <div class="col-11 col-md-10 col-lg-9">
 
-      <!-- Título -->
+      <!-- Title -->
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="m-0">LU con pivoteo parcial</h3>
+          <h3 class="m-0">LU Decomposition (Partial Pivoting)</h3>
         </div>
       </div>
 
       <div class="row g-3">
-        <!-- Formulario -->
+        <!-- Input -->
         <div class="col-lg-5">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="mb-3">Entrada</h5>
+              <h5 class="mb-3">Input</h5>
 
-              <!-- Dimensiones -->
+              <!-- Dimensions -->
               <div class="row g-2 align-items-end text-start mb-3">
                 <div class="col-6">
-                  <label class="form-label mb-1">Filas (A)</label>
+                  <label class="form-label mb-1">Rows (A)</label>
                   <input id="rowsA" type="number" class="form-control" min="1" max="12" value="3">
                 </div>
                 <div class="col-6">
-                  <label class="form-label mb-1">Columnas (A)</label>
+                  <label class="form-label mb-1">Columns (A)</label>
                   <input id="colsA" type="number" class="form-control" min="1" max="12" value="3">
                 </div>
                 <div class="col-12 form-check mt-2">
                   <input class="form-check-input" type="checkbox" id="syncB" checked>
                   <label class="form-check-label" for="syncB">
-                    Ajustar tamaño de b a las filas de A
+                    Match size of b with rows of A
                   </label>
                 </div>
               </div>
 
-              <!-- Matriz A -->
-              <div class="text-start">
-                <label class="form-label">Matriz A</label>
-                <div id="matrixAContainer" class="table-responsive"></div>
+              <!-- Matrix A -->
+              <div class="matrix-input-wrapper">
+                <label class="form-label matrix-label">Matrix A</label>
+                <div id="matrixAContainer" class="matrix-grid matrix-input"></div>
               </div>
 
               <!-- Vector b -->
-              <div class="text-start mt-3">
-                <div class="d-flex align-items-center justify-content-between">
-                  <label class="form-label m-0">Vector b</label>
+              <div class="matrix-input-wrapper mt-3">
+                <label class="form-label matrix-label">Vector b</label>
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="small text-muted">Entries of b</div>
                   <div id="lenBWrap" class="ms-2">
                     <input id="lenB" type="number" class="form-control form-control-sm" min="1" max="12" value="3" style="width: 90px;">
                   </div>
                 </div>
-                <div id="vectorBContainer" class="table-responsive mt-1"></div>
+                <div id="vectorBContainer" class="matrix-grid matrix-input mt-1"></div>
               </div>
 
               <div class="d-grid gap-2 mt-3">
-                <button id="run" class="btn btn-primary">Calcular</button>
-                <button id="example" class="btn btn-outline-secondary">Rellenar ejemplo</button>
-                <button id="clear" class="btn btn-outline-danger">Limpiar</button>
+                <button id="run" class="btn btn-calc-gauss">Calculate</button>
+                <button id="example" class="btn btn-fill-example">Fill example</button>
+                <button id="clear" class="btn btn-outline-danger">Clear</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Resultados -->
+        <!-- Output -->
         <div class="col-lg-7">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="mb-3">Resultado</h5>
+              <h5 class="mb-3">Output</h5>
               <div id="alert" class="alert alert-danger d-none"></div>
 
-              <div id="loading" class="d-none text-muted mb-2">Calculando…</div>
+              <div id="loading" class="d-none text-muted mb-2">Computing…</div>
 
-              <div id="solucion"></div>
+              <div id="solucion" class="mb-3"></div>
               <div id="matrices"></div>
               <div id="etapas"></div>
             </div>
@@ -84,44 +85,176 @@
   </div>
 </div>
 
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+
+<!-- Extra styles: input centering, bigger cells, Gaussian-like buttons -->
+<style>
+  /* labels above grids */
+  .matrix-label{
+    display:block;
+    margin-bottom:4px;
+    font-weight:600;
+  }
+
+  /* center the input grids inside the card */
+  .matrix-input-wrapper{
+    text-align:center;
+  }
+  .matrix-input-wrapper .matrix-label{
+    text-align:left;
+    margin-left:4px;
+  }
+
+  /* bigger INPUT cells (Matrix A, Vector b) */
+  .matrix-grid table{
+    border-collapse:separate;
+    border-spacing:6px;
+  }
+  .matrix-grid td{
+    min-width:60px;
+    height:40px;
+  }
+  .matrix-grid input{
+    width:100%;
+    text-align:center;
+    padding:4px 6px;
+    font-size:0.95rem;
+  }
+
+  /* Output result cards */
+  .lu-result-card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  .lu-result-card .card-header {
+    background: #f8f9fa;
+    font-size: 0.9rem;
+  }
+
+  /* bigger RESULT cells */
+  .lu-grid{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:10px;
+    background:#ffffff;
+  }
+  .lu-grid table{
+    border-collapse:separate;
+    border-spacing:6px;
+  }
+  .lu-grid td{
+    min-width:90px;
+    height:40px;
+    padding:4px 10px;
+    border-radius:6px;
+    border:1px solid #ced4da;
+    text-align:center;
+    font-family:monospace;
+    font-size:0.95rem;
+  }
+
+  /* Calculate button: mimic Gaussian elimination style */
+  .btn-calc-gauss{
+    background-color:#004000;
+    border:1px solid #00ff4d;
+    color:#ffffff;
+    font-weight:600;
+    border-radius:3px;
+    height:40px;
+    box-shadow:
+      0 0 3px #00ff4d,
+      0 0 8px #00ff4d,
+      0 0 16px rgba(0,255,77,0.9);
+  }
+  .btn-calc-gauss:hover{
+    background-color:#005200;
+    box-shadow:
+      0 0 5px #00ff4d,
+      0 0 12px #00ff4d,
+      0 0 20px rgba(0,255,77,1);
+  }
+
+  /* Fill example button: light green with glow */
+  .btn-fill-example{
+    background-color:#b8ffd0;
+    border:1px solid #46e67f;
+    color:#064b1c;
+    border-radius:3px;
+    font-weight:500;
+    height:38px;
+    box-shadow:0 0 6px rgba(0,255,136,0.7);
+  }
+  .btn-fill-example:hover{
+    background-color:#a3ffbf;
+    box-shadow:0 0 10px rgba(0,255,136,0.9);
+  }
+</style>
+
 <script>
-/* ===== helpers con el mismo estilo de tus páginas ===== */
+/* ===== helpers ===== */
 function fmt(v){
+  if (typeof v === 'string') {
+    const num = Number(v);
+    if (!isNaN(num)) v = num;
+  }
   if (typeof v === 'number' && isFinite(v)) {
-    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
+    if (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) {
+      return v.toExponential(6);
+    }
+    return v.toFixed(6);
   }
   return v;
 }
-function renderTable(title, matrix){
-  if(!matrix) return '';
+
+/* render one result block (Solution, L, U, Step 1, ...) */
+function renderTable(title, matrix, subtitle){
+  if (!matrix) return '';
   const isVector = Array.isArray(matrix) && matrix.length && !Array.isArray(matrix[0]);
-  let html = `<div class="mb-3 text-start"><h6 class="mb-2">${title}</h6><div class="table-responsive"><table class="table table-sm table-bordered align-middle"><tbody>`;
-  if(isVector){
-    html += `<tr>${matrix.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`;
+
+  let rowsHTML = '';
+
+  if (isVector) {
+    rowsHTML = '<tr>' + matrix.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
   } else {
-    html += matrix.map(row => `<tr>${row.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`).join('');
+    rowsHTML = matrix
+      .map(row => '<tr>' + row.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>')
+      .join('');
   }
-  html += `</tbody></table></div></div>`;
-  return html;
+
+  return `
+    <div class="card lu-result-card mb-3 text-start">
+      <div class="card-header py-2 text-center">
+        <strong>${title}</strong>${subtitle ? `<span class="text-muted"> - ${subtitle}</span>` : ''}
+      </div>
+      <div class="card-body text-center">
+        <div class="lu-grid">
+          <table>
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
 }
-function show(el, show=true){ el.classList[show?'remove':'add']('d-none'); }
+
+function show(el, show=true){ el.classList[show ? 'remove' : 'add']('d-none'); }
 function setHTML(el, html){ el.innerHTML = html; }
 
-/* ===== construcción dinámica de entradas ===== */
+/* ===== build input grids ===== */
 function buildMatrixInputs(rows, cols){
   const table = document.createElement('table');
-  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
 
-  for(let i=0;i<rows;i++){
+  for (let i = 0; i < rows; i++){
     const tr = document.createElement('tr');
-    for(let j=0;j<cols;j++){
+    for (let j = 0; j < cols; j++){
       const td = document.createElement('td');
       const inp = document.createElement('input');
-      inp.type = 'number';
-      inp.step = 'any';
-      inp.className = 'form-control form-control-sm';
+      inp.type = 'text';
       inp.value = '0';
+      inp.placeholder = '0';
       inp.dataset.i = i;
       inp.dataset.j = j;
       td.appendChild(inp);
@@ -135,32 +268,32 @@ function buildMatrixInputs(rows, cols){
 
 function buildVectorInputs(n){
   const table = document.createElement('table');
-  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
 
-  for(let i=0;i<n;i++){
+  for (let i = 0; i < n; i++){
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     const inp = document.createElement('input');
-    inp.type = 'number';
-    inp.step = 'any';
-    inp.className = 'form-control form-control-sm';
+    inp.type = 'text';
     inp.value = '0';
+    inp.placeholder = '0';
     inp.dataset.k = i;
     td.appendChild(inp);
     tr.appendChild(td);
     tbody.appendChild(tr);
   }
+
   table.appendChild(tbody);
   return table;
 }
 
 function readMatrix(container){
   const rows = [];
-  container.querySelectorAll('tr').forEach(tr=>{
+  container.querySelectorAll('tr').forEach(tr => {
     const row = [];
-    tr.querySelectorAll('input').forEach(inp=>{
-      row.push(parseFloat(inp.value || '0'));
+    tr.querySelectorAll('input').forEach(inp => {
+      const val = parseFloat((inp.value || '0').replace(',', '.'));
+      row.push(isNaN(val) ? 0 : val);
     });
     rows.push(row);
   });
@@ -168,13 +301,14 @@ function readMatrix(container){
 }
 function readVector(container){
   const v = [];
-  container.querySelectorAll('input').forEach(inp=>{
-    v.push(parseFloat(inp.value || '0'));
+  container.querySelectorAll('input').forEach(inp => {
+    const val = parseFloat((inp.value || '0').replace(',', '.'));
+    v.push(isNaN(val) ? 0 : val);
   });
   return v;
 }
 
-/* ===== referencias ===== */
+/* ===== references ===== */
 const rowsA = document.getElementById('rowsA');
 const colsA = document.getElementById('colsA');
 const lenB  = document.getElementById('lenB');
@@ -194,7 +328,7 @@ const solucion = document.getElementById('solucion');
 const matrices = document.getElementById('matrices');
 const etapas = document.getElementById('etapas');
 
-/* ===== estado inicial ===== */
+/* ===== initial state ===== */
 function rebuildA(){
   const r = Math.max(1, Math.min(12, parseInt(rowsA.value || '1', 10)));
   const c = Math.max(1, Math.min(12, parseInt(colsA.value || '1', 10)));
@@ -203,7 +337,7 @@ function rebuildA(){
   matrixAContainer.innerHTML = '';
   matrixAContainer.appendChild(buildMatrixInputs(r, c));
 
-  if(syncB.checked){
+  if (syncB.checked){
     lenB.value = r;
     rebuildB();
   }
@@ -218,44 +352,50 @@ function rebuildB(){
 rowsA.addEventListener('change', rebuildA);
 colsA.addEventListener('change', rebuildA);
 lenB.addEventListener('change', rebuildB);
-syncB.addEventListener('change', ()=>{
+syncB.addEventListener('change', () => {
   lenBWrap.style.display = syncB.checked ? 'none' : 'block';
-  if(syncB.checked){
+  if (syncB.checked){
     lenB.value = rowsA.value;
     rebuildB();
   }
 });
 
-/* ejemplo rápido */
-exampleBtn.addEventListener('click', ()=>{
+/* example */
+exampleBtn.addEventListener('click', () => {
   rowsA.value = 3; colsA.value = 3; rebuildA();
-  // valores ejemplo:
   const vals = [
     [2, 1, -1],
     [-3, -1, 2],
     [-2, 1, 2]
   ];
-  matrixAContainer.querySelectorAll('tr').forEach((tr,i)=>{
-    tr.querySelectorAll('input').forEach((inp,j)=>{
+  matrixAContainer.querySelectorAll('tr').forEach((tr,i) => {
+    tr.querySelectorAll('input').forEach((inp,j) => {
       inp.value = vals[i]?.[j] ?? 0;
     });
   });
   const bvals = [8, -11, -3];
-  vectorBContainer.querySelectorAll('input').forEach((inp,k)=> inp.value = bvals[k] ?? 0);
+  vectorBContainer.querySelectorAll('input').forEach((inp,k) => {
+    inp.value = bvals[k] ?? 0;
+  });
 });
 
-/* limpiar */
-clearBtn.addEventListener('click', ()=>{
-  matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  setHTML(solucion,''); setHTML(matrices,''); setHTML(etapas,'');
+/* clear */
+clearBtn.addEventListener('click', () => {
+  matrixAContainer.querySelectorAll('input').forEach(inp => inp.value = '0');
+  vectorBContainer.querySelectorAll('input').forEach(inp => inp.value = '0');
+  setHTML(solucion,'');
+  setHTML(matrices,'');
+  setHTML(etapas,'');
   show(alertBox, false);
 });
 
-/* calcular */
-runBtn.addEventListener('click', async ()=>{
-  setHTML(solucion,''); setHTML(matrices,''); setHTML(etapas,'');
-  show(alertBox, false); show(loading, true);
+/* calculate */
+runBtn.addEventListener('click', async () => {
+  setHTML(solucion,'');
+  setHTML(matrices,'');
+  setHTML(etapas,'');
+  show(alertBox, false);
+  show(loading, true);
 
   try{
     const A = readMatrix(matrixAContainer);
@@ -269,42 +409,38 @@ runBtn.addEventListener('click', async ()=>{
     const data = await res.json();
     show(loading, false);
 
-    if(!res.ok || data.error){
-      alertBox.textContent = data.error || 'Error en el cálculo';
+    if (!res.ok || data.error){
+      alertBox.textContent = data.error || 'Computation error';
       show(alertBox, true);
       return;
     }
 
-    // Solución
-    if (data.x) setHTML(solucion, renderTable('Solución x', data.x));
+    if (data.x) setHTML(solucion, renderTable('Solution', data.x));
 
-    // Matrices
     let mHTML = '';
-    if (data.L) mHTML += renderTable('Matriz L', data.L);
-    if (data.U) mHTML += renderTable('Matriz U', data.U);
-    if (data.P) mHTML += renderTable('Matriz de Permutación P', data.P);
-    if (data.aumentada_final) mHTML += renderTable('Aumentada final [U | y]', data.aumentada_final);
+    if (data.L) mHTML += renderTable('L Matrix', data.L);
+    if (data.U) mHTML += renderTable('U Matrix', data.U);
+    if (data.P) mHTML += renderTable('Permutation Matrix P', data.P);
+    if (data.aumentada_final) mHTML += renderTable('Final augmented [U | y]', data.aumentada_final);
     setHTML(matrices, mHTML);
 
-    // Etapas
     if (Array.isArray(data.etapas) && data.etapas.length){
-      let eHTML = '<div class="text-start"><h6 class="mb-2">Etapas</h6>';
+      let eHTML = '';
       data.etapas.forEach((step, i) => {
         const M = step && step.matrix ? step.matrix : step;
-        if (M) eHTML += renderTable(`Etapa ${i+1}`, M);
+        if (M) eHTML += renderTable(`Step ${i+1}`, M);
       });
-      eHTML += '</div>';
       setHTML(etapas, eHTML);
     }
 
   }catch(err){
     show(loading, false);
-    alertBox.textContent = 'Error inesperado: ' + (err?.message || err);
+    alertBox.textContent = 'Unexpected error: ' + (err?.message || err);
     show(alertBox, true);
   }
 });
 
-/* inicia con 3x3 y b de 3 */
+/* start with 3x3 and b of length 3 */
 rebuildA();
 lenBWrap.style.display = syncB.checked ? 'none' : 'block';
 </script>

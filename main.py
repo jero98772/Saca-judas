@@ -44,7 +44,7 @@ from tools.methods.lineal_tracers import compute_trazadores_lineales
 from tools.methods.cholesky import compute_cholesky
 from tools.methods.jacobi import compute_jacobi
 from tools.methods.newton_interpolation import newton_interpolant_object 
-from tools.methods.lagrange import lagrange_interpolation 
+from tools.methods.lagrange import lagrange_interpolation_object 
 
 # Si reactivas Muller, descomenta el import y el endpoint más abajo
 # from tools.java_methods.muller.Muller import muller_controller
@@ -732,7 +732,7 @@ async def newton_interpolant(request: Request):
             if not _is_number(v):
                 return JSONResponse({"error": f"Non-numeric value at y[{i+1}] → {repr(v)}"}, status_code=400)
 
-        result = lagrange_interpolation(x, y)
+        result = lagrange_interpolation_object(x, y)
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)

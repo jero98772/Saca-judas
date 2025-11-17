@@ -62,7 +62,7 @@ METHOD_CATEGORIES = {
     ],
     'Interpolation': [
         'vandermonde', 'lineal_tracers', 'newton_interpolation',
-        'lagrange'
+        'lagrange', 'cubic_tracers', 'cuadratic_tracers'
     ]
 }
 

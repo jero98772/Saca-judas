@@ -74,38 +74,38 @@ def doolittle(A: list, b: list, decimals: int = 6):
     })
 
     # --- Doolittle Factorization ---
-    L = np.eye(n)
+    L = np.eye(n)  # Lower triangular with 1's on diagonal
     U = np.zeros((n, n))
 
-    for j in range(n):
-        # --- Upper matrix U ---
-        for k in range(j, n):
-            U[j, k] = A[j, k] - np.sum(L[j, :j] * U[:j, k])
-
-        # --- Lower matrix L ---
-        for i in range(j + 1, n):
-            if np.isclose(U[j, j], 0):
+    for i in range(n):
+        # Calculate U elements for row i
+        for j in range(i, n):
+            U[i, j] = A[i, j] - np.sum(L[i, :i] * U[:i, j])
+        
+        # Calculate L elements for column i (below diagonal)
+        for j in range(i + 1, n):
+            if np.isclose(U[i, i], 0):
                 return {
                     "solution": None,
                     "logs": logs + [{
-                        "step": f"Step {j+1}",
+                        "step": f"Step {i+1}",
                         "matrix": pd.DataFrame(
                             np.column_stack((A, b)),
                             columns=[f"x{i+1}" for i in range(n)] + ["b"]
                         ).round(decimals),
-                        "message": f"Zero pivot at U[{j},{j}]. Method fails."
+                        "message": f"Zero pivot at U[{i},{i}]. Method fails."
                     }]
                 }
-            L[i, j] = (A[i, j] - np.sum(L[i, :j] * U[:j, j])) / U[j, j]
+            L[j, i] = (A[j, i] - np.sum(L[j, :i] * U[:i, i])) / U[i, i]
 
         logs.append({
-            "step": f"Step {j+1}",
+            "step": f"Step {i+1}",
             "L": pd.DataFrame(L).round(decimals),
             "U": pd.DataFrame(U).round(decimals),
-            "message": f"Column {j+1} processed."
+            "message": f"Row {i+1} processed."
         })
 
-    # --- Forward substitution ---
+    # --- Forward substitution (Ly = b) ---
     y = np.zeros(n)
     for i in range(n):
         y[i] = b[i] - np.dot(L[i, :i], y[:i])
@@ -116,7 +116,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
         "y": pd.Series(y.round(decimals))
     })
 
-    # --- Backward substitution ---
+    # --- Backward substitution (Ux = y) ---
     x = np.zeros(n)
     for i in reversed(range(n)):
         if np.isclose(U[i, i], 0):
@@ -124,7 +124,7 @@ def doolittle(A: list, b: list, decimals: int = 6):
                 "solution": None,
                 "logs": logs + [{
                     "step": "Backward Substitution",
-                    "message": f"Zero pivot at U[{i},{i}]. Method fails."
+                    "message": f"Zero diagonal element in U at position [{i},{i}]. System may be singular."
                 }]
             }
         x[i] = (y[i] - np.dot(U[i, i+1:], x[i+1:])) / U[i, i]

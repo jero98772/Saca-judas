@@ -233,7 +233,6 @@
           const card = document.createElement("div");
           card.className = "card mb-3 shadow-sm";
 
-          let matrixHtml = "";
           let matrixL = "";
           let matrixU = "";
 
@@ -274,12 +273,8 @@
                 </div>
             `;
           } else if(log.matrix){
-            matrixHtml = ensureGaussTableClass(String(log.matrix));
               card.innerHTML = `
               <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
-                <div class="card-body">
-                  <div class="gauss-table-wrapper">${matrixHtml}</div>
-                </div>
             `;
           }
 

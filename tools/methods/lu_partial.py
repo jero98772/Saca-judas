@@ -1,11 +1,11 @@
 # tools/methods/lu_partial.py
 # -*- coding: utf-8 -*-
 """
-LU con pivoteo parcial para la web.
+LU with partial pivoting for the web.
 
-- Si encuentra TU implementación (lu_parcial_mio, gauss_con_pivote_parcial, etc.),
-  la usa y devuelve un dict JSON-friendly.
-- Si no la encuentra, usa un fallback interno para no romper la página.
+- If it finds YOUR implementation (lu_parcial_mio, gauss_con_pivote_parcial, etc.),
+  it uses it and returns a JSON-friendly dict.
+- If it does not find it, it uses an internal fallback so the page does not break.
 """
 
 from typing import List, Dict, Any, Optional, Callable, Tuple
@@ -13,7 +13,7 @@ import numpy as np
 import importlib, inspect, sys
 
 # ------------------------------------------------------------
-# 1) Buscar tu código (en ESTE archivo o en submódulos "mio")
+# 1) Look for your code (in THIS file or in "mio" submodules)
 # ------------------------------------------------------------
 USER_MAIN_NAMES = [
     "lu_parcial_mio",
@@ -31,11 +31,11 @@ USER_FWD_NAMES = ["sustitucion_adelante", "forward_substitution", "sustitucion_h
 USER_BWD_NAMES = ["sustitucion_atras", "back_substitution", "sustitucion_hacia_atras"]
 
 CANDIDATE_MODULES = [
-    # mismo paquete
+    # same package
     "tools.methods.gauss_con_pivote_parcial_mio",
     "tools.methods.lu_parcial_mio",
     "tools.methods.lu_partial_mio",
-    # por si lo dejaste en raíz
+    # in case you left it at project root
     "gauss_con_pivote_parcial_mio",
     "lu_parcial_mio",
     "lu_partial_mio",
@@ -56,7 +56,7 @@ def _import_first_available(mod_names):
             continue
     return None
 
-# También mira si las funciones están definidas en ESTE archivo (si pegaste tu código aquí)
+# Also check if the functions are defined in THIS file (if you pasted your code here)
 _this_module = sys.modules[__name__]
 LOCAL_MAIN = _get_fn(_this_module, USER_MAIN_NAMES)
 LOCAL_FACT = _get_fn(_this_module, USER_FACT_NAMES)
@@ -70,7 +70,7 @@ MIO_FWD  = _get_fn(MIO, USER_FWD_NAMES)  if MIO else None
 MIO_BWD  = _get_fn(MIO, USER_BWD_NAMES)  if MIO else None
 
 # ------------------------------------------------------------
-# 2) Utilidades (solo si tu módulo no trae estas)
+# 2) Utilities (only if your module does not provide these)
 # ------------------------------------------------------------
 def _forward_substitution(L: np.ndarray, b: np.ndarray) -> np.ndarray:
     n = L.shape[0]
@@ -87,7 +87,7 @@ def _back_substitution(U: np.ndarray, y: np.ndarray) -> np.ndarray:
     for i in range(n - 1, -1, -1):
         s = y[i] - (U[i, i+1:] @ x[i+1:] if i < n - 1 else 0.0)
         if abs(U[i, i]) < 1e-15:
-            raise ValueError("Matriz singular o casi singular en sustitución hacia atrás.")
+            raise ValueError("Singular or nearly singular matrix in back substitution.")
         x[i] = s / U[i, i]
     return x
 
@@ -95,7 +95,7 @@ def _to_list(M: np.ndarray):
     return M.astype(float).tolist()
 
 # ------------------------------------------------------------
-# 3) Llamar a TU función con firmas comunes
+# 3) Call YOUR function with common signatures
 # ------------------------------------------------------------
 def _try_call_main(fn: Callable, A: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray], Optional[list]]:
     sig = inspect.signature(fn)
@@ -118,7 +118,7 @@ def _try_call_main(fn: Callable, A: np.ndarray, b: np.ndarray) -> Tuple[np.ndarr
                 return np.array(L, float), np.array(U, float), np.array(P, float), (None if x is None else np.array(x, float)), etapas
         except Exception:
             continue
-    raise RuntimeError("No se pudo invocar tu función principal de LU con firmas conocidas.")
+    raise RuntimeError("Could not call your main LU function with known signatures.")
 
 def _solve_with_helpers(L: np.ndarray, U: np.ndarray, P: np.ndarray, b: np.ndarray) -> np.ndarray:
     fwd = LOCAL_FWD or MIO_FWD
@@ -135,8 +135,8 @@ def _solve_with_helpers(L: np.ndarray, U: np.ndarray, P: np.ndarray, b: np.ndarr
     return x
 
 # ------------------------------------------------------------
-# 4) Fallback interno (si no hay user-code disponible)
-#     -> Factoriza con pivoteo parcial y resuelve
+# 4) Internal fallback (if there is no user-code available)
+#     -> Factorizes with partial pivoting and solves
 # ------------------------------------------------------------
 def _fallback_lu(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list]:
     n = A.shape[0]
@@ -148,7 +148,7 @@ def _fallback_lu(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, lis
     for k in range(n-1):
         piv = np.argmax(np.abs(U[k:, k])) + k
         if abs(U[piv, k]) < 1e-15:
-            raise ValueError("No se puede factorizar: pivote cero.")
+            raise ValueError("Cannot factorize: zero pivot.")
         if piv != k:
             U[[k, piv], :] = U[[piv, k], :]
             P[[k, piv], :] = P[[piv, k], :]
@@ -161,39 +161,39 @@ def _fallback_lu(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, lis
     return L, U, P, etapas
 
 # ------------------------------------------------------------
-# 5) API principal usada por FastAPI
+# 5) Main API used by FastAPI
 # ------------------------------------------------------------
 def compute_gauss_pivote_parcial(A: List[List[float]], b: List[float], track_etapas: bool = True) -> Dict[str, Any]:
     if not isinstance(A, list) or not A or not all(isinstance(r, list) for r in A):
-        raise ValueError("A debe ser una lista de listas no vacía.")
+        raise ValueError("A must be a non-empty list of lists.")
     n = len(A)
     if any(len(r) != n for r in A):
-        raise ValueError("A debe ser cuadrada.")
+        raise ValueError("A must be square.")
     if not isinstance(b, list) or len(b) != n:
-        raise ValueError("b debe tener longitud n.")
+        raise ValueError("b must have length n.")
 
     A_np = np.array(A, dtype=float)
     b_np = np.array(b, dtype=float)
 
     etapas = None
 
-    # a) Tu función principal en este archivo
+    # a) Your main function in this file
     if LOCAL_MAIN:
         L, U, P, x_opt, etapas = _try_call_main(LOCAL_MAIN, A_np, b_np)
         x = x_opt if x_opt is not None else _solve_with_helpers(L, U, P, b_np)
 
-    # b) Tu función principal en módulo *_mio
+    # b) Your main function in *_mio module
     elif MIO_MAIN:
         L, U, P, x_opt, etapas = _try_call_main(MIO_MAIN, A_np, b_np)
         x = x_opt if x_opt is not None else _solve_with_helpers(L, U, P, b_np)
 
     else:
-        # c) Solo factorizar (este archivo o módulo *_mio)
+        # c) Only factorization (this file or *_mio module)
         fn_fact = LOCAL_FACT or MIO_FACT
         if fn_fact:
             out = fn_fact(A_np)
             if not isinstance(out, tuple) or len(out) < 3:
-                raise RuntimeError("La función de factorización debe retornar al menos (L, U, P).")
+                raise RuntimeError("The factorization function must return at least (L, U, P).")
             L = np.array(out[0], float)
             U = np.array(out[1], float)
             P = np.array(out[2], float)
@@ -201,11 +201,11 @@ def compute_gauss_pivote_parcial(A: List[List[float]], b: List[float], track_eta
                 etapas = out[3]
             x = _solve_with_helpers(L, U, P, b_np)
         else:
-            # d) Fallback interno (para no romper)
+            # d) Internal fallback (to avoid breaking)
             L, U, P, etapas = _fallback_lu(A_np)
             x = _solve_with_helpers(L, U, P, b_np)
 
-    # aumentada final [U | y]
+    # final augmented [U | y]
     try:
         Pb = P @ b_np
         y = _forward_substitution(L, Pb)

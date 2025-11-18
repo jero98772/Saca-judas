@@ -45,24 +45,27 @@
                 </div>
               </div>
 
-              <div class="text-start">
-                <label class="form-label">Matrix A (n×n)</label>
-                <div id="matrixAContainer" class="table-responsive"></div>
+              <!-- Matrix A -->
+              <div class="matrix-input-wrapper">
+                <label class="form-label matrix-label">Matrix A (n×n)</label>
+                <div id="matrixAContainer" class="matrix-grid matrix-input"></div>
               </div>
 
-              <div class="text-start mt-3">
-                <label class="form-label">Vector b (n)</label>
-                <div id="vectorBContainer" class="table-responsive"></div>
+              <!-- Vector b -->
+              <div class="matrix-input-wrapper mt-3">
+                <label class="form-label matrix-label">Vector b (n)</label>
+                <div id="vectorBContainer" class="matrix-grid matrix-input"></div>
               </div>
 
-              <div class="text-start mt-3">
-                <label class="form-label">Initial vector x₀ (n)</label>
-                <div id="vectorX0Container" class="table-responsive"></div>
+              <!-- Initial vector x0 -->
+              <div class="matrix-input-wrapper mt-3">
+                <label class="form-label matrix-label">Initial vector x₀ (n)</label>
+                <div id="vectorX0Container" class="matrix-grid matrix-input"></div>
               </div>
 
               <div class="d-grid gap-2 mt-3">
-                <button id="run" class="btn btn-primary">Compute</button>
-                <button id="example" class="btn btn-outline-secondary">Example</button>
+                <button id="run" class="btn btn-calc-gauss">Compute</button>
+                <button id="example" class="btn btn-fill-example">Example</button>
                 <button id="clear" class="btn btn-outline-danger">Clear</button>
               </div>
             </div>
@@ -89,77 +92,219 @@
   </div>
 </div>
 
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+
+<style>
+  .matrix-label{
+    display:block;
+    margin-bottom:4px;
+    font-weight:600;
+  }
+
+  /* center input grids */
+  .matrix-input-wrapper{
+    text-align:center;
+  }
+  .matrix-input-wrapper .matrix-label{
+    text-align:left;
+    margin-left:4px;
+  }
+
+  /* bigger input cells */
+  .matrix-grid table{
+    border-collapse:separate;
+    border-spacing:6px;
+    margin:0 auto;
+  }
+  .matrix-grid td{
+    min-width:60px;
+    height:40px;
+  }
+  .matrix-grid input{
+    width:100%;
+    text-align:center;
+    padding:4px 6px;
+    font-size:0.95rem;
+  }
+
+  /* result cards & grids */
+  .lu-result-card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  .lu-result-card .card-header {
+    background: #f8f9fa;
+    font-size: 0.9rem;
+  }
+  .lu-grid{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:10px;
+    background:#ffffff;
+  }
+  .lu-grid table{
+    border-collapse:separate;
+    border-spacing:6px;
+  }
+  .lu-grid th,
+  .lu-grid td{
+    min-width:70px;
+    height:34px;
+    padding:4px 8px;
+    border-radius:6px;
+    border:1px solid #ced4da;
+    text-align:center;
+    font-family:monospace;
+    font-size:0.85rem;
+  }
+  .lu-grid th{
+    font-weight:700;
+    background:#f1f3f5;
+  }
+
+  /* Gaussian-style compute button */
+  .btn-calc-gauss{
+    background-color:#004000;
+    border:1px solid #00ff4d;
+    color:#ffffff;
+    font-weight:600;
+    border-radius:3px;
+    height:40px;
+    box-shadow:
+      0 0 3px #00ff4d,
+      0 0 8px #00ff4d,
+      0 0 16px rgba(0,255,77,0.9);
+  }
+  .btn-calc-gauss:hover{
+    background-color:#005200;
+    box-shadow:
+      0 0 5px #00ff4d,
+      0 0 12px #00ff4d,
+      0 0 20px rgba(0,255,77,1);
+  }
+
+  /* Example button: light green with glow */
+  .btn-fill-example{
+    background-color:#b8ffd0;
+    border:1px solid #46e67f;
+    color:#064b1c;
+    border-radius:3px;
+    font-weight:500;
+    height:38px;
+    box-shadow:0 0 6px rgba(0,255,136,0.7);
+  }
+  .btn-fill-example:hover{
+    background-color:#a3ffbf;
+    box-shadow:0 0 10px rgba(0,255,136,0.9);
+  }
+</style>
+
 <script>
 function fmt(v){
+  if (typeof v === 'string') {
+    const num = Number(v);
+    if (!isNaN(num)) v = num;
+  }
   if (typeof v === 'number' && isFinite(v)) {
-    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6) ? v.toExponential(6) : Number(v.toFixed(6));
+    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6)
+      ? v.toExponential(6)
+      : v.toFixed(6);
   }
   return v;
 }
+
+/* result tables: Solution + Iterations */
 function renderTable(title, matrix, headers){
   const isVector = Array.isArray(matrix) && matrix.length && !Array.isArray(matrix[0]);
-  let html = `<div class="mb-3 text-start"><h6 class="mb-2">${title}</h6><div class="table-responsive"><table class="table table-sm table-bordered align-middle">`;
-  if(headers && headers.length) html += `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>`;
+
+  let html = `
+    <div class="card lu-result-card mb-3 text-start">
+      <div class="card-header py-2 text-center">
+        <strong>${title}</strong>
+      </div>
+      <div class="card-body text-center">
+        <div class="lu-grid">
+          <table>`;
+
+  if(headers && headers.length){
+    html += `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>`;
+  }
   html += `<tbody>`;
+
   if(isVector){
     html += `<tr>${matrix.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`;
   } else if (Array.isArray(matrix)){
-    html += matrix.map(row => `<tr>${row.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`).join('');
+    html += matrix
+      .map(row => `<tr>${row.map(v => `<td>${fmt(v)}</td>`).join('')}</tr>`)
+      .join('');
   }
-  html += `</tbody></table></div></div>`;
+
+  html += `</tbody></table></div></div></div>`;
   return html;
 }
+
 function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
 function setHTML(el, html){ el.innerHTML = html; }
 
 function buildMatrixInputs(n){
   const table = document.createElement('table');
-  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
   for(let i=0;i<n;i++){
     const tr = document.createElement('tr');
     for(let j=0;j<n;j++){
       const td = document.createElement('td');
       const inp = document.createElement('input');
-      inp.type = 'number'; inp.step = 'any';
-      inp.className = 'form-control form-control-sm';
+      inp.type = 'text';
       inp.value = (i === j) ? '4' : '1';
-      td.appendChild(inp); tr.appendChild(td);
+      inp.placeholder = '0';
+      inp.dataset.i = i;
+      inp.dataset.j = j;
+      td.appendChild(inp);
+      tr.appendChild(td);
     }
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
   return table;
 }
+
 function buildVectorInputs(n, def=0){
   const table = document.createElement('table');
-  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
   for(let i=0;i<n;i++){
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     const inp = document.createElement('input');
-    inp.type = 'number'; inp.step = 'any';
-    inp.className = 'form-control form-control-sm';
+    inp.type = 'text';
     inp.value = String(def);
-    td.appendChild(inp); tr.appendChild(td);
+    inp.placeholder = '0';
+    inp.dataset.k = i;
+    td.appendChild(inp);
+    tr.appendChild(td);
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
   return table;
 }
+
 function readMatrix(container){
   const rows = [];
   container.querySelectorAll('tr').forEach(tr=>{
     const row = [];
-    tr.querySelectorAll('input').forEach(inp=> row.push(parseFloat(inp.value || '0')));
+    tr.querySelectorAll('input').forEach(inp=>{
+      const val = parseFloat((inp.value || '0').replace(',', '.'));
+      row.push(isNaN(val) ? 0 : val);
+    });
     rows.push(row);
   });
   return rows;
 }
 function readVector(container){
   const v = [];
-  container.querySelectorAll('input').forEach(inp=> v.push(parseFloat(inp.value || '0')));
+  container.querySelectorAll('input').forEach(inp=>{
+    const val = parseFloat((inp.value || '0').replace(',', '.'));
+    v.push(isNaN(val) ? 0 : val);
+  });
   return v;
 }
 
@@ -216,12 +361,17 @@ clearBtn.addEventListener('click', ()=>{
   matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
   vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
   vectorX0Container.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false);
+  setHTML(solucion,'');
+  setHTML(tablaIter,'');
+  show(alertBox, false);
 });
 
 /* compute */
 runBtn.addEventListener('click', async ()=>{
-  setHTML(solucion,''); setHTML(tablaIter,''); show(alertBox, false); show(loading, true);
+  setHTML(solucion,'');
+  setHTML(tablaIter,'');
+  show(alertBox, false);
+  show(loading, true);
   try{
     const A = readMatrix(matrixAContainer);
     const b = readVector(vectorBContainer);
@@ -247,8 +397,10 @@ runBtn.addEventListener('click', async ()=>{
       return;
     }
 
+    // Solution vector
     if (data.x) setHTML(solucion, renderTable('Solution x', data.x));
 
+    // Iteration history
     const hist = data.iterations || data.history || data.logs || data.tabla;
     if (Array.isArray(hist) && hist.length){
       const rows = hist.map(item=>{

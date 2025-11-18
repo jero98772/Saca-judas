@@ -30,8 +30,7 @@ from tools.methods.fixed_point import run_fixed_point_web
 from tools.methods.gaussian_elimination_simple import gauss_simple
 from tools.methods.gaussian_elimination_with_pivot_partial import gauss_partial
 from tools.methods.gaussian_elimination_with_pivot_total import gauss_total
-from tools.methods.lu_simple import lu_simple
-# OJO: quitamos import de lu_partial (ya no existe esa función con ese nombre)
+
 from tools.methods.crout import crout
 from tools.methods.doolittle import doolittle
 from tools.methods.gauss_seidel import gauss_seidel
@@ -39,11 +38,13 @@ from tools.methods.SOR import sor
 
 # ===== Nuevas funciones compute_* que retornan dict (para los endpoints /eval) =====
 from tools.methods.lu_partial import compute_gauss_pivote_parcial
+from tools.methods.lu_simple import compute_lu_simple
 from tools.methods.vandermonde import compute_vandermonde
 from tools.methods.lineal_tracers import compute_trazadores_lineales
 from tools.methods.cholesky import compute_cholesky
 from tools.methods.jacobi import compute_jacobi
 from tools.methods.newton_interpolation import newton_interpolant_object 
+from tools.methods.lagrange import lagrange_interpolation_object 
 
 
 #Trazadores
@@ -61,7 +62,7 @@ METHOD_CATEGORIES = {
     ],
     'Interpolation': [
         'vandermonde', 'lineal_tracers', 'newton_interpolation',
-        'lagrange'
+        'lagrange', 'cubic_tracers', 'cuadratic_tracers'
     ]
 }
 
@@ -584,7 +585,101 @@ async def crout_post(request: Request):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/doolittle", response_class=JSONResponse)
+async def doolittle_post(request: Request):
+    try:
+        # Parse JSON safely
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
 
+        A = data.get("A")
+        b = data.get("b")
+        decimals = data.get("decimals", 6)
+
+        # Check required parameters
+        if A is None or b is None:
+            return JSONResponse(
+                content={"error": "Parameters 'A' and 'b' are required."},
+                status_code=400
+            )
+
+        # Validate matrix A and vector b structure
+        if not (isinstance(A, list) and all(isinstance(row, list) for row in A) and A):
+            return JSONResponse(content={"error": "Matrix 'A' must be a non-empty list of lists."}, status_code=400)
+        if not (isinstance(b, list) and b):
+            return JSONResponse(content={"error": "Vector 'b' must be a non-empty list."}, status_code=400)
+
+        cols = len(A[0])
+        if not all(len(row) == cols for row in A):
+            return JSONResponse(content={"error": "All rows in 'A' must have the same length."}, status_code=400)
+
+        # Convert to float safely
+        A_conv = []
+        for i, row in enumerate(A):
+            row_conv = []
+            for j, val in enumerate(row):
+                f = to_float_safe(val)
+                if f is None:
+                    return JSONResponse(
+                        content={"error": f"Non-numeric value at A[{i+1}][{j+1}] → {repr(val)}"},
+                        status_code=400
+                    )
+                row_conv.append(f)
+            A_conv.append(row_conv)
+
+        b_conv = []
+        for i, val in enumerate(b):
+            f = to_float_safe(val)
+            if f is None:
+                return JSONResponse(
+                    content={"error": f"Non-numeric value at b[{i+1}] → {repr(val)}"},
+                    status_code=400
+                )
+            b_conv.append(f)
+
+        # Validate decimals
+        try:
+            decimals = int(decimals)
+            if not (0 <= decimals <= 10):
+                raise ValueError
+        except (TypeError, ValueError):
+            return JSONResponse(content={"error": "Parameter 'decimals' must be an integer between 0 and 10."}, status_code=400)
+
+        # Compute Doolittle decomposition result
+        result = doolittle(A_conv, b_conv, decimals)
+
+        # Serialize DataFrames and combine A|b for visualization
+        for log in result.get("logs", []):
+            original_keys = list(log.keys())
+            for k in original_keys:
+                v = log.get(k)
+
+                try:
+                    ser = serialize_value(v, decimals)
+                except Exception:
+                    ser = str(v)
+
+                if isinstance(ser, dict) and "html" in ser and "json" in ser:
+                    if k == "matrix":
+                        log["matrix"] = ser["html"]
+                        log["matrix_json"] = ser["json"]
+                    else:
+                        log[f"{k}_html"] = ser["html"]
+                        log[f"{k}_json"] = ser["json"]
+                        if k in log:
+                            del log[k]
+                else:
+                    log[k] = ser
+
+            combine_A_b(log, decimals)
+
+        return JSONResponse(content=jsonable_encoder(result), status_code=200)
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
 
 
 @app.post("/eval/incremental_search")
@@ -664,7 +759,23 @@ async def lu_partial_eval(request: Request):
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+@app.post("/eval/lu_simple", response_class=JSONResponse)
+async def lu_simple_eval(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
 
+        A = data.get("A"); b = data.get("b")
+        err = _validate_matrix(A) or _validate_vector("b", b)
+        if err: return JSONResponse({"error": err}, status_code=400)
+
+        result = compute_lu_simple(A, b, track_etapas=True)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
 
 @app.post("/eval/vandermonde", response_class=JSONResponse)
 async def vandermonde_eval(request: Request):
@@ -708,6 +819,30 @@ async def newton_interpolant(request: Request):
                 return JSONResponse({"error": f"Non-numeric value at y[{i+1}] → {repr(v)}"}, status_code=400)
 
         result = newton_interpolant_object(x, y)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)
+    
+    
+@app.post("/eval/lagrange", response_class=JSONResponse)
+async def newton_interpolant(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
+
+        x = data.get("x"); y = data.get("y")
+        if not (isinstance(x, list) and isinstance(y, list) and len(x) == len(y) and len(x) > 0):
+            return JSONResponse({"error": "x and y must be non-empty lists of the same length."}, status_code=400)
+        for i, v in enumerate(x):
+            if not _is_number(v):
+                return JSONResponse({"error": f"Non-numeric value at x[{i+1}] → {repr(v)}"}, status_code=400)
+        for i, v in enumerate(y):
+            if not _is_number(v):
+                return JSONResponse({"error": f"Non-numeric value at y[{i+1}] → {repr(v)}"}, status_code=400)
+
+        result = lagrange_interpolation_object(x, y)
         return JSONResponse(content=result, status_code=200)
     except Exception as e:
         return JSONResponse({"error": f"Internal server error: {str(e)}"}, status_code=500)

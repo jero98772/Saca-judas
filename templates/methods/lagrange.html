@@ -1,17 +1,410 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div id="content">
+    <div id="container-fluid text-center">
+        <div class="row align-items-start" style="width: 95vw;">
+            <!-- Graph -->
+            <div class="col-12 mb-3">
+                <div class="card newton-card newton-graph-card" id="plotCard">
+                    <div id="graph" style="height: 100%; width: 100%;"></div>
+                </div>
+            </div>
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Lagrange</h1>
+            <!-- Input Panel -->
+            <div class="col-12 mb-3">
+                <div class="card newton-card p-4">
+                    <div
+                        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+                        <h4 class="mb-0">Lagrange Interpolation</h4>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-success" id="add-point-btn">
+                                <i class="bi bi-plus-circle"></i> Add Point
+                            </button>
+                            <button id="calculation-btn">Calculate</button>
+                        </div>
+                    </div>
+
+                    <div id="points-container" style="display: flex; gap: 15px; overflow-x: auto; padding: 10px 0;">
+                        <!-- Points will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="col-12">
+                <div class="card newton-card p-3 newton-results-card">
+                    <h4>Results</h4>
+                    <div id="result-message" class="alert alert-info" style="display: none;"></div>
+
+                    <!-- Polinomios Li -->
+                    <div id="lagrange-polys-result" class="mt-3" style="display: none;">
+                        <h6 style="color: #00ff41; text-shadow: 0 0 5px #00ff41;">Lagrange Basis Polynomials (Lᵢ):</h6>
+                        <div class="alert alert-secondary"
+                            style="font-family: monospace; white-space: pre-line; word-wrap: break-word; font-size: 0.9rem;">
+                            <span id="lagrange-polys"></span>
+                        </div>
+                    </div>
+
+                    <!-- Combinación -->
+                    <div id="lagrange-combination-result" class="mt-3" style="display: none;">
+                        <h6 style="color: #00ff41; text-shadow: 0 0 5px #00ff41;">Polynomial Combination:</h6>
+                        <div class="alert alert-secondary"
+                            style="font-family: monospace; word-wrap: break-word; font-size: 0.9rem;">
+                            <span id="lagrange-combination"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <script src="/static/js/lagrange.js"></script>
     </div>
 </div>
-{% endblock %}
 
+<style>
+    /* Estilos específicos para Lagrange Interpolation */
+    #content .newton-card {
+        background: rgba(15, 15, 35, 0.85);
+        border: 2px solid #00ff41;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+        backdrop-filter: blur(10px);
+    }
+
+    /* Altura de la gráfica responsive */
+    .newton-graph-card {
+        height: 70vh;
+        width: 100%;
+    }
+
+    /* Altura de resultados responsive */
+    .newton-results-card {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    #content .newton-card h4 {
+        color: #00ff41;
+        text-shadow: 0 0 8px #00ff41;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .point-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        flex-shrink: 0;
+        background: rgba(0, 59, 0, 0.3);
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #00ff41;
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .point-row:hover {
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .point-input {
+        width: 100px;
+        background: rgba(15, 15, 35, 0.8);
+        border: 1px solid #00ff41;
+        color: #00ff41 !important;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        padding: 8px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .point-input:focus {
+        outline: none;
+        box-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
+        background: rgba(0, 59, 0, 0.5);
+        color: #00ff41 !important;
+    }
+
+    .point-input::placeholder {
+        color: rgba(0, 255, 65, 0.5);
+    }
+
+    /* Asegurar que el texto sea verde mientras escribes */
+    .point-input:active,
+    .point-input:focus-visible {
+        color: #00ff41 !important;
+    }
+
+    .btn-remove-point {
+        background: rgba(139, 0, 0, 0.7);
+        color: #ff4444;
+        border: 1px solid #ff4444;
+        width: 100px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-remove-point:hover {
+        background: rgba(139, 0, 0, 0.9);
+        box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        transform: scale(1.05);
+    }
+
+    #points-container {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 65, 0.3);
+    }
+
+    #points-container::-webkit-scrollbar {
+        height: 10px;
+    }
+
+    #points-container::-webkit-scrollbar-track {
+        background: rgba(0, 59, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    #points-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(90deg, #00ff41 0%, #00aa2b 100%);
+        border-radius: 10px;
+        border: 1px solid #003b00;
+    }
+
+    #points-container::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(90deg, #00ff41 0%, #00ff41 100%);
+        box-shadow: 0 0 10px #00ff41;
+    }
+
+    #calculation-btn {
+        background: linear-gradient(135deg, #003b00 0%, #005500 100%);
+        color: #00ff41;
+        border: 2px solid #00ff41;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    #calculation-btn:hover {
+        background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+        color: #0f0f23;
+        box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
+        transform: scale(1.05);
+    }
+
+    #add-point-btn {
+        background: linear-gradient(135deg, #003b00 0%, #005500 100%);
+        color: #00ff41;
+        border: 2px solid #00ff41;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    #add-point-btn:hover {
+        background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+        color: #0f0f23;
+        box-shadow: 0 0 25px rgba(0, 255, 65, 0.6);
+        transform: scale(1.05);
+    }
+
+    #content .newton-card .alert-secondary {
+        background: rgba(0, 59, 0, 0.3);
+        border: 1px solid #00ff41;
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+    }
+
+    #content .newton-card .alert-success {
+        background: rgba(0, 59, 0, 0.5);
+        border: 1px solid #00ff41;
+        color: #00ff41;
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    #content .newton-card .alert-danger {
+        background: rgba(139, 0, 0, 0.3);
+        border: 1px solid #ff4444;
+        color: #ff4444;
+        box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+    }
+
+    #content .newton-card .alert-info {
+        background: rgba(0, 119, 182, 0.3);
+        border: 1px solid #00d4ff;
+        color: #00d4ff;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    }
+
+    #graph {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+    }
+
+    /* Animación de entrada */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .newton-card {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* ===== RESPONSIVE STYLES ===== */
+    @media (max-width: 768px) {
+        .newton-graph-card {
+            height: 50vh;
+        }
+
+        .newton-results-card {
+            max-height: none;
+        }
+
+        #content .newton-card h4 {
+            font-size: 1.2rem;
+        }
+
+        #calculation-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        #add-point-btn {
+            font-size: 0.9rem;
+        }
+
+        .point-input {
+            width: 90px;
+            padding: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-remove-point {
+            width: 90px;
+            font-size: 0.85rem;
+        }
+
+        .point-row {
+            padding: 10px;
+        }
+
+        #points-container {
+            padding: 10px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .newton-graph-card {
+            height: 40vh;
+        }
+
+        #content .newton-card h4 {
+            font-size: 1rem;
+        }
+
+        #calculation-btn,
+        #add-point-btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .point-input {
+            width: 80px;
+            padding: 5px;
+            font-size: 0.85rem;
+        }
+
+        .btn-remove-point {
+            width: 80px;
+            height: 28px;
+            font-size: 0.8rem;
+        }
+
+        .point-row {
+            padding: 8px;
+        }
+
+        #points-container {
+            gap: 10px;
+        }
+
+        #content .newton-card .alert-secondary {
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .newton-graph-card {
+            height: 35vh;
+        }
+
+        .point-input {
+            width: 70px;
+        }
+
+        .btn-remove-point {
+            width: 70px;
+        }
+    }
+
+    .newton-graph-card .function-plot .axis text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    .newton-graph-card .function-plot .tick text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    .newton-graph-card .function-plot .x.axis text,
+    .newton-graph-card .function-plot .y.axis text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    /* También cambiar las líneas de los ejes a un color más claro */
+    .newton-graph-card .function-plot .axis path,
+    .newton-graph-card .function-plot .axis line {
+        stroke: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .newton-graph-card .function-plot .tick line {
+        stroke: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    /* Cambiar el texto de la leyenda también a blanco */
+    .newton-graph-card .function-plot .top-right-legend {
+        fill: white !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}

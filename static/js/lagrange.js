@@ -114,7 +114,7 @@ document.getElementById('calculation-btn').addEventListener('click', (event) => 
 
     console.log('Sending points:', points);
 
-    fetch('/eval/newton_interpolant', {
+    fetch('/eval/lagrange', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -139,20 +139,24 @@ document.getElementById('calculation-btn').addEventListener('click', (event) => 
             showMessage(data.message, data.status);
 
             if (data.status === 'success' && data.symbolic_expression) {
-                // Mostrar forma de Newton
-                document.getElementById('newton-form-result').style.display = 'block';
-                document.getElementById('newton-form').textContent = data.polynomial_newton;
+                // Mostrar polinomios Li (es un array)
+                document.getElementById('lagrange-polys-result').style.display = 'block';
+                const polysText = data.polynomial_lagrange.join('\n');
+                document.getElementById('lagrange-polys').textContent = polysText;
+
+                // Mostrar combinación
+                document.getElementById('lagrange-combination-result').style.display = 'block';
+                document.getElementById('lagrange-combination').textContent = data.polynomial_combination;
 
                 // Parsear y graficar el polinomio
                 const polyJS = pythonPowToJS(data.symbolic_expression);
                 const points = getPoints()
 
                 drawPlot(polyJS, points.x, points.y)
-
-
             } else {
                 // Ocultar resultados si hay error
-                document.getElementById('newton-form-result').style.display = 'none';
+                document.getElementById('lagrange-polys-result').style.display = 'none';
+                document.getElementById('lagrange-combination-result').style.display = 'none';
 
                 // Solo graficar los puntos
                 const graphData = [{
@@ -170,7 +174,8 @@ document.getElementById('calculation-btn').addEventListener('click', (event) => 
             showMessage('Error: ' + error.message, 'danger');
 
             // Ocultar resultados
-            document.getElementById('newton-form-result').style.display = 'none';
+            document.getElementById('lagrange-polys-result').style.display = 'none';
+            document.getElementById('lagrange-combination-result').style.display = 'none';
         });
 });
 

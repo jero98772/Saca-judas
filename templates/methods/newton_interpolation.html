@@ -6,7 +6,7 @@
         <div class="row align-items-start" style="width: 95vw;">
             <!-- Graph -->
             <div class="col-12 mb-3">
-                <div class="card newton-card" style="height: 70vh; width: 100%;">
+                <div class="card newton-card newton-graph-card" id="plotCard">
                     <div id="graph" style="height: 100%; width: 100%;"></div>
                 </div>
             </div>
@@ -14,31 +14,33 @@
             <!-- Input Panel -->
             <div class="col-12 mb-3">
                 <div class="card newton-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">Data Points</h4>
-                        <div>
+                    <div
+                        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+                        <h4 class="mb-0">Newton Interpolation</h4>
+                        <div class="d-flex gap-2 flex-wrap">
                             <button class="btn btn-success" id="add-point-btn">
                                 <i class="bi bi-plus-circle"></i> Add Point
                             </button>
-                            <button id="calculation-btn" style="margin-left: 10px;">Calculate Interpolation</button>
+                            <button id="calculation-btn">Calculate</button>
                         </div>
                     </div>
-                    
+
                     <div id="points-container" style="display: flex; gap: 15px; overflow-x: auto; padding: 10px 0;">
                         <!-- Points will be added here dynamically -->
                     </div>
                 </div>
             </div>
-            
+
             <!-- Results -->
             <div class="col-12">
-                <div class="card newton-card p-3">
+                <div class="card newton-card p-3 newton-results-card">
                     <h4>Results</h4>
                     <div id="result-message" class="alert alert-info" style="display: none;"></div>
-                    
+
                     <div id="newton-form-result" class="mt-3" style="display: none;">
                         <h6 style="color: #00ff41; text-shadow: 0 0 5px #00ff41;">Newton Form:</h6>
-                        <div class="alert alert-secondary" style="font-family: monospace; word-wrap: break-word; font-size: 0.9rem;">
+                        <div class="alert alert-secondary"
+                            style="font-family: monospace; word-wrap: break-word; font-size: 0.9rem; word-break: break-word;">
                             <span id="newton-form"></span>
                         </div>
                     </div>
@@ -58,6 +60,18 @@
         border-radius: 12px;
         box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
         backdrop-filter: blur(10px);
+    }
+
+    /* Altura de la gráfica responsive */
+    .newton-graph-card {
+        height: 70vh;
+        width: 100%;
+    }
+
+    /* Altura de resultados responsive */
+    .newton-results-card {
+        max-height: 60vh;
+        overflow-y: auto;
     }
 
     #content .newton-card h4 {
@@ -90,7 +104,7 @@
         width: 100px;
         background: rgba(15, 15, 35, 0.8);
         border: 1px solid #00ff41;
-        color: #00ff41;
+        color: #00ff41 !important;
         text-align: center;
         font-family: 'Courier New', monospace;
         font-weight: bold;
@@ -103,10 +117,17 @@
         outline: none;
         box-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
         background: rgba(0, 59, 0, 0.5);
+        color: #00ff41 !important;
     }
 
     .point-input::placeholder {
         color: rgba(0, 255, 65, 0.5);
+    }
+
+    /* Asegurar que el texto sea verde mientras escribes */
+    .point-input:active,
+    .point-input:focus-visible {
+        color: #00ff41 !important;
     }
 
     .btn-remove-point {
@@ -236,6 +257,7 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -244,6 +266,135 @@
 
     .newton-card {
         animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* ===== RESPONSIVE STYLES ===== */
+    @media (max-width: 768px) {
+        .newton-graph-card {
+            height: 50vh;
+        }
+
+        .newton-results-card {
+            max-height: none;
+        }
+
+        #content .newton-card h4 {
+            font-size: 1.2rem;
+        }
+
+        #calculation-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        #add-point-btn {
+            font-size: 0.9rem;
+        }
+
+        .point-input {
+            width: 90px;
+            padding: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-remove-point {
+            width: 90px;
+            font-size: 0.85rem;
+        }
+
+        .point-row {
+            padding: 10px;
+        }
+
+        #points-container {
+            padding: 10px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .newton-graph-card {
+            height: 40vh;
+        }
+
+        #content .newton-card h4 {
+            font-size: 1rem;
+        }
+
+        #calculation-btn,
+        #add-point-btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .point-input {
+            width: 80px;
+            padding: 5px;
+            font-size: 0.85rem;
+        }
+
+        .btn-remove-point {
+            width: 80px;
+            height: 28px;
+            font-size: 0.8rem;
+        }
+
+        .point-row {
+            padding: 8px;
+        }
+
+        #points-container {
+            gap: 10px;
+        }
+
+        #content .newton-card .alert-secondary {
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .newton-graph-card {
+            height: 35vh;
+        }
+
+        .point-input {
+            width: 70px;
+        }
+
+        .btn-remove-point {
+            width: 70px;
+        }
+    }
+
+    .newton-graph-card .function-plot .axis text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    .newton-graph-card .function-plot .tick text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    .newton-graph-card .function-plot .x.axis text,
+    .newton-graph-card .function-plot .y.axis text {
+        fill: white !important;
+        color: white !important;
+    }
+
+    /* También cambiar las líneas de los ejes a un color más claro */
+    .newton-graph-card .function-plot .axis path,
+    .newton-graph-card .function-plot .axis line {
+        stroke: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .newton-graph-card .function-plot .tick line {
+        stroke: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    /* Cambiar el texto de la leyenda también a blanco */
+    .newton-graph-card .function-plot .top-right-legend {
+        fill: white !important;
+        color: white !important;
     }
 </style>
 {% endblock %}

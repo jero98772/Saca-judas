@@ -1,17 +1,77 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div id="content">
+  <div class="container text-center">
+    <div class="row justify-content-center">
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>Doolittle</h1>
-                </div>
+      <!-- ===== MATRICES, BOTÓN Y DECIMALES ===== -->
+      <div class="col-12 col-lg-10 mb-3">
+        <div class="card text-center p-4">
+          <h2>Doolittle Decomposition Method</h2>
+          <h6>Enter matrix values below to compute L and U factors</h6>
+          
+          <div class="mb-3 text-center">
+            <div class="row">
+              <div class="col">
+                <label class="form-label fw-bold">Matrix A</label>
+                <br>
+                <div id="matrixA" class="matrix-grid"></div>
+              </div>
+              <div class="col">
+                <label class="form-label fw-bold">Vector b</label>
+                <br>
+                <div id="matrixB" class="matrix-grid"></div>  
+              </div>
             </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+          </div>
 
+          <div class="input-group mb-3">
+            <span class="input-group-text">Decimals</span>
+            <input type="number" id="decimals" class="form-control" value="6" min="0" max="12">
+          </div>
+
+          <button id="calculation-btn" class="btn btn-outline-primary mb-3" type="button">
+            Compute Doolittle
+          </button>
+
+          <div id="result-message" class="alert" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- ===== DECOMPOSITION STEPS ===== -->
+      <div class="col-12 col-lg-12 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+          <h4>Decomposition Steps</h4>
+          <div id="logs-container"></div>
+        </div>
+      </div>
+
+      <!-- ===== SOLUTION ===== -->
+      <div class="col-12 col-lg-8 mb-3">
+        <div class="card p-3">
+          <h4>Solution</h4>
+          <div id="solution-container" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+<script src="/static/js/matrix_grid.js"></script>
+<script src="/static/js/doolittle.js"></script>
+
+<style>
+  .btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+  }
+  .btn-outline-primary:hover {
+    background-color: #007bff;
+    color: white;
+  }
+</style>
+
+{% endblock %}

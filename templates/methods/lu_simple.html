@@ -8,7 +8,7 @@
       <!-- Title -->
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="m-0">LU Decomposition (Partial Pivoting)</h3>
+          <h3 class="m-0">LU Decomposition (Simple - No Pivoting)</h3>
         </div>
       </div>
 
@@ -56,7 +56,7 @@
               </div>
 
               <div class="d-grid gap-2 mt-3">
-                <button id="run" class="btn btn-calc-gauss">Calculate</button>
+                <button id="run" class="btn btn-calc-lu">Calculate</button>
                 <button id="example" class="btn btn-fill-example">Fill example</button>
                 <button id="clear" class="btn btn-outline-danger">Clear</button>
               </div>
@@ -87,7 +87,7 @@
 
 <link rel="stylesheet" href="/static/css/matrix_grid.css">
 
-<!-- Extra styles: input centering, bigger cells, Gaussian-like buttons -->
+<!-- Extra styles: input centering, bigger cells, LU-like buttons -->
 <style>
   /* labels above grids */
   .matrix-label{
@@ -153,40 +153,40 @@
     font-size:0.95rem;
   }
 
-  /* Calculate button: mimic Gaussian elimination style */
-  .btn-calc-gauss{
-    background-color:#004000;
-    border:1px solid #00ff4d;
+  /* Calculate button: LU Simple style */
+  .btn-calc-lu{
+    background-color:#004080;
+    border:1px solid #4da6ff;
     color:#ffffff;
     font-weight:600;
     border-radius:3px;
     height:40px;
     box-shadow:
-      0 0 3px #00ff4d,
-      0 0 8px #00ff4d,
-      0 0 16px rgba(0,255,77,0.9);
+      0 0 3px #4da6ff,
+      0 0 8px #4da6ff,
+      0 0 16px rgba(77,166,255,0.9);
   }
-  .btn-calc-gauss:hover{
-    background-color:#005200;
+  .btn-calc-lu:hover{
+    background-color:#0059b3;
     box-shadow:
-      0 0 5px #00ff4d,
-      0 0 12px #00ff4d,
-      0 0 20px rgba(0,255,77,1);
+      0 0 5px #4da6ff,
+      0 0 12px #4da6ff,
+      0 0 20px rgba(77,166,255,1);
   }
 
-  /* Fill example button: light green with glow */
+  /* Fill example button: light blue with glow */
   .btn-fill-example{
-    background-color:#b8ffd0;
-    border:1px solid #46e67f;
-    color:#064b1c;
+    background-color:#d1ecff;
+    border:1px solid #66b3ff;
+    color:#004080;
     border-radius:3px;
     font-weight:500;
     height:38px;
-    box-shadow:0 0 6px rgba(0,255,136,0.7);
+    box-shadow:0 0 6px rgba(77,166,255,0.7);
   }
   .btn-fill-example:hover{
-    background-color:#a3ffbf;
-    box-shadow:0 0 10px rgba(0,255,136,0.9);
+    background-color:#b3d9ff;
+    box-shadow:0 0 10px rgba(77,166,255,0.9);
   }
 </style>
 
@@ -401,7 +401,7 @@ runBtn.addEventListener('click', async () => {
     const A = readMatrix(matrixAContainer);
     const b = readVector(vectorBContainer);
 
-    const res = await fetch('/eval/lu_partial', {
+    const res = await fetch('/eval/lu_simple', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ A, b })
@@ -420,7 +420,6 @@ runBtn.addEventListener('click', async () => {
     let mHTML = '';
     if (data.L) mHTML += renderTable('L Matrix', data.L);
     if (data.U) mHTML += renderTable('U Matrix', data.U);
-    if (data.P) mHTML += renderTable('Permutation Matrix P', data.P);
     if (data.aumentada_final) mHTML += renderTable('Final augmented [U | y]', data.aumentada_final);
     setHTML(matrices, mHTML);
 

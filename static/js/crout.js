@@ -224,6 +224,7 @@
         return;
       }
 
+      console.log(data)
       showMessage("Crout decomposition completed successfully.", "success");
 
       if (Array.isArray(data.logs) && logsDiv) {
@@ -232,21 +233,50 @@
           const card = document.createElement("div");
           card.className = "card mb-3 shadow-sm";
 
-          let matrixHtml = "";
-          if (log.matrix) {
-            matrixHtml = ensureGaussTableClass(String(log.matrix));
-          } else if (log.matrix_html) {
-            matrixHtml = ensureGaussTableClass(String(log.matrix_html));
-          } else {
-            matrixHtml = "<em>No matrix available for this step.</em>";
-          }
+          let matrixL = "";
+          let matrixU = "";
 
-          card.innerHTML = `
-            <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
-            <div class="card-body">
-              <div class="gauss-table-wrapper">${matrixHtml}</div>
-            </div>
-          `;
+          if (log.L_html) {
+            matrixL = ensureGaussTableClass(String(log.L_html));
+            matrixU = ensureGaussTableClass(String(log.U_html));
+            card.innerHTML = `
+              <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6">
+                      <div class="h5">L</div>
+                      <div class="gauss-table-wrapper">${matrixL}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="h5">U</div>
+                      <div class="gauss-table-wrapper">${matrixU}</div>
+                    </div>
+                  </div>
+                </div>
+            `;
+          } else if (log.L_json) {
+            matrixL = ensureGaussTableClass(String(log.L_json));
+            matrixU = ensureGaussTableClass(String(log.U_json));
+            card.innerHTML = `
+              <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6">
+                      <div class="h5">L</div>
+                      <div class="gauss-table-wrapper">${matrixL}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="h5">U</div>
+                      <div class="gauss-table-wrapper">${matrixU}</div>
+                    </div>
+                  </div>
+                </div>
+            `;
+          } else if(log.matrix){
+              card.innerHTML = `
+              <div class="card-header bg-light"><b>${escapeHtml(log.step || `Step ${idx + 1}`)}</b> - ${escapeHtml(log.message || "")}</div>
+            `;
+          }
 
           logsDiv.appendChild(card);
         });

@@ -1,13 +1,26 @@
 import numpy as np
 from sympy import symbols, simplify, expand
 
-def divided_differences_safe(x, y, eps=1e-14, max_value=1e12):
-    """
-    Computes divided differences with numerical validations.
-    Returns: diff, status, message
-    status ∈ {"success", "danger", "info"}
-    """
+# ----------------- Helpers de formateo -----------------
 
+def fmt_num(v):
+    """Convierte 3.0 → '3', -2.0 → '-2', pero deja decimales reales."""
+    v = float(v)
+    if v.is_integer():
+        return str(int(v))
+    return str(v)
+
+def fmt_x_minus(value):
+    """Devuelve (x - a) o (x + a) según el signo, con formato limpio."""
+    v = float(value)
+    if v >= 0:
+        return f"(x - {fmt_num(v)})"
+    else:
+        return f"(x + {fmt_num(abs(v))})"
+
+# --------------------------------------------------------
+
+def divided_differences_safe(x, y, eps=1e-14, max_value=1e12):
     x = np.array(x, dtype=float)
     y = np.array(y, dtype=float)
     n = len(x)
@@ -34,34 +47,30 @@ def divided_differences_safe(x, y, eps=1e-14, max_value=1e12):
 
 
 def build_newton_interpolant(x, diff):
-    """
-    Builds:
-    - symbolic expression P(x)
-    - Newton form expression as string
-    Returns dict.
-    """
-
     x_sym = symbols('x')
     n = len(x)
     b = [diff[0, i] for i in range(n)]
 
-    # Symbolic polynomial
+    # ----- Polinomio simbólico -----
     P = b[0]
     prod = 1
+
     for i in range(1, n):
         prod *= (x_sym - x[i - 1])
         P += b[i] * prod
 
     expr_sym = simplify(expand(P))
 
-    # Newton string
+    # ----- String de la forma de Newton -----
     newton_terms = []
+
     for i in range(n):
+        bi = fmt_num(b[i])
         if i == 0:
-            newton_terms.append(f"{b[i]}")
+            newton_terms.append(f"{bi}")
         else:
-            factors = "".join([f"(x - {x[j]})" for j in range(i)])
-            newton_terms.append(f"{b[i]}*{factors}")
+            factors = "".join([fmt_x_minus(x[j]) for j in range(i)])
+            newton_terms.append(f"{bi}*{factors}")
 
     newton_poly_str = " + ".join(newton_terms)
 
@@ -72,14 +81,6 @@ def build_newton_interpolant(x, diff):
 
 
 def newton_interpolant_object(x, y):
-    """
-    Returns an OBJECT containing:
-      - status  → "danger" | "success" | "info"
-      - message
-      - symbolic_expression (string)
-      - polynomial_newton (string)
-    """
-
     diff, status, message = divided_differences_safe(x, y)
 
     if status != "success":
@@ -95,6 +96,6 @@ def newton_interpolant_object(x, y):
     return {
         "status": "success",
         "message": message,
-        "symbolic_expression": result["symbolic_expression"],   # Example: "2*x**3 + 3*x**4"
-        "polynomial_newton": result["polynomial_newton"]        # Newton form
+        "symbolic_expression": result["symbolic_expression"],
+        "polynomial_newton": result["polynomial_newton"]
     }

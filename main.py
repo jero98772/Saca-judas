@@ -302,7 +302,7 @@ async def gauss_simple_post(request: Request):
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
     
-@app.post("/eval/gauss_partial", response_class=JSONResponse)
+@app.post("/eval/gauss_total", response_class=JSONResponse)
 async def gauss_total_post(request: Request):
     try:
     
@@ -396,7 +396,7 @@ async def gauss_total_post(request: Request):
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
     
-@app.post("/eval/gauss_total", response_class=JSONResponse)
+@app.post("/eval/gauss_partial", response_class=JSONResponse)
 async def gauss_partial_post(request: Request):
     try:
     

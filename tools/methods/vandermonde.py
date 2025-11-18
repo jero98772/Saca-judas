@@ -1,12 +1,12 @@
 # tools/methods/vandermonde.py
 # -*- coding: utf-8 -*-
 """
-Interpolación con matriz de Vandermonde — usa TU implementación si existe
-(por ejemplo en tools/methods/Vandermonde_mio.py o vandermonde_mio.py) y
-solo la envuelve para retornar un dict JSON-friendly.
+Interpolation with Vandermonde matrix — uses YOUR implementation if it exists
+(for example in tools/methods/Vandermonde_mio.py or vandermonde_mio.py) and
+just wraps it to return a JSON-friendly dict.
 
-Exporta:
-- compute_vandermonde(x, y, decimals=6) -> dict con:
+Exports:
+- compute_vandermonde(x, y, decimals=6) -> dict with:
   {
     "coeficientes": [a0, a1, ..., a_{n-1}],
     "V": [[...], ...],
@@ -20,19 +20,19 @@ import numpy as np
 import importlib
 import inspect
 
-# ========= CANDIDATOS: módulo y nombres que podría tener tu función =========
+# ========= CANDIDATES: module and names your function might have =========
 CANDIDATE_MODULES = [
     "tools.methods.Vandermonde_mio",
     "tools.methods.vandermonde_mio",
     "tools.methods.vandermonde_user",
-    # por si lo dejaste en la raíz del proyecto:
+    # in case you left it at the project root:
     "Vandermonde_mio",
     "vandermonde_mio",
     "vandermonde_user",
 ]
 
 MAIN_FUNC_NAMES = [
-    # funciones que podrían devolver coeficientes, V y/o dict:
+    # functions that might return coefficients, V and/or a dict:
     "vandermonde_mio",
     "resolver_vandermonde",
     "interpolacion_vandermonde",
@@ -42,13 +42,13 @@ MAIN_FUNC_NAMES = [
 ]
 
 V_ONLY_FUNC_NAMES = [
-    # funciones que quizá solo construyen la matriz de Vandermonde:
+    # functions that might only build the Vandermonde matrix:
     "matriz_vandermonde",
     "construir_vandermonde",
     "build_vandermonde",
 ]
 
-# ========= utilidades de soporte (no reemplazan tu lógica) =========
+# ========= support utilities (do not replace your logic) =========
 def _to_2d_list(M: np.ndarray):
     return [[float(c) for c in row] for row in M]
 
@@ -95,12 +95,12 @@ def _get_first_callable(mod, names) -> Optional[Callable]:
 
 def _call_user_main(fn: Callable, x: List[float], y: List[float], decimals: int) -> Dict[str, Any]:
     """
-    Intenta varias firmas comunes para TU función:
+    Tries several common signatures for YOUR function:
       - fn(x, y)
       - fn(x, y, decimals)
       - fn(x, y, True/False)
-    Acepta retornos: dict, (coef,), (coef, V), (coef, V, poly), etc.
-    Normaliza a un dict estándar.
+    Accepts returns: dict, (coef,), (coef, V), (coef, V, poly), etc.
+    Normalizes to a standard dict.
     """
     sig = inspect.signature(fn)
     params = list(sig.parameters.keys())
@@ -109,15 +109,15 @@ def _call_user_main(fn: Callable, x: List[float], y: List[float], decimals: int)
     if len(params) >= 2:
         tries.append((x, y))
     if len(params) >= 3:
-        # primero intentamos con decimals por si tu función lo usa
+        # first we try with decimals in case your function uses it
         tries.append((x, y, decimals))
-        # alternativa booleana (track/verbose/etc.)
+        # boolean alternative (track/verbose/etc.)
         tries.append((x, y, True))
 
     for args in tries:
         try:
             out = fn(*args)
-            # 1) si ya es dict con nuestras claves
+            # 1) if it is already a dict with our keys
             if isinstance(out, dict):
                 res = {}
                 coef = out.get("coeficientes") or out.get("coef") or out.get("a")
@@ -135,12 +135,12 @@ def _call_user_main(fn: Callable, x: List[float], y: List[float], decimals: int)
                     res["polinomio"] = poly
                 return res
 
-            # 2) si es tupla/lista con varias salidas
+            # 2) if it is a tuple/list with multiple outputs
             if isinstance(out, (list, tuple)):
                 coef = None
                 V = None
                 poly = None
-                # mapea por longitud:
+                # map by length:
                 if len(out) >= 1:
                     coef = np.array(out[0], dtype=float)
                 if len(out) >= 2:
@@ -163,30 +163,30 @@ def _call_user_main(fn: Callable, x: List[float], y: List[float], decimals: int)
         except Exception:
             continue
 
-    raise RuntimeError("No se pudo invocar tu función de Vandermonde con firmas conocidas.")
+    raise RuntimeError("Could not call your Vandermonde function with known signatures.")
 
 def _call_user_V_only(fnV: Callable, x: List[float], y: List[float], decimals: int) -> Dict[str, Any]:
     """
-    Si tu módulo solo expone la construcción de V, la usamos y resolvemos coeficientes.
-    Soporta firmas fnV(x) o fnV(x, n).
+    If your module only exposes the construction of V, we use it and then solve for coefficients.
+    Supports signatures fnV(x) or fnV(x, n).
     """
     n = len(x)
     try:
-        # intentos típicos
+        # typical attempts
         try:
-            V = fnV(x, n)  # firma: (x, n)
+            V = fnV(x, n)  # signature: (x, n)
         except TypeError:
-            V = fnV(x)     # firma: (x)
+            V = fnV(x)     # signature: (x)
         V = np.array(V, dtype=float)
     except Exception:
-        # si falla, construimos nosotros
+        # if it fails, we build it ourselves
         V = _vandermonde_matrix(x, n)
 
-    # resolver V a = y
+    # solve V a = y
     try:
         coef = np.linalg.solve(V, np.array(y, dtype=float))
     except np.linalg.LinAlgError as e:
-        raise ValueError("La matriz de Vandermonde es singular (x repetidos o mal condicionados).") from e
+        raise ValueError("The Vandermonde matrix is singular (repeated x or ill-conditioned).") from e
 
     return {
         "coeficientes": [float(v) for v in coef],
@@ -195,34 +195,34 @@ def _call_user_V_only(fnV: Callable, x: List[float], y: List[float], decimals: i
         "grado": len(coef) - 1,
     }
 
-# ========= API principal (usada por FastAPI) =========
+# ========= main API (used by FastAPI) =========
 def compute_vandermonde(x: List[float], y: List[float], decimals: int = 6) -> Dict[str, Any]:
     """
-    Usa TU implementación si está disponible; si no, resuelve con fallback
-    (sin romper la app).
+    Uses YOUR implementation if available; otherwise, solves with a fallback
+    (without breaking the app).
     """
     if not (isinstance(x, list) and isinstance(y, list) and len(x) == len(y) and len(x) >= 2):
-        raise ValueError("x e y deben ser listas no vacías del mismo tamaño (>= 2).")
+        raise ValueError("x and y must be non-empty lists of the same size (>= 2).")
 
-    # 1) intenta cargar tu módulo
+    # 1) try to load your module
     user_mod = _import_first(CANDIDATE_MODULES)
 
-    # 2) si hay función principal de usuario, úsala
+    # 2) if there is a main user function, use it
     user_main = _get_first_callable(user_mod, MAIN_FUNC_NAMES) if user_mod else None
     if user_main:
         return _call_user_main(user_main, x, y, decimals)
 
-    # 3) si solo hay función de matriz V, úsala y resuelve
+    # 3) if there is only a V-matrix function, use it and solve
     user_vonly = _get_first_callable(user_mod, V_ONLY_FUNC_NAMES) if user_mod else None
     if user_vonly:
         return _call_user_V_only(user_vonly, x, y, decimals)
 
-    # 4) fallback (por si no metiste aún tu módulo): resolvemos directo
+    # 4) fallback (in case you haven't added your module yet): solve directly
     V = _vandermonde_matrix(x)
     try:
         coef = np.linalg.solve(V, np.array(y, dtype=float))
     except np.linalg.LinAlgError as e:
-        raise ValueError("La matriz de Vandermonde es singular (x repetidos o mal condicionados).") from e
+        raise ValueError("The Vandermonde matrix is singular (repeated x or ill-conditioned).") from e
 
     return {
         "coeficientes": [float(v) for v in coef],

@@ -1,12 +1,12 @@
 # tools/methods/lineal_tracers.py
 # -*- coding: utf-8 -*-
 """
-Trazadores lineales (spline lineal) — usa TU implementación si existe
-(por ejemplo en tools/methods/Trazadores_lineales_mio.py) y la envuelve para
-devolver un dict JSON-friendly que consume la web.
+Linear tracers (linear spline) — uses YOUR implementation if it exists
+(for example in tools/methods/Trazadores_lineales_mio.py) and wraps it to
+return a JSON-friendly dict consumed by the web.
 
-Exporta:
-- compute_trazadores_lineales(x, y, decimals=6) -> dict con:
+Exports:
+- compute_trazadores_lineales(x, y, decimals=6) -> dict with:
   {
     "tramos": [
       {"intervalo": [xi, xi1], "pendiente": m, "intercepto": b}
@@ -22,19 +22,19 @@ import importlib
 import inspect
 
 
-# ========= dónde buscar TU módulo / función =========
+# ========= where to look for YOUR module / function =========
 CANDIDATE_MODULES = [
     "tools.methods.Trazadores_lineales_mio",
     "tools.methods.trazadores_lineales_mio",
     "tools.methods.lineal_tracers_mio",
-    # por si lo dejaste en la raíz del repo
+    # in case you left it at the repo root
     "Trazadores_lineales_mio",
     "trazadores_lineales_mio",
     "lineal_tracers_mio",
 ]
 
 MAIN_FUNC_NAMES = [
-    # nombres típicos que podrías haber usado
+    # typical names you might have used
     "trazadores_lineales_mio",
     "trazadores_lineales",
     "lineal_tracers_mio",
@@ -63,7 +63,7 @@ def _get_first_callable(mod, names) -> Optional[Callable]:
 
 def _normalize_result_from_user(out, x: List[float], y: List[float], decimals: int) -> Dict[str, Any]:
     """
-    Acepta varias formas de retorno (dict, tuplas/listas) y normaliza a:
+    Accepts various return formats (dict, tuples/lists) and normalizes to:
     {
       "tramos": [{"intervalo":[xi,xi1], "pendiente":m, "intercepto":b}, ...],
       "ecuaciones": ["S0(x) = ...", ...],
@@ -72,7 +72,7 @@ def _normalize_result_from_user(out, x: List[float], y: List[float], decimals: i
     """
     def fmt_num(v: float) -> float:
         v = float(v)
-        # no redondeo duro aquí; dejo el float tal cual para que el frontend decida cómo mostrar
+        # no hard rounding here; keep the float as-is and let the frontend decide how to display it
         return v
 
     def tramo_str(i, m, b, xi, xi1):
@@ -85,30 +85,30 @@ def _normalize_result_from_user(out, x: List[float], y: List[float], decimals: i
     tramos = []
     ecuaciones = []
 
-    # Caso 1: ya viene dict con claves conocidas
+    # Case 1: already a dict with known keys
     if isinstance(out, dict):
-        # posibles nombres:
+        # possible names:
         segs = out.get("tramos") or out.get("segments") or out.get("spline") or out.get("S")
         m_list = out.get("pendientes") or out.get("m") or out.get("slopes")
         b_list = out.get("interceptos") or out.get("b") or out.get("intercepts")
         eq_list = out.get("ecuaciones") or out.get("equations")
 
         if segs and isinstance(segs, list):
-            # cada seg puede ser dict {"intervalo":[xi,xi1], "pendiente":m, "intercepto":b}
+            # each seg can be a dict {"intervalo":[xi,xi1], "pendiente":m, "intercepto":b}
             for i, seg in enumerate(segs):
                 if isinstance(seg, dict):
                     xi, xi1 = seg.get("intervalo", [x[i], x[i+1]])
                     m = seg.get("pendiente")
                     b = seg.get("intercepto")
                 else:
-                    # o forma [xi, xi1, m, b]
+                    # or form [xi, xi1, m, b]
                     xi, xi1, m, b = seg
                 tramos.append({"intervalo": [fmt_num(xi), fmt_num(xi1)],
                                "pendiente": fmt_num(m), "intercepto": fmt_num(b)})
                 ecuaciones.append(tramo_str(i, float(m), float(b), float(xi), float(xi1)))
 
         elif m_list is not None and b_list is not None:
-            # construir a partir de m y b
+            # build from m and b
             m_list = list(map(float, m_list))
             b_list = list(map(float, b_list))
             for i in range(len(m_list)):
@@ -127,9 +127,9 @@ def _normalize_result_from_user(out, x: List[float], y: List[float], decimals: i
 
         return res
 
-    # Caso 2: tupla/lista: [(m0,b0), (m1,b1), ...] o (m_list, b_list) o similar
+    # Case 2: tuple/list: [(m0,b0), (m1,b1), ...] or (m_list, b_list) or similar
     if isinstance(out, (list, tuple)):
-        # (a) lista de pares (m,b) por tramo
+        # (a) list of (m,b) pairs per segment
         if out and all(isinstance(t, (list, tuple)) and len(t) >= 2 for t in out) and not isinstance(out[0], (float, int)):
             for i, t in enumerate(out):
                 m, b = float(t[0]), float(t[1])
@@ -152,14 +152,14 @@ def _normalize_result_from_user(out, x: List[float], y: List[float], decimals: i
             res["ecuaciones"] = ecuaciones
             return res
 
-    # si no pude normalizar, devuelvo lo que haya
+    # if it could not be normalized, return whatever we have
     res["detalle"] = out
     return res
 
 
 def _fallback_compute(x: List[float], y: List[float], decimals: int) -> Dict[str, Any]:
     """
-    Fallback simple: arma el spline lineal con m_i = (y_{i+1} - y_i)/(x_{i+1}-x_i) y b_i = y_i - m_i x_i.
+    Simple fallback: builds the linear spline with m_i = (y_{i+1} - y_i)/(x_{i+1}-x_i) and b_i = y_i - m_i x_i.
     """
     x_arr = np.array(x, dtype=float)
     y_arr = np.array(y, dtype=float)
@@ -169,7 +169,7 @@ def _fallback_compute(x: List[float], y: List[float], decimals: int) -> Dict[str
     for i in range(n-1):
         dx = x_arr[i+1] - x_arr[i]
         if abs(dx) < 1e-15:
-            raise ValueError("Hay puntos x repetidos; no se puede construir el trazador lineal.")
+            raise ValueError("There are repeated x points; the linear tracer cannot be built.")
         m = (y_arr[i+1] - y_arr[i]) / dx
         b = y_arr[i] - m * x_arr[i]
         tramos.append({"intervalo": [float(x_arr[i]), float(x_arr[i+1])],
@@ -182,24 +182,24 @@ def _fallback_compute(x: List[float], y: List[float], decimals: int) -> Dict[str
     return {"tramos": tramos, "ecuaciones": ecuaciones, "x": list(map(float, x)), "y": list(map(float, y))}
 
 
-# ========= API principal (usada por FastAPI) =========
+# ========= main API (used by FastAPI) =========
 def compute_trazadores_lineales(x: List[float], y: List[float], decimals: int = 6) -> Dict[str, Any]:
     """
-    Usa TU implementación si está disponible; si no, aplica un fallback lineal estándar.
+    Uses YOUR implementation if available; otherwise, applies a standard linear fallback.
     """
     if not (isinstance(x, list) and isinstance(y, list) and len(x) == len(y) and len(x) >= 2):
-        raise ValueError("x e y deben ser listas del mismo tamaño (>= 2).")
-    # sugerencia: x estrictamente creciente
+        raise ValueError("x and y must be lists of the same size (>= 2).")
+    # suggestion: x strictly increasing
     if any((x[i+1] - x[i]) == 0 for i in range(len(x)-1)):
-        raise ValueError("Hay valores de x repetidos; los trazadores requieren x estrictamente crecientes.")
+        raise ValueError("There are repeated x values; linear tracers require strictly increasing x values.")
 
-    # 1) intenta cargar tu módulo
+    # 1) try to load your module
     user_mod = _import_first(CANDIDATE_MODULES)
 
-    # 2) intenta tu función principal
+    # 2) try your main function
     user_main = _get_first_callable(user_mod, MAIN_FUNC_NAMES) if user_mod else None
     if user_main:
-        # Firma típica: f(x, y) ó f(x, y, decimals) ó f(x, y, True)
+        # Typical signatures: f(x, y) OR f(x, y, decimals) OR f(x, y, True)
         sig = inspect.signature(user_main)
         params = list(sig.parameters.keys())
         tries = []
@@ -215,8 +215,8 @@ def compute_trazadores_lineales(x: List[float], y: List[float], decimals: int = 
                 return _normalize_result_from_user(out, x, y, decimals)
             except Exception:
                 continue
-        # si no hubo suerte con las firmas, caemos al fallback
+        # if signatures did not work, fall back
         return _fallback_compute(x, y, decimals)
 
-    # 3) fallback (no encontré tu módulo/función)
+    # 3) fallback (module/function not found)
     return _fallback_compute(x, y, decimals)

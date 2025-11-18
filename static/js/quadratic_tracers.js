@@ -15,7 +15,8 @@ function validatePointsStrict(xArr, yArr, minPoints) {
     if (!Number.isFinite(yNums[i])) return { ok: false, reason: `y[${i}] is not a finite number.` };
   }
 
-  const distinctX = new Set(xNums.map(v => String(v)));
+
+  const distinctX = new Set(xNums.map(v => String(v))); 
   if (distinctX.size < minPoints) return { ok: false, reason: `At least ${minPoints} distinct x values are required.` };
 
   return { ok: true, x: xNums, y: yNums };
@@ -36,12 +37,12 @@ function addLog(entry) {
 
   if (entry.segment !== undefined) div.dataset.segment = entry.segment;
 
-  const { a, b, c, d } = entry.coefficients || {};
+  const { a, b, c } = entry.coefficients || {};
   const interval = entry.interval || [];
 
   div.innerHTML = `
     <strong>s_${entry.segment}:</strong>
-      a=${a}, b=${b}, c=${c}, d=${d}
+      a=${a}, b=${b}, c=${c}
     <br>
     <strong>interval:</strong> [${interval[0]}, ${interval[1]}]
   `;
@@ -55,9 +56,11 @@ function buildPlotData(xNodes, logs) {
   logs.forEach(log => {
     if (!log || !log.coefficients || !Array.isArray(log.interval)) return;
 
-    const { a, b, c, d } = log.coefficients;
+    const { a, b, c } = log.coefficients;
     const [xi, xi1] = log.interval;
-    const expr = `${Number(a)} + ${Number(b)}*(x - ${Number(xi)}) + ${Number(c)}*(x - ${Number(xi)})^2 + ${Number(d)}*(x - ${Number(xi)})^3`;
+
+    // FIX: pow en vez de ^
+    const expr = `${Number(a)} + ${Number(b)}*(x - ${Number(xi)}) + ${Number(c)}*pow(x - ${Number(xi)}, 2)`;
 
     data.push({
       fn: expr,
@@ -68,6 +71,7 @@ function buildPlotData(xNodes, logs) {
 
   return data;
 }
+
 
 function renderPlot(plotData) {
   const container = document.getElementById("graph-container");
@@ -126,7 +130,7 @@ function highlightLog(segmentId) {
 
 
 let lastLogs = [];
-let xVal = null;
+let xVal = null;     // valor evaluado (global)
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -171,13 +175,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const pts = (typeof getPointsValues === "function") ? getPointsValues("pointsGrid") : null;
     if (!pts) {
       showMessage("Function getPointsValues doesn't available.", "danger");
-      console.error("getPointsValues is not defined.");
+      console.error("getPointsValues no está definida");
       return;
     }
     let { x, y } = pts;
 
 
-    const v = validatePointsStrict(x, y, 3);
+    const v = validatePointsStrict(x, y, 2);
     if (!v.ok) {
       return showMessage(v.reason, "danger");
     }
@@ -201,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       console.log("Sending payload (sorted) to the backend:", { x: x_sorted, y: y_sorted });
-      const response = await fetch("/eval/cubic_spline", {
+      const response = await fetch("/eval/quadratic_spline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ x: x_sorted, y: y_sorted })
@@ -235,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Mostrar logs y graficar
       lastLogs.forEach(addLog);
       renderPlot(buildPlotData(x_sorted, lastLogs));
-      showMessage("Cubic tracers computed successfully.", "success");
+      showMessage("Quadratic tracers computed successfully.", "success");
 
       // Mover el apartado de evaluación al final del panel de Tracers y mostrarlo
       moveEvalSectionToEndOfTracers();
@@ -244,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     } catch (err) {
-      console.error("Error on fetch /eval/cubic_spline:", err);
+      console.error("Error on fetch /eval/quadratic_spline:", err);
       showMessage("Conection error.", "danger");
     }
   });
@@ -255,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultDiv = document.getElementById("eval-result");
       const input = document.getElementById("eval-x");
       if (!input) {
-        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">Input not found.</span>`;
+        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">Input no encontrado.</span>`;
         return;
       }
 
@@ -292,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const coeff = found.coefficients || {};
       const xi0 = Number(found.interval[0]);
       const dx = xEval - xi0;
-      const yEval = Number(coeff.a || 0) + Number(coeff.b || 0)*dx + Number(coeff.c || 0)*(dx*dx) + Number(coeff.d || 0)*(dx*dx*dx);
+      const yEval = Number(coeff.a || 0) + Number(coeff.b || 0)*dx + Number(coeff.c || 0)*(dx*dx);
 
       if (resultDiv) {
         resultDiv.innerHTML = `

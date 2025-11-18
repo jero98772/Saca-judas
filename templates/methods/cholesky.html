@@ -14,14 +14,14 @@
       </div>
 
       <div class="row g-3">
-        <!-- Input -->
+        <!-- Input card -->
         <div class="col-lg-5">
           <div class="card h-100">
             <div class="card-body">
               <h5 class="mb-3">Input</h5>
 
-              <!-- Size (square) -->
-              <div class="row g-2 align-items-end text-start mb-3">
+              <!-- Size -->
+              <div class="row g-2 text-start mb-3">
                 <div class="col-12">
                   <label class="form-label mb-1">Size (n × n)</label>
                   <input id="sizeN" type="number" class="form-control" min="1" max="12" value="3">
@@ -49,7 +49,7 @@
           </div>
         </div>
 
-        <!-- Results -->
+        <!-- Result card -->
         <div class="col-lg-7">
           <div class="card h-100">
             <div class="card-body">
@@ -58,12 +58,11 @@
               <div id="loading" class="d-none text-muted mb-2">Computing…</div>
 
               <div id="solucion"></div>
-              <div id="matrices"></div>
               <div id="otros"></div>
+              <div id="matrices"></div>
             </div>
           </div>
         </div>
-
       </div>
 
     </div>
@@ -79,7 +78,6 @@
     font-weight:600;
   }
 
-  /* center input grids */
   .matrix-input-wrapper{
     text-align:center;
   }
@@ -88,7 +86,7 @@
     margin-left:4px;
   }
 
-  /* bigger input cells */
+  /* bigger input cells for matrix and vector */
   .matrix-grid table{
     border-collapse:separate;
     border-spacing:6px;
@@ -103,36 +101,6 @@
     text-align:center;
     padding:4px 6px;
     font-size:0.95rem;
-  }
-
-  /* result cards & grids */
-  .lu-result-card {
-    border: 1px solid #dee2e6;
-    box-shadow: 0 1px 2px rgba(0,0,0,.05);
-  }
-  .lu-result-card .card-header {
-    background: #f8f9fa;
-    font-size: 0.9rem;
-  }
-  .lu-grid{
-    display:inline-block;
-    padding:6px 10px;
-    border-radius:10px;
-    background:#ffffff;
-  }
-  .lu-grid table{
-    border-collapse:separate;
-    border-spacing:6px;
-  }
-  .lu-grid td{
-    min-width:80px;
-    height:36px;
-    padding:4px 10px;
-    border-radius:6px;
-    border:1px solid #ced4da;
-    text-align:center;
-    font-family:monospace;
-    font-size:0.9rem;
   }
 
   /* Gaussian-style compute button */
@@ -156,7 +124,7 @@
       0 0 20px rgba(0,255,77,1);
   }
 
-  /* Example button: light green with glow */
+  /* light green example button */
   .btn-fill-example{
     background-color:#b8ffd0;
     border:1px solid #46e67f;
@@ -170,28 +138,61 @@
     background-color:#a3ffbf;
     box-shadow:0 0 10px rgba(0,255,136,0.9);
   }
+
+  /* LU-style result cards */
+  .lu-result-card{
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  .lu-result-card .card-header{
+    background:#f8f9fa;
+    font-size:0.9rem;
+  }
+  .lu-grid{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:10px;
+    background:#ffffff;
+  }
+  .lu-grid table{
+    border-collapse:separate;
+    border-spacing:6px;
+  }
+  .lu-grid td{
+    min-width:90px;
+    height:40px;
+    padding:4px 10px;
+    border-radius:6px;
+    border:1px solid #ced4da;
+    text-align:center;
+    font-family:monospace;
+    font-size:0.95rem;
+  }
 </style>
 
 <script>
+/* ===== helpers ===== */
 function fmt(v){
+  // Keep complex strings like "1.937106i" as they are
   if (typeof v === 'string') {
+    if (v.includes('i')) return v;
     const num = Number(v);
-    if (!isNaN(num)) v = num;
+    if (!Number.isNaN(num)) v = num;
+    else return v;
   }
   if (typeof v === 'number' && isFinite(v)) {
-    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6)
-      ? v.toExponential(6)
-      : v.toFixed(6);
+    return Number(v.toFixed(6));
   }
   return v;
 }
 
-function renderTable(title, matrix){
-  if(!matrix) return '';
+/* solo el grid con estilo LU */
+function renderGrid(matrix){
+  if (!matrix) return '';
   const isVector = Array.isArray(matrix) && matrix.length && !Array.isArray(matrix[0]);
 
   let rowsHTML = '';
-  if(isVector){
+  if (isVector){
     rowsHTML = '<tr>' + matrix.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
   } else {
     rowsHTML = matrix
@@ -200,18 +201,26 @@ function renderTable(title, matrix){
   }
 
   return `
+    <div class="lu-grid">
+      <table>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* card de resultado estilo LU */
+function renderTable(title, matrix){
+  if (!matrix) return '';
+  return `
     <div class="card lu-result-card mb-3 text-start">
       <div class="card-header py-2 text-center">
         <strong>${title}</strong>
       </div>
       <div class="card-body text-center">
-        <div class="lu-grid">
-          <table>
-            <tbody>
-              ${rowsHTML}
-            </tbody>
-          </table>
-        </div>
+        ${renderGrid(matrix)}
       </div>
     </div>
   `;
@@ -220,21 +229,20 @@ function renderTable(title, matrix){
 function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
 function setHTML(el, html){ el.innerHTML = html; }
 
+/* ===== build inputs ===== */
 function buildMatrixInputs(n){
   const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
   for(let i=0;i<n;i++){
     const tr = document.createElement('tr');
     for(let j=0;j<n;j++){
       const td = document.createElement('td');
       const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.value = (i===j) ? '1' : '0';
-      inp.placeholder = '0';
-      inp.dataset.i = i;
-      inp.dataset.j = j;
-      td.appendChild(inp);
-      tr.appendChild(td);
+      inp.type = 'number'; inp.step = 'any';
+      inp.className = 'form-control form-control-sm';
+      inp.value = (i === j) ? '4' : '1';
+      td.appendChild(inp); tr.appendChild(td);
     }
     tbody.appendChild(tr);
   }
@@ -242,19 +250,18 @@ function buildMatrixInputs(n){
   return table;
 }
 
-function buildVectorInputs(n){
+function buildVectorInputs(n, def=0){
   const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered align-middle m-0';
   const tbody = document.createElement('tbody');
   for(let i=0;i<n;i++){
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.value = '0';
-    inp.placeholder = '0';
-    inp.dataset.k = i;
-    td.appendChild(inp);
-    tr.appendChild(td);
+    inp.type = 'number'; inp.step = 'any';
+    inp.className = 'form-control form-control-sm';
+    inp.value = String(def);
+    td.appendChild(inp); tr.appendChild(td);
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
@@ -265,23 +272,19 @@ function readMatrix(container){
   const rows = [];
   container.querySelectorAll('tr').forEach(tr=>{
     const row = [];
-    tr.querySelectorAll('input').forEach(inp=>{
-      const val = parseFloat((inp.value || '0').replace(',', '.'));
-      row.push(isNaN(val) ? 0 : val);
-    });
+    tr.querySelectorAll('input').forEach(inp=> row.push(parseFloat(inp.value || '0')));
     rows.push(row);
   });
   return rows;
 }
+
 function readVector(container){
   const v = [];
-  container.querySelectorAll('input').forEach(inp=>{
-    const val = parseFloat((inp.value || '0').replace(',', '.'));
-    v.push(isNaN(val) ? 0 : val);
-  });
+  container.querySelectorAll('input').forEach(inp=> v.push(parseFloat(inp.value || '0')));
   return v;
 }
 
+/* ===== DOM refs ===== */
 const sizeN = document.getElementById('sizeN');
 const matrixAContainer = document.getElementById('matrixAContainer');
 const vectorBContainer = document.getElementById('vectorBContainer');
@@ -296,34 +299,35 @@ const solucion = document.getElementById('solucion');
 const matrices = document.getElementById('matrices');
 const otros = document.getElementById('otros');
 
+/* ===== initial state ===== */
 function rebuild(){
   const n = Math.max(1, Math.min(12, parseInt(sizeN.value || '1', 10)));
   sizeN.value = n;
   matrixAContainer.innerHTML = '';
   vectorBContainer.innerHTML = '';
   matrixAContainer.appendChild(buildMatrixInputs(n));
-  vectorBContainer.appendChild(buildVectorInputs(n));
+  vectorBContainer.appendChild(buildVectorInputs(n, 0));
 }
 sizeN.addEventListener('change', rebuild);
 
-/* SPD example */
+/* SPD example (the one you showed) */
 exampleBtn.addEventListener('click', ()=>{
   const A = [
-    [4, 1, 1],
-    [1, 3, 0],
-    [1, 0, 2]
+    [4, -1, 0, 3],
+    [1, 15.5, 3, 8],
+    [0, -1.3, -4, 1.1],
+    [14, 5, -2, 30]
   ];
-  const b = [1, 2, 3];
-  sizeN.value = 3; rebuild();
+  const b = [1, 1, 1, 1];
+
+  sizeN.value = A.length; rebuild();
   matrixAContainer.querySelectorAll('tr').forEach((tr,i)=>{
-    tr.querySelectorAll('input').forEach((inp,j)=>{
-      inp.value = (A[i]?.[j] ?? 0);
-    });
+    tr.querySelectorAll('input').forEach((inp,j)=> inp.value = A[i][j]);
   });
-  vectorBContainer.querySelectorAll('input').forEach((inp,k)=> inp.value = (b[k] ?? 0));
+  vectorBContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = b[i]);
 });
 
-/* clear */
+/* clear all */
 clearBtn.addEventListener('click', ()=>{
   matrixAContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
   vectorBContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
@@ -331,7 +335,7 @@ clearBtn.addEventListener('click', ()=>{
   show(alertBox, false);
 });
 
-/* compute */
+/* ===== compute ===== */
 runBtn.addEventListener('click', async ()=>{
   setHTML(solucion,''); setHTML(matrices,''); setHTML(otros,'');
   show(alertBox, false); show(loading, true);
@@ -345,47 +349,79 @@ runBtn.addEventListener('click', async ()=>{
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ A, b })
     });
+
     const data = await res.json();
     show(loading, false);
 
-    if(!res.ok || data.error){
+    if (!res.ok || data.error){
+      // show Python error (SPD fail, shape issues, etc.)
       alertBox.textContent = data.error || 'Computation error';
       show(alertBox, true);
-      return;
     }
 
-    // solution x
-    if (data.x) setHTML(solucion, renderTable('Solution x', data.x));
+    // ---- solution x ----
+    if (data.x) {
+      setHTML(solucion, renderTable('Solution x', data.x));
+    }
 
-    // extra vectors (y)
-    let extras = '';
-    if (data.y) extras += renderTable('Intermediate vector y (Ly = b)', data.y);
-    setHTML(otros, extras);
+    // ---- intermediate vector y ----
+    if (data.y) {
+      setHTML(otros, renderTable('Intermediate vector y (Ly = b)', data.y));
+    }
 
-    // matrices L and Lᵀ
+    // ---- matrices L and Lt ----
     let mHTML = '';
-    if (data.L) mHTML += renderTable('Matrix L', data.L);
+    if (data.L)  mHTML += renderTable('Matrix L', data.L);
     if (data.Lt) mHTML += renderTable('Matrix Lᵀ', data.Lt);
     setHTML(matrices, mHTML);
 
-    // steps (if provided)
+    // ---- steps / stages ----
     if (Array.isArray(data.etapas) && data.etapas.length){
-      let eHTML = '';
-      data.etapas.forEach((step, i) => {
-        const M = step && step.matrix ? step.matrix : step;
-        if (M) eHTML += renderTable(`Step ${i+1}`, M);
+      let stepsHTML = '<div class="text-start mt-3"><h6 class="mb-2">Steps</h6>';
+
+      data.etapas.forEach((step, idx) => {
+        let title;
+        let body = '';
+
+        // Step 0: original matrix A
+        if (step.A){
+          title = 'Step 0 – original matrix A';
+          body += renderGrid(step.A);
+        } else {
+          const k = step.k ?? (idx);
+          title = `Step ${k}`;
+          if (step.L){
+            body += '<div class="mb-2"><strong>L</strong><br>' + renderGrid(step.L) + '</div>';
+          }
+          if (step.U){
+            body += '<div class="mb-2"><strong>U</strong><br>' + renderGrid(step.U) + '</div>';
+          }
+        }
+
+        stepsHTML += `
+          <div class="card lu-result-card mb-2">
+            <div class="card-header py-2 text-center">
+              <strong>${title}</strong>
+            </div>
+            <div class="card-body text-center">
+              ${body}
+            </div>
+          </div>
+        `;
       });
-      matrices.insertAdjacentHTML('beforeend', eHTML);
+
+      stepsHTML += '</div>';
+      matrices.insertAdjacentHTML('beforeend', stepsHTML);
     }
 
   }catch(err){
     show(loading, false);
-    alertBox.textContent = 'Unexpected error: ' + (err?.message || err);
+    alertBox.textContent = 'Unexpected error: ' + (err && err.message ? err.message : err);
     show(alertBox, true);
   }
 });
 
-/* start with n = 3 */
+/* init: n = 3 */
 rebuild();
 </script>
 {% endblock %}

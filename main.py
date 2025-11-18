@@ -49,6 +49,7 @@ from tools.methods.lagrange import lagrange_interpolation_object
 
 #Trazadores
 from tools.methods.cubic_tracers import cubic_spline_method, save_cubic_tracer
+from tools.methods.quadratic_tracers import quadratic_spline_method, save_quadratic_tracer
 
 METHOD_CATEGORIES = {
     'Solution_of_Nonlinear_Equations': [
@@ -1086,6 +1087,60 @@ async def cubic_spline_post(request: Request):
             content={"error": f"Internal server error: {str(e)}"},
             status_code=500
         )
+    
+@app.post("/eval/quadratic_spline", response_class=JSONResponse)
+async def quadratic_spline_post(request: Request):
+    try:
+        try:
+            data = await request.json()
+        except Exception:
+            return JSONResponse(content={"error": "Invalid JSON body."}, status_code=400)
+
+        x = data.get("x")
+        y = data.get("y")
+
+        if x is None or y is None:
+            return JSONResponse(content={"error": "Parameters 'x' and 'y' are required."}, status_code=400)
+
+        if not isinstance(x, list) or not isinstance(y, list):
+            return JSONResponse(content={"error": "'x' and 'y' must be lists."}, status_code=400)
+
+        if len(x) != len(y):
+            return JSONResponse(content={"error": "'x' and 'y' must have the same length."}, status_code=400)
+
+        if len(x) < 2:
+            return JSONResponse(content={"error": "At least two points are required to build a quadratic spline."}, status_code=400)
+
+        x_conv = []
+        for i, val in enumerate(x):
+            f = to_float_safe(val)
+            if f is None:
+                return JSONResponse(content={"error": f"Non-numeric value in x[{i+1}] → {repr(val)}"}, status_code=400)
+            x_conv.append(f)
+
+        y_conv = []
+        for i, val in enumerate(y):
+            f = to_float_safe(val)
+            if f is None:
+                return JSONResponse(content={"error": f"Non-numeric value in y[{i+1}] → {repr(val)}"}, status_code=400)
+            y_conv.append(f)
+
+        try:
+            coefficients = quadratic_spline_method(x_conv, y_conv)
+        except Exception as e:
+            return JSONResponse(content={"error": f"Quadratic spline computation failed: {str(e)}"}, status_code=400)
+
+        # Convert coefficients to plain lists of floats (JSON safe)
+        coeffs_serializable = [[float(a), float(b), float(c)] for (a, b, c) in coefficients]
+
+        logs = save_quadratic_tracer(x_conv, coefficients)
+
+        result = {"coefficients": coeffs_serializable, "logs": logs}
+        return JSONResponse(content=jsonable_encoder(result), status_code=200)
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
+
 
 # ===================== 404 =====================
 @app.exception_handler(404)

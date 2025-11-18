@@ -1,70 +1,73 @@
 {% extends 'base.html' %}
+
 {% block content %}
+<div id="content">
+  <div class="container text-center">
+    <div class="row justify-content-center">
 
-<div class="container-fluid text-center">
-  <div class="row justify-content-center my-4">
-    <div class="col-11 col-md-10 col-lg-9">
+      <!-- ==== MAIN CARD: GRID + GRAPH ==== -->
+      <div class="col-12 col-lg-10 mb-3">
+        <div class="card p-4">
 
-      <div class="card mb-3">
-        <div class="card-body">
-          <h3 class="m-0">Linear Splines (Piecewise Linear Tracers)</h3>
+          <h2>Linear Tracers</h2>
+
+          <div class="row mt-4 d-flex">
+
+            <!-- POINTS GRID -->
+            <div class="col">
+              <label class="form-label fw-bold"
+                     style="width: 200px; display: block; text-align: center;">
+                Enter your points (X , Y)
+              </label>
+              <div id="pointsGrid" class="matrix-grid" style="width: 200px;"></div>
+            </div>
+
+            <!-- GRAPH -->
+            <div class="col">
+              <label class="form-label fw-bold">Tracers on the graph</label>
+
+              <div id="graph-container"
+                   class="border rounded p-4 text-muted"
+                   style="height: 350px; width: 100%; background: #fafafa; position: relative;">
+                <!-- function-plot draws here -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- MAIN BUTTON -->
+          <div class="mt-4">
+            <button id="solve-btn" class="btn btn-outline-success" type="button">
+              Compute Linear Tracers
+            </button>
+          </div>
+
+          <!-- EVALUATE A POINT -->
+          <div id="eval-section" class="mt-3 gap-2" style="display: none;">
+            <label for="eval-x" class="form-label mb-0 fw-bold">Evaluate at x =</label>
+            <input id="eval-x" type="number" step="any"
+                   class="form-control form-control-sm"
+                   style="width:140px" placeholder="e.g. 1.23">
+            <button id="eval-btn" class="btn btn-outline-primary btn-sm" type="button">
+              Compute
+            </button>
+
+            <div id="eval-result" class="ms-3" style="min-width:220px;">
+              <span class="text-muted">Enter a value and press compute</span>
+            </div>
+          </div>
+
+          <!-- MESSAGE -->
+          <div id="result-message" class="alert mt-3" style="display:none;"></div>
+
         </div>
       </div>
 
-      <div class="row g-3">
-        <!-- Input -->
-        <div class="col-lg-5">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Input</h5>
-
-              <div class="row g-2 align-items-end text-start mb-3">
-                <div class="col-12">
-                  <label class="form-label mb-1">Number of points (n ≥ 2)</label>
-                  <input id="nPoints" type="number" class="form-control" min="2" max="20" value="4">
-                </div>
-              </div>
-
-              <div class="matrix-input-wrapper">
-                <label class="form-label matrix-label">Vector x (strictly increasing)</label>
-                <div id="vectorXContainer" class="matrix-grid matrix-input"></div>
-              </div>
-
-              <div class="matrix-input-wrapper mt-3">
-                <label class="form-label matrix-label">Vector y</label>
-                <div id="vectorYContainer" class="matrix-grid matrix-input"></div>
-              </div>
-
-              <div class="d-grid gap-2 mt-3">
-                <button id="run" class="btn btn-calc-gauss">Calculate</button>
-                <button id="example" class="btn btn-fill-example">Fill example</button>
-                <button id="clear" class="btn btn-outline-danger">Clear</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Output -->
-        <div class="col-lg-7">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Output</h5>
-              <div id="alert" class="alert alert-danger d-none"></div>
-              <div id="loading" class="d-none text-muted mb-2">Computing…</div>
-
-              <div id="ecuaciones" class="text-start mb-2"></div>
-              <div id="tablaTramos" class="text-start"></div>
-
-              <!-- Graph -->
-              <div id="plotCard" class="card mt-3 d-none">
-                <div class="card-body">
-                  <h6 class="mb-3 text-center">Graph of piecewise linear interpolation</h6>
-                  <div id="plot" style="width:100%;height:400px;"></div>
-                </div>
-              </div>
-
-            </div>
-          </div>
+      <!-- LOGS / SEGMENTS -->
+      <div class="col-12 col-lg-10 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+          <h4>Tracers</h4>
+          <div id="logs-container"></div>
         </div>
       </div>
 
@@ -72,360 +75,350 @@
   </div>
 </div>
 
-<link rel="stylesheet" href="/static/css/matrix_grid.css">
+<!-- POINTS GRID (same one used in Cubic) -->
+<script src="/static/js/points_grid.js"></script>
+
+<!-- function-plot for the graph -->
 <script src="https://unpkg.com/function-plot@1.23.1/dist/function-plot.js"></script>
 
-<style>
-  .matrix-label{
-    display:block;
-    margin-bottom:4px;
-    font-weight:600;
-  }
-
-  /* center input grids */
-  .matrix-input-wrapper{
-    text-align:center;
-  }
-  .matrix-input-wrapper .matrix-label{
-    text-align:left;
-    margin-left:4px;
-  }
-
-  /* bigger input cells */
-  .matrix-grid table{
-    border-collapse:separate;
-    border-spacing:6px;
-    margin:0 auto;
-  }
-  .matrix-grid td{
-    min-width:60px;
-    height:40px;
-  }
-  .matrix-grid input{
-    width:100%;
-    text-align:center;
-    padding:4px 6px;
-    font-size:0.95rem;
-  }
-
-  /* result card and table style (for segment table) */
-  .lu-result-card {
-    border: 1px solid #dee2e6;
-    box-shadow: 0 1px 2px rgba(0,0,0,.05);
-  }
-  .lu-result-card .card-header {
-    background: #f8f9fa;
-    font-size: 0.9rem;
-  }
-  .lu-grid{
-    display:inline-block;
-    padding:6px 10px;
-    border-radius:10px;
-    background:#ffffff;
-  }
-  .lu-grid table{
-    border-collapse:separate;
-    border-spacing:6px;
-  }
-  .lu-grid td{
-    min-width:90px;
-    height:40px;
-    padding:4px 10px;
-    border-radius:6px;
-    border:1px solid #ced4da;
-    text-align:center;
-    font-family:monospace;
-    font-size:0.95rem;
-  }
-
-  /* “Gaussian” calculate button */
-  .btn-calc-gauss{
-    background-color:#004000;
-    border:1px solid #00ff4d;
-    color:#ffffff;
-    font-weight:600;
-    border-radius:3px;
-    height:40px;
-    box-shadow:
-      0 0 3px #00ff4d,
-      0 0 8px #00ff4d,
-      0 0 16px rgba(0,255,77,0.9);
-  }
-  .btn-calc-gauss:hover{
-    background-color:#005200;
-    box-shadow:
-      0 0 5px #00ff4d,
-      0 0 12px #00ff4d,
-      0 0 20px rgba(0,255,77,1);
-  }
-
-  /* Fill example button: light green with glow */
-  .btn-fill-example{
-    background-color:#b8ffd0;
-    border:1px solid #46e67f;
-    color:#064b1c;
-    border-radius:3px;
-    font-weight:500;
-    height:38px;
-    box-shadow:0 0 6px rgba(0,255,136,0.7);
-  }
-  .btn-fill-example:hover{
-    background-color:#a3ffbf;
-    box-shadow:0 0 10px rgba(0,255,136,0.9);
-  }
-</style>
-
 <script>
-function fmt(v){
-  if (typeof v === 'string') {
-    const num = Number(v);
-    if (!isNaN(num)) v = num;
-  }
-  if (typeof v === 'number' && isFinite(v)) {
-    return (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e6)
-      ? v.toExponential(6)
-      : v.toFixed(6);
-  }
-  return v;
+// ==================== UTILITIES ====================
+function randomColor() {
+  return `hsl(${Math.floor(Math.random() * 360)}, 80%, 45%)`;
 }
 
-function renderTable(title, rows, headers){
-  let h = `
-    <div class="card lu-result-card mb-3">
-      <div class="card-header py-2 text-center">
-        <strong>${title}</strong>
-      </div>
-      <div class="card-body text-center">
-        <div class="lu-grid">
-          <table>
-            <thead><tr>`;
-  headers.forEach(th => h += `<th>${th}</th>`);
-  h += `</tr></thead><tbody>`;
-  rows.forEach(r => {
-    h += `<tr>${r.map(c => `<td>${fmt(c)}</td>`).join('')}</tr>`;
+function clearLogs() {
+  const lc = document.getElementById("logs-container");
+  if (lc) lc.innerHTML = "";
+}
+
+function addLog(entry) {
+  const logs = document.getElementById("logs-container");
+  if (!logs) return;
+
+  const div = document.createElement("div");
+  div.className = "card mb-2 p-2 border";
+
+  if (entry.segment !== undefined) {
+    div.dataset.segment = entry.segment;
+  }
+
+  const { m, b } = entry.coefficients || {};
+  const interval = entry.interval || [];
+
+  div.innerHTML = `
+    <strong>s_${entry.segment}:</strong>
+      m = ${m}, b = ${b}
+    <br>
+    <strong>interval:</strong> [${interval[0]}, ${interval[1]}]
+  `;
+  logs.appendChild(div);
+}
+
+function buildPlotData(logs) {
+  const data = [];
+  if (!Array.isArray(logs)) return data;
+
+  logs.forEach(log => {
+    if (!log || !log.coefficients || !Array.isArray(log.interval)) return;
+
+    const { m, b } = log.coefficients;
+    const [xi, xi1] = log.interval.map(Number);
+
+    const expr = `${Number(m)}*x + ${Number(b)}`;
+
+    data.push({
+      fn: expr,
+      color: randomColor(),
+      range: [xi, xi1],
+      graphType: "polyline"
+    });
   });
-  h += `</tbody></table></div></div></div>`;
-  return h;
+
+  return data;
 }
 
-function show(el, on=true){ el.classList[on?'remove':'add']('d-none'); }
-function setHTML(el, html){ el.innerHTML = html; }
+function renderPlot(plotData) {
+  const container = document.getElementById("graph-container");
+  if (!container) return;
 
-function buildVectorInputs(n, defaults){
-  const table = document.createElement('table');
-  const tbody = document.createElement('tbody');
-  for(let i=0;i<n;i++){
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.value = (defaults && defaults[i] !== undefined) ? defaults[i] : '0';
-    inp.placeholder = '0';
-    inp.dataset.k = i;
-    td.appendChild(inp);
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-  }
-  table.appendChild(tbody);
-  return table;
-}
+  container.innerHTML = "";
 
-function readVector(container){
-  const v = [];
-  container.querySelectorAll('input').forEach(inp=>{
-    const val = parseFloat((inp.value || '0').replace(',', '.'));
-    v.push(isNaN(val) ? 0 : val);
-  });
-  return v;
-}
-
-/* === graph of piecewise linear interpolation === */
-function drawPlotSegments(tramos, xVals, yVals){
-  const plotCard = document.getElementById('plotCard');
-  const target = '#plot';
-
-  if (!window.functionPlot || !Array.isArray(tramos) || !tramos.length){
-    plotCard.classList.add('d-none');
+  if (typeof functionPlot !== "function") {
+    const msg = document.createElement("div");
+    msg.className = "text-warning";
+    msg.textContent = "The functionPlot library is not loaded.";
+    container.appendChild(msg);
     return;
   }
 
-  // Domains based on data points
-  let minX = Math.min.apply(null, xVals);
-  let maxX = Math.max.apply(null, xVals);
-  if (!isFinite(minX) || !isFinite(maxX)){
-    minX = -5; maxX = 5;
-  }
-  let dx = maxX - minX;
-  if (dx === 0) dx = 1;
-  const xMargin = dx * 0.3;
-  const xDomain = [minX - xMargin, maxX + xMargin];
-
-  let minY = Math.min.apply(null, yVals);
-  let maxY = Math.max.apply(null, yVals);
-  if (!isFinite(minY) || !isFinite(maxY)){
-    minY = -5; maxY = 5;
-  }
-  let dy = maxY - minY;
-  if (dy === 0) dy = 1;
-  const yMargin = dy * 0.3;
-  const yDomain = [minY - yMargin, maxY + yMargin];
-
-  const dataSeries = [];
-
-  // piecewise segments: y = m*x + b in [xi, xi+1]
-  tramos.forEach(t => {
-    const xi = Number(t.intervalo && t.intervalo[0]);
-    const xj = Number(t.intervalo && t.intervalo[1]);
-    const m  = Number(t.pendiente);
-    const b  = Number(t.intercepto);
-    if (!isFinite(xi) || !isFinite(xj) || !isFinite(m) || !isFinite(b)) return;
-
-    const expr = `${m}*x+${b}`;
-    dataSeries.push({
-      fn: expr,
-      sampler: 'builtIn',
-      graphType: 'polyline',
-      range: [xi, xj]
+  try {
+    functionPlot({
+      target: "#graph-container",
+      width: container.clientWidth,
+      height: container.clientHeight,
+      grid: true,
+      data: plotData,
+      xAxis: { label: "X" },
+      yAxis: { label: "Y" },
+      tip: { xLine: true, yLine: true }
     });
-  });
-
-  // scatter points
-  if (xVals && xVals.length){
-    const pts = xVals.map((x,i)=>[x, yVals[i]]);
-    dataSeries.push({
-      fnType: 'points',
-      graphType: 'scatter',
-      points: pts
-    });
+  } catch (e) {
+    console.error("Render error:", e);
+    container.innerHTML = `<div class="text-danger">Render error.</div>`;
   }
-
-  functionPlot({
-    target,
-    width: 600,
-    height: 400,
-    grid: true,
-    xAxis: { domain: xDomain },
-    yAxis: { domain: yDomain },
-    data: dataSeries
-  });
-
-  plotCard.classList.remove('d-none');
 }
 
-/* === DOM refs === */
-const nPoints = document.getElementById('nPoints');
-const vectorXContainer = document.getElementById('vectorXContainer');
-const vectorYContainer = document.getElementById('vectorYContainer');
+function showMessage(msg, level = "info") {
+  const div = document.getElementById("result-message");
+  if (!div) {
+    console.log(msg);
+    return;
+  }
 
-const runBtn = document.getElementById('run');
-const clearBtn = document.getElementById('clear');
-const exampleBtn = document.getElementById('example');
-
-const alertBox = document.getElementById('alert');
-const loading = document.getElementById('loading');
-const ecuaciones = document.getElementById('ecuaciones');
-const tablaTramos = document.getElementById('tablaTramos');
-
-function rebuild(){
-  const n = Math.max(2, Math.min(20, parseInt(nPoints.value || '2', 10)));
-  nPoints.value = n;
-  vectorXContainer.innerHTML = '';
-  vectorYContainer.innerHTML = '';
-  vectorXContainer.appendChild(buildVectorInputs(n));
-  vectorYContainer.appendChild(buildVectorInputs(n));
+  div.textContent = msg;
+  div.className = `alert alert-${level}`;
+  div.style.display = "block";
 }
-nPoints.addEventListener('change', rebuild);
 
-/* example */
-exampleBtn.addEventListener('click', ()=>{
-  const xs = [0, 1, 2, 4];
-  const ys = [0, 1, 4, 2];
-  nPoints.value = xs.length; rebuild();
-  vectorXContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = xs[i]);
-  vectorYContainer.querySelectorAll('input').forEach((inp,i)=> inp.value = ys[i]);
-});
+function highlightLog(segmentId) {
+  const logs = document.getElementById("logs-container");
+  if (!logs) return;
 
-/* clear */
-clearBtn.addEventListener('click', ()=>{
-  vectorXContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  vectorYContainer.querySelectorAll('input').forEach(inp=> inp.value = '0');
-  setHTML(ecuaciones,''); setHTML(tablaTramos,'');
-  drawPlotSegments([], [], []);  // hide plot
-  show(alertBox, false);
-});
+  Array.from(logs.children).forEach(el => {
+    if (String(el.dataset.segment) === String(segmentId)) {
+      el.classList.add("border-success");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      el.classList.remove("border-success");
+    }
+  });
+}
 
-/* calculate */
-runBtn.addEventListener('click', async ()=>{
-  setHTML(ecuaciones,''); setHTML(tablaTramos,'');
-  drawPlotSegments([], [], []); // reset plot
-  show(alertBox, false); show(loading, true);
+// ==================== GLOBAL STATE ====================
+let lastLogs = [];
+let xVal = null;
 
-  try{
-    const x = readVector(vectorXContainer);
-    const y = readVector(vectorYContainer);
+// ==================== MAIN LOGIC ====================
+document.addEventListener("DOMContentLoaded", () => {
+  const solveBtn = document.getElementById("solve-btn");
+  const evalSection = document.getElementById("eval-section");
+  const evalBtn = document.getElementById("eval-btn");
+  const logsContainer = document.getElementById("logs-container");
 
-    // simple validation: strictly increasing
-    for(let i=0;i<x.length-1;i++){
-      if (x[i+1] - x[i] <= 0){
-        show(loading, false);
-        alertBox.textContent = 'x has repeated or decreasing values; it must be strictly increasing.';
-        show(alertBox, true);
+  if (!solveBtn) {
+    console.error("#solve-btn was not found");
+    return;
+  }
+  if (!logsContainer) {
+    console.warn("#logs-container not found; eval location will be in main.");
+  }
+
+  if (evalSection) {
+    evalSection.style.display = "none";
+  }
+
+  function moveEvalSectionToEndOfTracers() {
+    if (!evalSection) return;
+
+    const logsCard = logsContainer ? logsContainer.closest(".card") : null;
+    if (logsCard) {
+      if (!logsCard.contains(evalSection)) {
+        logsCard.appendChild(evalSection);
+      }
+    } else {
+      const content = document.getElementById("content");
+      if (content && !content.contains(evalSection)) {
+        content.appendChild(evalSection);
+      }
+    }
+  }
+
+  // ---------- COMPUTE BUTTON ----------
+  solveBtn.addEventListener("click", async () => {
+    clearLogs();
+    const msgDiv = document.getElementById("result-message");
+    if (msgDiv) msgDiv.style.display = "none";
+
+    const pts = (typeof getPointsValues === "function") ? getPointsValues("pointsGrid") : null;
+    if (!pts) {
+      showMessage("The function getPointsValues is not available.", "danger");
+      console.error("getPointsValues is not defined");
+      return;
+    }
+
+    let { x, y } = pts;
+
+    x = x.map(v => Number(v));
+    y = y.map(v => Number(v));
+
+    if (x.length < 2) {
+      showMessage("You must enter at least two points.", "danger");
+      return;
+    }
+
+    if (x.some(v => !isFinite(v)) || y.some(v => !isFinite(v))) {
+      showMessage("There are invalid values in the points.", "danger");
+      return;
+    }
+
+    // Sort by X
+    const pairs = x.map((xi, i) => ({ x: xi, y: y[i] }));
+    pairs.sort((p1, p2) => p1.x - p2.x);
+
+    for (let i = 1; i < pairs.length; ++i) {
+      if (Math.abs(pairs[i].x - pairs[i - 1].x) < 1e-14) {
+        showMessage(`Repeated or very close X values: ${pairs[i].x}.`, "danger");
         return;
       }
     }
 
-    const res = await fetch('/eval/lineal_tracers', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ x, y })
+    const x_sorted = pairs.map(p => p.x);
+    const y_sorted = pairs.map(p => p.y);
+
+    try {
+      console.log("Sending to /eval/lineal_tracers:", { x: x_sorted, y: y_sorted });
+
+      const response = await fetch("/eval/lineal_tracers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ x: x_sorted, y: y_sorted })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Could not parse JSON response:", e);
+        showMessage("Invalid server response.", "danger");
+        return;
+      }
+
+      console.log("Response from /eval/lineal_tracers:", response.status, data);
+
+      if (!response.ok || data.error) {
+        const errMsg = data && data.error ? data.error : `Server error (status ${response.status})`;
+        showMessage(errMsg, "danger");
+        return;
+      }
+
+      // Typical backend: { ecuaciones: [...], tramos: [{intervalo:[xi,xi1], pendiente, intercepto}, ...] }
+      const tramos = Array.isArray(data.tramos) ? data.tramos : [];
+
+      if (!tramos.length) {
+        showMessage("The server did not return valid segments.", "danger");
+        return;
+      }
+
+      // Convert segments to internal “logs” like in cubic tracers
+      const preparedLogs = tramos.map((t, idx) => ({
+        segment: idx + 1,
+        coefficients: {
+          m: Number(t.pendiente ?? t.m ?? 0),
+          b: Number(t.intercepto ?? t.b ?? 0),
+        },
+        interval: [
+          Number(t.intervalo?.[0] ?? t.x0 ?? 0),
+          Number(t.intervalo?.[1] ?? t.x1 ?? 0),
+        ],
+      }));
+
+      lastLogs = preparedLogs;
+      lastLogs.forEach(addLog);
+
+      const plotData = buildPlotData(lastLogs);
+      renderPlot(plotData);
+
+      showMessage("Linear tracers computed successfully.", "success");
+
+      // Show evaluation section
+      moveEvalSectionToEndOfTracers();
+      if (evalSection) {
+        evalSection.style.display = "flex";
+        evalSection.classList.add("d-flex", "align-items-center", "justify-content-center");
+      }
+
+    } catch (err) {
+      console.error("Error in fetch /eval/lineal_tracers:", err);
+      showMessage("Connection error with the server.", "danger");
+    }
+  });
+
+  // ---------- EVALUATE BUTTON ----------
+  if (evalBtn) {
+    evalBtn.addEventListener("click", () => {
+      const resultDiv = document.getElementById("eval-result");
+      const input = document.getElementById("eval-x");
+      if (!input) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">Input field not found.</span>`;
+        }
+        return;
+      }
+
+      const raw = input.value;
+      const xEval = Number(raw);
+      if (!raw || isNaN(xEval)) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">Enter a valid number.</span>`;
+        }
+        return;
+      }
+
+      if (!Array.isArray(lastLogs) || lastLogs.length === 0) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">You must compute the tracers first.</span>`;
+        }
+        return;
+      }
+
+      xVal = xEval;
+      console.log("xVal =", xVal);
+
+      let found = null;
+      for (const seg of lastLogs) {
+        if (!seg || !Array.isArray(seg.interval)) continue;
+        const [x0, x1] = seg.interval.map(Number);
+        const xi = Math.min(x0, x1), xf = Math.max(x0, x1);
+        if (xEval >= xi - 1e-12 && xEval <= xf + 1e-12) {
+          found = seg;
+          break;
+        }
+      }
+
+      if (!found) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">x = ${xEval} is outside the domain of the tracers.</span>`;
+        }
+        console.warn(
+          "Evaluation: no tracer found for x =",
+          xEval,
+          "domains:",
+          lastLogs.map(l => l.interval)
+        );
+        return;
+      }
+
+      const coeff = found.coefficients || {};
+      const m = Number(coeff.m || 0);
+      const b = Number(coeff.b || 0);
+      const yEval = m * xEval + b;
+
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div>
+            <strong>input x:</strong> ${xEval}<br>
+            <strong>f(${xEval}) =</strong> ${yEval.toFixed(8)}
+            <br><small>Segment s_${found.segment} in [${found.interval[0]}, ${found.interval[1]}]</small>
+          </div>
+        `;
+      }
+
+      highlightLog(found.segment);
+      console.log(`Evaluation: x=${xEval} → y=${yEval} (tracer s_${found.segment})`);
     });
-    const data = await res.json();
-    show(loading, false);
-
-    if(!res.ok || data.error){
-      alertBox.textContent = data.error || 'Computation error';
-      show(alertBox, true);
-      return;
-    }
-
-    // equations list
-    if (Array.isArray(data.ecuaciones) && data.ecuaciones.length){
-      const html = `
-        <div class="mb-3">
-          <h6 class="mb-2">Segment equations</h6>
-          <ul class="list-group">
-            ${data.ecuaciones.map(s => `<li class="list-group-item">${s}</li>`).join('')}
-          </ul>
-        </div>`;
-      setHTML(ecuaciones, html);
-    }
-
-    // segment table
-    if (Array.isArray(data.tramos) && data.tramos.length){
-      const rows = data.tramos.map(t => [
-        t.intervalo?.[0],
-        t.intervalo?.[1],
-        t.pendiente,
-        t.intercepto
-      ]);
-      setHTML(
-        tablaTramos,
-        renderTable('Segment table', rows, ['xᵢ', 'xᵢ₊₁', 'm', 'b'])
-      );
-    }
-
-    // graph segments + points
-    if (Array.isArray(data.tramos) && data.tramos.length){
-      drawPlotSegments(data.tramos, x, y);
-    }
-
-  }catch(err){
-    show(loading, false);
-    alertBox.textContent = 'Unexpected error: ' + (err?.message || err);
-    show(alertBox, true);
   }
-});
 
-rebuild();
+});
 </script>
 {% endblock %}

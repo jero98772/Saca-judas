@@ -141,7 +141,7 @@ def _normalize_user_output(out, A: np.ndarray, b: np.ndarray, x0: np.ndarray,
             return res
         elif len(out) == 1:
             x = np.array(out[0], dtype=float)
-            return _jacobi_fallback(A, b, x0, tol, nmax, norma)
+            return _jacobi_fallback(A, b, x, tol, nmax, norma)
 
     # 3) If only a vector/ndarray
     if isinstance(out, np.ndarray) or (isinstance(out, list) and out and isinstance(out[0], (int, float))):

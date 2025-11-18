@@ -1,4 +1,4 @@
-const MIN_ROWS = 4;
+const MIN_ROWS = 3;
 const FIXED_COLS = 2;
 
 function createPointsGrid(containerId, rows = 2) {

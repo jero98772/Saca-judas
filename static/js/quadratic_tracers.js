@@ -2,6 +2,27 @@ function randomColor() {
   return `hsl(${Math.floor(Math.random() * 360)}, 80%, 45%)`;
 }
 
+function validatePointsStrict(xArr, yArr, minPoints) {
+  if (!Array.isArray(xArr) || !Array.isArray(yArr)) return { ok: false, reason: "Points must be arrays." };
+  if (xArr.length !== yArr.length) return { ok: false, reason: "'x' and 'y' must have the same length." };
+  if (xArr.length < minPoints) return { ok: false, reason: `At least ${minPoints} points are required.` };
+
+
+  const xNums = xArr.map(v => Number(v));
+  const yNums = yArr.map(v => Number(v));
+  for (let i = 0; i < xNums.length; ++i) {
+    if (!Number.isFinite(xNums[i])) return { ok: false, reason: `x[${i}] is not a finite number.` };
+    if (!Number.isFinite(yNums[i])) return { ok: false, reason: `y[${i}] is not a finite number.` };
+  }
+
+
+  const distinctX = new Set(xNums.map(v => String(v))); 
+  if (distinctX.size < minPoints) return { ok: false, reason: `At least ${minPoints} distinct x values are required.` };
+
+  return { ok: true, x: xNums, y: yNums };
+}
+
+
 function clearLogs() {
   const lc = document.getElementById("logs-container");
   if (lc) lc.innerHTML = "";
@@ -23,7 +44,7 @@ function addLog(entry) {
     <strong>s_${entry.segment}:</strong>
       a=${a}, b=${b}, c=${c}
     <br>
-    <strong>intervalo:</strong> [${interval[0]}, ${interval[1]}]
+    <strong>interval:</strong> [${interval[0]}, ${interval[1]}]
   `;
   logs.appendChild(div);
 }
@@ -160,10 +181,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let { x, y } = pts;
 
 
-    x = x.map(v => Number(v));
-    y = y.map(v => Number(v));
-    if (x.length < 2) return showMessage("You must enter at least two points.", "danger");
-    if (x.some(v => !isFinite(v)) || y.some(v => !isFinite(v))) return showMessage("Invalid values.", "danger");
+    const v = validatePointsStrict(x, y, 2);
+    if (!v.ok) {
+      return showMessage(v.reason, "danger");
+    }
+    x = v.x;
+    y = v.y;
+
 
 
     const pairs = x.map((xi, i) => ({ x: xi, y: y[i] }));
@@ -277,9 +301,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (resultDiv) {
         resultDiv.innerHTML = `
           <div>
-            <strong>x ingresado:</strong> ${xEval}<br>
+            <strong>x inputted:</strong> ${xEval}<br>
             <strong>f(${xEval}) =</strong> ${yEval.toFixed(8)}
-            <br><small>Segmento s_${found.segment} en [${found.interval[0]}, ${found.interval[1]}]</small>
+            <br><small>Tracer s_${found.segment} on [${found.interval[0]}, ${found.interval[1]}]</small>
           </div>
         `;
       }

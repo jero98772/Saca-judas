@@ -6,7 +6,27 @@ const tol = document.getElementById("tol")
 const nmax = document.getElementById("nmax")
 const normaBtn = document.getElementById("normaBtn")
 const opts = document.querySelectorAll(".dropdown-item")
+const rangeInput = document.getElementById('range4');
+const rangeOutput = document.getElementById('rangeValue');
+const decimalsInput = document.getElementById('decimals')
+
+// Set initial value
+rangeOutput.textContent = `${rangeInput.value} (Gauss-Seidel)`
+
 let norma = "inf"
+
+
+rangeInput.addEventListener('input', function () {
+    
+    if(this.value < 1){
+        rangeOutput.textContent = `${this.value} (promote convergence)`
+    }else if(this.value > 1){
+        rangeOutput.textContent = `${this.value} (promote speed)`
+    }else if (this.value = 1){
+        rangeOutput.textContent = `${this.value} (Gauss-Seidel)`
+    }
+
+});
 
 opts.forEach((opt) => {
     opt.addEventListener('click', () => {
@@ -129,23 +149,16 @@ btn.addEventListener("click", async () => {
         return;
     }
 
-
-    const decimalsInput = document.getElementById("decimals");
-    let decimals = 6;
-    if (decimalsInput) {
-        decimals = parseInt(decimalsInput.value, 10);
-        if (!Number.isInteger(decimals) || decimals < 0) decimals = 6;
-    }
     const body = {
         A, b, x0,
         tol: parseFloat(tol.value || '1e-7'),
         nmax: parseInt(nmax.value || '100', 10),
         norma: norma || 'inf',
-        decimales: decimals
+        omega: rangeInput.value
     };
 
     try {
-        const resp = await fetch("/eval/gauss_seidel", {
+        const resp = await fetch("/eval/SOR", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -188,13 +201,13 @@ btn.addEventListener("click", async () => {
                     if (Array.isArray(value)) {
                         // Verificar si es un vector (array de números) o una matriz (array de arrays)
                         const isVector = !Array.isArray(value[0]);
-                        
+
                         const tableHtml = renderAsTable(value);
-                        
+
                         // No mostrar la etiqueta "x:" para el vector x
                         const displayKey = (key === 'x' || isVector) ? '' : escapeHtml(key);
                         const labelHtml = displayKey ? `<b>${displayKey}:</b>` : '';
-                        
+
                         contentHtml += `
                             <div class="mb-3">
                                 ${labelHtml}
@@ -240,13 +253,13 @@ btn.addEventListener("click", async () => {
         if (Array.isArray(data.solution) && solDiv) {
             const values = data.solution.map((v) => {
                 const num = Number(v);
-                return Number.isFinite(num) ? num.toFixed(decimals) : String(v);
+                return Number.isFinite(num) ? num.toFixed(parseInt(decimalsInput.value)) : String(v);
             });
 
             let html = '<div class="solution-grid">';
             values.forEach((val, idx) => {
                 // Obtener el error si existe
-                
+
                 html += `
             <div class="sol-box" role="group" aria-label="Solution x">
               <div class="sol-label">x<sub>${idx + 1}</sub></div>
@@ -309,7 +322,7 @@ function renderAsTable(arr) {
 function formatScientificError(value) {
     const num = Number(value);
     if (!Number.isFinite(num)) return String(value);
-    
+
     // Convertir a notación científica con 2 decimales
     return num.toExponential(2);
 }
@@ -333,7 +346,7 @@ function copyTableToClipboard(button) {
         button.textContent = '✓ Copiado';
         button.classList.add('btn-success');
         button.classList.remove('btn-primary');
-        
+
         setTimeout(() => {
             button.textContent = originalText;
             button.classList.remove('btn-success');
@@ -350,16 +363,16 @@ function copyIterationToClipboard(iterationIdx) {
     if (!iterationBody) return;
 
     let text = '';
-    
+
     // Obtener todas las tablas de la iteración
     const tables = iterationBody.querySelectorAll('table');
     tables.forEach((table, tableIdx) => {
         if (tableIdx > 0) text += '\n';
-        
+
         // Obtener la etiqueta de la tabla (si existe)
         const label = table.closest('.mb-3').querySelector('b');
         if (label) text += label.textContent + ':\n';
-        
+
         // Copiar contenido de la tabla
         const rows = table.querySelectorAll('tr');
         rows.forEach(row => {
@@ -377,7 +390,7 @@ function copyIterationToClipboard(iterationIdx) {
             button.textContent = '✓ Copiado';
             button.classList.add('btn-success');
             button.classList.remove('btn-primary');
-            
+
             setTimeout(() => {
                 button.textContent = originalText;
                 button.classList.remove('btn-success');
@@ -393,7 +406,7 @@ function copySolutionToClipboard() {
     // Obtener todos los valores de la solución
     const solBoxes = document.querySelectorAll('.sol-box');
     let text = ""
-    
+
     solBoxes.forEach((box) => {
 
         const value = box.querySelector('.sol-value').textContent.trim();
@@ -409,7 +422,7 @@ function copySolutionToClipboard() {
             button.textContent = '✓ Copiado';
             button.classList.add('btn-success');
             button.classList.remove('btn-primary');
-            
+
             setTimeout(() => {
                 button.textContent = originalText;
                 button.classList.remove('btn-success');

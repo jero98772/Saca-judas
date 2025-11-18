@@ -1,6 +1,6 @@
 import numpy as np
 
-def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: int = 6):
+def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, decimals: int = 6, norma = "inf"):
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
     x_0 = np.array(x_0, dtype=float)
@@ -40,15 +40,22 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
 
     eigen_vals_TGS = np.linalg.eigvals(T_GS)
     spectral_radius = max(abs(eigen_vals_TGS))
-    norm2_TGS = np.linalg.norm(T_GS, 2)
+    
+    norm2_TGS = _vec_norm(T_GS,norma)
 
     logs.append({
         "step": "Iteration Matrix",
         "T_GS": np.round(T_GS, decimals).tolist(),
-        "message": f"Spectral radius ρ(T_GS) = {spectral_radius:.6f},  ||T_GS||₂ = {norm2_TGS:.6f}"
+        "message": f"Spectral radius ρ(T_GS) = {spectral_radius:.6f},   ||T_GS||{norma} = {norm2_TGS:.6f}"
     })
 
-
+    if(spectral_radius >= 1):
+        return {
+            "solution": None,
+            "logs": [{"step": "Check", "message": f"Spectral radius ρ(T_GS) equal or greater than 1, ρ(T_GS) = {spectral_radius:.6f} this doesn't converge"}]
+        }
+    
+    
     x = x_0.copy()
     for iteration in range(1, n_max + 1):
         x_new = np.zeros_like(x)
@@ -57,7 +64,8 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
             sum2 = np.dot(A[i, i+1:], x[i+1:])
             x_new[i] = (b[i] - sum1 - sum2) / A[i, i]
 
-        error = np.linalg.norm(x_new - x, ord=2)
+        # error = np.linalg.norm(x_new - x, ord=2)
+        error = _vec_norm(x_new - x, norma)
         logs.append({
             "step": f"Iteration {iteration}",
             "x": np.round(x_new, decimals).tolist(),
@@ -83,3 +91,10 @@ def gauss_seidel(A: list, b: list, tolerance: float, x_0: list, n_max: int, deci
         "iterations": n_max,
         "logs": logs
     }
+
+def _vec_norm(v: np.ndarray, norma: str = "inf") -> float:
+    if norma == "1":
+        return float(np.linalg.norm(v, 1))
+    if norma == "2":
+        return float(np.linalg.norm(v, 2))
+    return float(np.linalg.norm(v, np.inf))

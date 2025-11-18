@@ -1,96 +1,102 @@
 body {
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    background: #0f0f23;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  background: #0f0f23;
 }
 
 html {
-    height: 100vh;
+  height: 100vh;
 }
 
 #content {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    text-align: center;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 
 h1 {
-    color: #00ff41;
-    text-shadow: 0 0 10px #00ff41;
-    font-size: 3rem;
-    margin-bottom: 2rem;
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+  font-size: 3rem;
+  margin-bottom: 2rem;
 }
 
 #calculation-btn {
-    background: #003b00;
-    color: #00ff41;
-    border: 2px solid #00ff41;
-    border-radius: 5px;
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 15px #00ff41;
-    transition: all 0.3s ease;
+  background: #003b00;
+  color: #00ff41;
+  border: 2px solid #00ff41;
+  border-radius: 5px;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 15px #00ff41;
+  transition: all 0.3s ease;
 }
 
 #calculation-btn:hover {
-    background: #00ff41;
-    color: #0f0f23;
-    box-shadow: 0 0 30px #00ff41;
+  background: #00ff41;
+  color: #0f0f23;
+  box-shadow: 0 0 30px #00ff41;
 }
 
 canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
 }
 
 .card {
-    height: 350px;
-    /* o el alto que prefieras */
-    max-width: 100%;
-    display: flex;
-    flex-direction: column;
+  height: 350px;
+  /* o el alto que prefieras */
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-img-top {
-    height: 180px;
-    /* o el alto que prefieras para la imagen */
-    object-fit: cover;
-    width: 100%;
+  height: 180px;
+  /* o el alto que prefieras para la imagen */
+  object-fit: cover;
+  width: 100%;
 }
 
 .card-body {
-    flex: 1 1 auto;
-    overflow: auto;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+#cool-card {
+  opacity: 0.2 !important;
 }
 
 @media screen and (min-width: 736px) {
 
-    #graph-container {
-        height: 50vh;
-    }
+  #graph-container {
+    height: 50vh;
+  }
 
 }
 
 .annotations path {
-    stroke: blue;
-    /* color de la línea */
+  stroke: blue;
+  /* color de la línea */
 }
 
 .table-container {
-    max-height: 80vh; /* un poco menos que el alto de la pantalla */
-    overflow-y: auto;  /* activa scroll vertical si se excede */
+  max-height: 80vh;
+  /* un poco menos que el alto de la pantalla */
+  overflow-y: auto;
+  /* activa scroll vertical si se excede */
 }
 
 /* ======================
@@ -106,7 +112,8 @@ canvas {
 
 /* Tablas con "recuadros" y spacing */
 #content .gauss-table {
-  border-collapse: separate;       /* spacing entre "recuadros" */
+  border-collapse: separate;
+  /* spacing entre "recuadros" */
   border-spacing: 8px;
   width: 100%;
   margin-top: 0.5rem;
@@ -188,8 +195,15 @@ canvas {
 
 /* Responsive */
 @media (max-width: 500px) {
-  #content .sol-box { min-width: 70px; padding: 8px; }
-  #content .gauss-table td { padding: 6px 8px; min-width: 44px; }
+  #content .sol-box {
+    min-width: 70px;
+    padding: 8px;
+  }
+
+  #content .gauss-table td {
+    padding: 6px 8px;
+    min-width: 44px;
+  }
 }
 
 /* ==== Reglas específicas para la vista Gauss (añadir al final de style.css) ==== */
@@ -199,7 +213,8 @@ canvas {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
-  justify-content: center;   /* centra la tabla horizontalmente */
+  justify-content: center;
+  /* centra la tabla horizontalmente */
   align-items: flex-start;
   padding: 6px 0;
 }
@@ -209,7 +224,8 @@ canvas {
   border-collapse: separate !important;
   border-spacing: 8px !important;
   width: auto !important;
-  margin: 0 auto !important;      /* centrar la tabla */
+  margin: 0 auto !important;
+  /* centrar la tabla */
   table-layout: auto !important;
   font-family: "Courier New", monospace;
   font-size: 0.95rem;
@@ -256,6 +272,7 @@ canvas {
   height: auto !important;
   max-width: 100%;
 }
+
 #content .card .card-body {
   overflow: auto !important;
   max-height: 60vh !important;
@@ -269,6 +286,7 @@ canvas {
   justify-content: center;
   margin-top: 8px;
 }
+
 #content .sol-box {
   background: linear-gradient(180deg, #eaffea 0%, #c8f5c8 100%);
   border: 1px solid #00ff41;
@@ -278,12 +296,29 @@ canvas {
   text-align: center;
   box-shadow: 0 0 8px rgba(0, 255, 65, 0.18);
 }
-#content .sol-label { font-size: 0.95rem; color: #003b00; font-weight: bold; }
-#content .sol-value { font-size: 1.25rem; font-weight: bold; color: #00ff41; }
+
+#content .sol-label {
+  font-size: 0.95rem;
+  color: #003b00;
+  font-weight: bold;
+}
+
+#content .sol-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #00ff41;
+}
 
 /* Responsive */
 @media (max-width: 700px) {
-  #content .sol-box { min-width: 80px; padding: 8px; }
-  #content table.gauss-table td { padding: 6px 8px; min-width: 44px; white-space: normal !important; }
-}
+  #content .sol-box {
+    min-width: 80px;
+    padding: 8px;
+  }
 
+  #content table.gauss-table td {
+    padding: 6px 8px;
+    min-width: 44px;
+    white-space: normal !important;
+  }
+}

@@ -1,67 +1,100 @@
-import math
+import numpy as np
+from sympy import symbols, simplify, expand
 
-def newton_prime(f, df, x0, tolerance=1e-7, max_iter=100):
+def divided_differences_safe(x, y, eps=1e-14, max_value=1e12):
     """
-    Newton's method (Newton-Raphson) for finding roots with JSON-compatible output.
-    
-    Parameters:
-    f: function
-    df: derivative of function
-    x0: initial guess
-    tolerance: convergence tolerance
-    max_iter: maximum iterations
-    
-    Returns:
-    dict: JSON-compatible result with message, value, and iteration history
+    Computes divided differences with numerical validations.
+    Returns: diff, status, message
+    status ∈ {"success", "danger", "info"}
     """
-    x = x0
-    historial_x = [x0]
-    historial_errorAbs = []
-    historial_iteraciones = []
-    
-    for i in range(1, max_iter + 1):
-        fx = f(x)
-        dfx = df(x)
-        
-        if abs(dfx) < 1e-12:
-            return {
-                "message": f"Derivada demasiado pequeña en la iteración {i}",
-                "value": None,
-                "historial": {
-                    "x": historial_x,
-                    "errorAbs": historial_errorAbs,
-                    "iteraciones": historial_iteraciones
-                }
-            }
-        
-        x_new = x - fx / dfx
-        error_abs = abs(x_new - x)
-        
-        # Update history
-        historial_x.append(x_new)
-        historial_errorAbs.append(error_abs)
-        historial_iteraciones.append(i)
-        
-        if error_abs < tolerance:
-            return {
-                "message": "Tolerancia satisfecha",
-                "value": x_new,
-                "historial": {
-                    "x": historial_x,
-                    "errorAbs": historial_errorAbs,
-                    "iteraciones": historial_iteraciones
-                }
-            }
-        
-        x = x_new
-    
-    # If we reach here, the method didn't converge
+
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+    n = len(x)
+
+    diff = np.zeros((n, n))
+    diff[:, 0] = y
+
+    for j in range(1, n):
+        for i in range(n - j):
+            denom = x[i + j] - x[i]
+            num = diff[i + 1][j - 1] - diff[i][j - 1]
+
+            if abs(denom) < eps:
+                return None, "danger", f"Denominator too small in f[x{i}, x{i+j}] → {denom}"
+
+            value = num / denom
+
+            if abs(value) > max_value:
+                return None, "danger", f"Excessively large value detected: {value}"
+
+            diff[i][j] = value
+
+    return diff, "success", "Computation completed successfully."
+
+
+def build_newton_interpolant(x, diff):
+    """
+    Builds:
+    - symbolic expression P(x)
+    - Newton form expression as string
+    Returns dict.
+    """
+
+    x_sym = symbols('x')
+    n = len(x)
+    b = [diff[0, i] for i in range(n)]
+
+    # Symbolic polynomial
+    P = b[0]
+    prod = 1
+    for i in range(1, n):
+        prod *= (x_sym - x[i - 1])
+        P += b[i] * prod
+
+    expr_sym = simplify(expand(P))
+
+    # Newton string
+    newton_terms = []
+    for i in range(n):
+        if i == 0:
+            newton_terms.append(f"{b[i]}")
+        else:
+            factors = "".join([f"(x - {x[j]})" for j in range(i)])
+            newton_terms.append(f"{b[i]}*{factors}")
+
+    newton_poly_str = " + ".join(newton_terms)
+
     return {
-        "message": "Máximo número de iteraciones alcanzado",
-        "value": x,
-        "historial": {
-            "x": historial_x,
-            "errorAbs": historial_errorAbs,
-            "iteraciones": historial_iteraciones
+        "symbolic_expression": str(expr_sym),
+        "polynomial_newton": f"P(x) = {newton_poly_str}"
+    }
+
+
+def newton_interpolant_object(x, y):
+    """
+    Returns an OBJECT containing:
+      - status  → "danger" | "success" | "info"
+      - message
+      - symbolic_expression (string)
+      - polynomial_newton (string)
+    """
+
+    diff, status, message = divided_differences_safe(x, y)
+
+    if status != "success":
+        return {
+            "status": status,
+            "message": message,
+            "symbolic_expression": None,
+            "polynomial_newton": None
         }
+
+    result = build_newton_interpolant(x, diff)
+
+    return {
+        "status": "success",
+        "message": message,
+        "symbolic_expression": result["symbolic_expression"],   # Example: "2*x**3 + 3*x**4"
+        "polynomial_newton": result["polynomial_newton"]        # Newton form
     }

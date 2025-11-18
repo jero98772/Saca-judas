@@ -1,17 +1,98 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div id="content">
+    <div class="container text-center">
+        <div class="row justify-content-center">
 
-<div id="container-fluid text-center">
-    <div class="row align-items-center" style="height: 100vh;">
-        <div class="col-3 ms-5">
-            <div class="card-container">
-                <div class="card p-4">
-                    <h1>SOR</h1>
+            <!-- ===== MATRICES, BOTÓN Y DECIMALES ===== -->
+            <div class="col-12 col-lg-11 mb-3">
+                <div class="card text-center p-4" style="background-color: rgba(255, 255, 255, 0.7);">
+                    <h2>SOR</h2>
+
+                    <div class="mb-3 text-center">
+                        <div class="row">
+                            <div class="col">
+                                <label class="form-label fw-bold">Matrix A</label>
+                                <br>
+                                <div id="matrixA" class="matrix-grid"></div>
+                            </div>
+                            <div class="col">
+                                <label class="form-label fw-bold">Vector b</label>
+                                <br>
+                                <div id="matrixB" class="matrix-grid"></div>
+                            </div>
+                            <div class="col">
+                                <label class="form-label fw-bold">x<sup>(0)</sup></label>
+                                <br>
+                                <div id="matrixX" class="matrix-grid"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="input-group mb-3 col">
+                            <span class="input-group-text">Decimals</span>
+                            <input type="number" id="decimals" class="form-control" value="6" min="0" max="12">
+                        </div>
+                        <div class="input-group mb-3 col">
+                            <span class="input-group-text">Iterations</span>
+                            <input type="number" id="nmax" class="form-control" value="100">
+                        </div>
+                        <div class="w-100"></div>
+                        <div class="input-group mb-3 col">
+                            <span class="input-group-text">Tolerance</span>
+                            <input type="number" id="tol" class="form-control" value="1e-7">
+                        </div>
+                        <div class="dropdown col">
+                            <button id="normaBtn" class="btn btn-secondary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                Norm (∞)
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" data-value="inf">∞</a></li>
+                                <li><a class="dropdown-item" data-value="2">2</a></li>
+                                <li><a class="dropdown-item" data-value="1">1</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mt-1">
+                        <label for="range4" class="form-label h1">ω</label>
+                        <output for="range4" class="h6" id="rangeValue" aria-hidden="true"></output>
+                        <input type="range" class="form-range" min="0.05" max="1.95" value="1" id="range4" step="0.05">
+
+                    </div>
+
+                    <button id="calculation-btn" class="btn btn-outline-success mb-3" type="button">
+                        Calculate SOR
+                    </button>
+
+                    <div id="result-message" class="alert" style="display:none;"></div>
                 </div>
             </div>
+
+            <!-- ===== ELIMINATION STEPS ===== -->
+            <div class="col-12 col-lg-8 mb-3">
+                <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+                    <h4>Iteration steps</h4>
+                    <div id="logs-container"></div>
+                </div>
+            </div>
+
+            <!-- ===== SOLUTION ===== -->
+            <div class="col-12 col-lg-8 mb-3">
+                <div class="card p-3">
+                    <h4>Solution</h4>
+                    <div id="solution-container" style="display:none;"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
-{% endblock %}
 
+<link rel="stylesheet" href="/static/css/matrix_grid.css">
+<script src="/static/js/matrix_grid.js"></script>
+<script src="/static/js/SOR.js"></script>
+
+{% endblock %}

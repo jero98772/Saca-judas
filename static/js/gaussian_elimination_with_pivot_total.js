@@ -234,7 +234,7 @@
         showMessage(errMsg, "danger");
         return;
       }
-
+      console.log(data)
       showMessage("Computation completed successfully.", "success");
 
       // Render logs igual que gauss_simple

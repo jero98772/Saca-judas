@@ -1,149 +1,146 @@
-// ======================================================
-// cubic_tracers.js
-// ======================================================
+// ===============================
+// cubic_tracers.js (VERSIÓN CORREGIDA)
+// ===============================
 
-// Genera colores aleatorios agradables
-function randomColor() {
-  return `hsl(${Math.floor(Math.random() * 360)}, 80%, 45%)`;
-}
+(() => {
+  console.log("JS cargado correctamente");
 
-// Limpia logs
-function clearLogs() {
-  const logs = document.getElementById("logs-container");
-  logs.innerHTML = "";
-}
+  const solveBtn = document.getElementById("solve-btn");
+  const evalBtn = document.getElementById("eval-btn");
+  const evalSection = document.getElementById("eval-section");
+  const evalInput = document.getElementById("eval-x");
+  const evalResult = document.getElementById("eval-result");
+  const logsContainer = document.getElementById("logs-container");
 
-// Imprime un log en el panel
-function addLog(entry) {
-  const logs = document.getElementById("logs-container");
+  let lastSplines = null;
 
-  const div = document.createElement("div");
-  div.className = "card mb-2 p-2 border";
+  // Utilidad clásica del oficio
+  const showMessage = (text, level = "info") => {
+    const msgEl = document.getElementById("result-message");
+    msgEl.className = `alert alert-${level}`;
+    msgEl.textContent = text;
+    msgEl.style.display = "block";
+  };
 
-  const seg = entry.segment;
-  const a = entry.coefficients.a;
-  const b = entry.coefficients.b;
-  const c = entry.coefficients.c;
-  const d = entry.coefficients.d;
-  const interval = entry.interval;
+  // Insertar el evaluador al final de la tarjeta de logs
+  function moveEvalSectionToEndOfTracers() {
+    const logsCard = logsContainer.closest(".card");
+    if (!logsCard) return;
+    logsCard.appendChild(evalSection);
+  }
 
-  div.innerHTML = `
-    <strong>s_${seg}:</strong>  
-    a=${a}, b=${b}, c=${c}, d=${d}  
-    <br>
-    <strong>intervalo:</strong> [${interval[0]}, ${interval[1]}]
-  `;
-  logs.appendChild(div);
-}
+  // Evaluar un x usando los splines del backend
+  function evaluateSplineAt(x, splines) {
+    for (const s of splines) {
+      const { a, b, c, d, x_i, x_ip1 } = s;
 
-// Construye trazadores para function-plot
-function buildPlotData(xNodes, logs) {
-  const data = [];
+      if (x >= x_i && x <= x_ip1) {
+        const t = x - x_i;
+        return a + b * t + c * t * t + d * t * t * t;
+      }
+    }
+    return null;
+  }
 
-  logs.forEach(log => {
-    const { a, b, c, d } = log.coefficients;
-    const [xi, xi1] = log.interval;
+  // ===============================
+  // MANEJO DEL BOTÓN "COMPUTE"
+  // ===============================
+  solveBtn.addEventListener("click", async () => {
+    showMessage("Computing cubic tracers...", "info");
+    evalResult.innerHTML = `<span class="text-muted">Introduce un valor y pulsa Evaluar</span>`;
+    evalSection.style.display = "none";
 
-    const color = randomColor();
-
-    const expr = `${a} + ${b}*(x - ${xi}) + ${c}*(x - ${xi})^2 + ${d}*(x - ${xi})^3`;
-
-    data.push({
-      fn: expr,
-      color: color,
-      range: [xi, xi1]
-    });
-  });
-
-  return data;
-}
-
-// Renderiza la gráfica con function-plot
-function renderPlot(plotData, xNodes) {
-  const container = document.getElementById("graph-container");
-  container.innerHTML = "";
-
-  functionPlot({
-    target: "#graph-container",
-    width: container.clientWidth,
-    height: container.clientHeight,
-    grid: true,
-    data: plotData,
-    tip: {
-      xLine: true,
-      yLine: true
-    },
-    xAxis: { label: "X" },
-    yAxis: { label: "Y" }
-  });
-}
-
-// Manejar el click del botón
-document.addEventListener("DOMContentLoaded", () => {
-
-  document.getElementById("solve-btn").addEventListener("click", async () => {
-
-    clearLogs();
-    document.getElementById("result-message").style.display = "none";
-
-    const { x, y } = getPointsValues("pointsGrid");
-
-    // Validación
-    if (x.length < 2) {
-      showMessage("Debes ingresar al menos dos puntos.", "danger");
+    const points = window.getPointsFromGrid?.();
+    if (!points || points.length < 2) {
+      showMessage("Need at least two valid points.", "danger");
       return;
     }
 
-    if (x.some(v => Number.isNaN(v)) || y.some(v => Number.isNaN(v))) {
-      showMessage("Hay valores inválidos en la tabla.", "danger");
-      return;
-    }
+    points.sort((a, b) => a[0] - b[0]);
 
-    // Ensamble datos
-    const payload = { x: x, y: y };
+    console.log("Enviando payload al backend:", points);
 
     try {
-      const response = await fetch("/eval/cubic_spline", {
+      const response = await fetch("/compute_tracers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ points }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        showMessage(result.error || "Hubo un error en el servidor.", "danger");
+        showMessage("Error en el servidor (status).", "danger");
         return;
       }
 
-      // Logs del servidor (con coeficientes ya listos)
-      const logs = result.logs;
+      const data = await response.json();
+      console.log("Respuesta del servidor:", data);
 
-      logs.forEach(addLog); // mostrar en panel
+      if (!data.splines) {
+        showMessage("Error: no se recibieron trazadores del servidor.", "danger");
+        return;
+      }
 
-      // Preparar para graficar
-      const plotData = buildPlotData(x, logs);
+      lastSplines = data.splines;
 
-      // Mostrar gráfica
-      renderPlot(plotData, x);
+      // LOGS
+      logsContainer.innerHTML = "";
+      data.logs?.forEach((line) => {
+        const p = document.createElement("p");
+        p.textContent = line;
+        logsContainer.appendChild(p);
+      });
 
-      showMessage("Cubic tracers computed successfully.", "success");
+      showMessage("Cubic tracers computed successfully!", "success");
+
+      // === MOSTRAR EVALUADOR (CORREGIDO) ===
+      moveEvalSectionToEndOfTracers();
+
+      evalSection.classList.add("d-flex", "align-items-center", "justify-content-center");
+      evalSection.style.display = "flex";
+
+      // Desplazar la vista hacia el evaluador
+      try {
+        evalSection.scrollIntoView({ behavior: "smooth", block: "end" });
+      } catch (e) {
+        const logsCard = logsContainer.closest(".card");
+        if (logsCard) logsCard.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+
+      // Darle foco para que el usuario pueda escribir de inmediato
+      evalInput.focus({ preventScroll: true });
 
     } catch (err) {
-      showMessage("Error de conexión con el servidor.", "danger");
+      console.error(err);
+      showMessage("Unexpected error.", "danger");
     }
-
   });
 
-});
+  // ===============================
+  // MANEJO DEL BOTÓN "EVALUAR"
+  // ===============================
+  evalBtn.addEventListener("click", () => {
+    if (!lastSplines) {
+      showMessage("Compute the tracers first.", "danger");
+      return;
+    }
 
+    const x = parseFloat(evalInput.value);
+    if (isNaN(x)) {
+      evalResult.innerHTML = `<span class="text-danger">Valor inválido.</span>`;
+      return;
+    }
 
-// ======================================================
-// Helper para mostrar mensajes
-// ======================================================
-function showMessage(msg, level) {
-  const div = document.getElementById("result-message");
-  div.textContent = msg;
-  div.className = `alert alert-${level}`;
-  div.style.display = "block";
-}
+    const y = evaluateSplineAt(x, lastSplines);
+    if (y === null) {
+      evalResult.innerHTML = `<span class="text-danger">x fuera del dominio.</span>`;
+      return;
+    }
+
+    evalResult.innerHTML = `
+      <span class="fw-bold text-success">
+        f(${x.toFixed(4)}) = ${y.toFixed(6)}
+      </span>
+    `;
+  });
+
+})();

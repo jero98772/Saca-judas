@@ -1,6 +1,6 @@
 const MIN_SIZE = 3;
 
-// ===================== HISTORIAL DE MATRICES =====================
+// ===================== MATRIX HISTORY =====================
 const MATRIX_HISTORY_KEY = "matrix_history";
 const MAX_HISTORY_ITEMS = 10;
 
@@ -21,7 +21,7 @@ function saveMatrixToHistory() {
   let history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
   history.unshift(historyItem);
 
-  // Mantener solo los últimos MAX_HISTORY_ITEMS
+  // Keep only the last MAX_HISTORY_ITEMS
   if (history.length > MAX_HISTORY_ITEMS) {
     history = history.slice(0, MAX_HISTORY_ITEMS);
   }
@@ -35,11 +35,11 @@ function loadMatrixFromHistory(id) {
   const item = history.find(h => h.id === id);
 
   if (!item) {
-    console.error("Historial no encontrado");
+    console.error("History not found");
     return;
   }
 
-  // Cargar Matrix A
+  // Load Matrix A
   const matrixAContainer = document.getElementById("matrixA");
   if (matrixAContainer) {
     createMatrixGrid("matrixA", item.matrixA.length, item.matrixA[0].length);
@@ -56,7 +56,7 @@ function loadMatrixFromHistory(id) {
     });
   }
 
-  // Cargar Vector B
+  // Load Vector B
   const matrixBContainer = document.getElementById("matrixB");
   if (matrixBContainer) {
     createMatrixGrid("matrixB", item.vectorB.length, 1);
@@ -69,7 +69,7 @@ function loadMatrixFromHistory(id) {
     });
   }
 
-  // Cargar Vector X (aproximación inicial)
+  // Load Vector X (initial approximation)
   const matrixXContainer = document.getElementById("matrixX");
   if (matrixXContainer) {
     createMatrixGrid("matrixX", item.vectorX.length, 1);
@@ -82,7 +82,7 @@ function loadMatrixFromHistory(id) {
     });
   }
 
-  // Cerrar modal si existe
+  // Close modal if exists
   const modal = document.getElementById("historyModal");
   if (modal) {
     const bsModal = bootstrap.Modal.getInstance(modal);
@@ -98,7 +98,7 @@ function deleteHistoryItem(id) {
 }
 
 function clearAllHistory() {
-  if (confirm("¿Estás seguro de que deseas eliminar todo el historial?")) {
+  if (confirm("Are you sure you want to delete all history?")) {
     localStorage.removeItem(MATRIX_HISTORY_KEY);
     updateHistoryUI();
   }
@@ -111,7 +111,7 @@ function updateHistoryUI() {
   const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
 
   if (history.length === 0) {
-    historyList.innerHTML = '<p class="text-muted">Sin historial guardado</p>';
+    historyList.innerHTML = '<p class="text-muted">No saved history</p>';
     return;
   }
 
@@ -123,14 +123,14 @@ function updateHistoryUI() {
         <div>
           <small class="text-muted">${item.timestamp}</small>
           <br>
-          <strong>Matriz ${dims}</strong>
+          <strong>Matrix ${dims}</strong>
         </div>
         <div class="btn-group btn-group-sm">
           <button class="btn btn-success" onclick="loadMatrixFromHistory(${item.id})">
-            Cargar
+            Load
           </button>
           <button class="btn btn-danger" onclick="deleteHistoryItem(${item.id})">
-            Eliminar
+            Delete
           </button>
         </div>
       </div>
@@ -141,7 +141,7 @@ function updateHistoryUI() {
 }
 
 function createHistoryModal() {
-  // Verificar si el modal ya existe
+  // Check if modal already exists
   if (document.getElementById("historyModal")) return;
 
   const modal = document.createElement("div");
@@ -151,15 +151,15 @@ function createHistoryModal() {
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Historial de Matrices</h5>
+          <h5 class="modal-title">Matrix History</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div id="historyList"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" class="btn btn-danger" onclick="clearAllHistory()">Limpiar Todo</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger" onclick="clearAllHistory()">Clear All</button>
         </div>
       </div>
     </div>
@@ -177,7 +177,7 @@ function showHistoryModal() {
   modal.show();
 }
 
-// ===================== FIN HISTORIAL DE MATRICES =====================
+// ===================== END MATRIX HISTORY =====================
 function createMatrixGrid(containerId, rows = 3, cols = 3) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -270,11 +270,11 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   const cols = table.rows[0].cells.length;
   const isMatrixA = containerId === "matrixA";
 
-  // === NUEVO: detección de posición del cursor dentro del texto ===
+  // === NEW: cursor position detection within text ===
   const cursorPos = inputEl.selectionStart;
   const textLength = inputEl.value.length;
 
-  // Si se mueve dentro del texto, no cambiar de celda
+  // If moving within text, don't change cell
   if (
     (e.key === "ArrowLeft" && cursorPos > 0) ||
     (e.key === "ArrowRight" && cursorPos < textLength)
@@ -283,7 +283,7 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   }
 
   // ==============================
-  // Navegación entre celdas
+  // Cell navigation
   // ==============================
 
   if (e.key === "ArrowUp" && row > 0 && !(isMatrixA && row === rows - 1)) {
@@ -314,7 +314,7 @@ function handleKey(e, row, col, table, containerId, inputEl) {
   e.preventDefault();
 
   // ==============================
-  // Expansión o reducción dinámica
+  // Dynamic expansion or reduction
   // ==============================
 
   if (isMatrixA && ((e.key === "ArrowRight" && col === cols - 1) || (e.key === "ArrowDown" && row === rows - 1))) {
@@ -482,27 +482,27 @@ document.addEventListener("DOMContentLoaded", () => {
   createMatrixGrid("matrixB", 3, 1);
   createMatrixGrid("matrixX", 3, 1);
 
-  // Crear botones de historial si no existen
+  // Create history buttons if they don't exist
   const calcBtn = document.getElementById("calculation-btn");
   if (calcBtn && calcBtn.parentElement) {
     const historyContainer = document.createElement("div");
     historyContainer.className = "mt-3 d-flex gap-2";
     historyContainer.innerHTML = `
-      <button type="button" class="btn btn-info" onclick="showHistoryModal()" title="Ver historial de matrices">
-        <i class="fas fa-history"></i> Historial
+      <button type="button" class="btn btn-info" onclick="showHistoryModal()" title="View matrix history">
+        <i class="fas fa-history"></i> History
       </button>
-      <button type="button" class="btn btn-success" onclick="saveMatrixToHistory()" title="Guardar matriz actual">
-        <i class="fas fa-save"></i> Guardar
+      <button type="button" class="btn btn-success" onclick="saveMatrixToHistory()" title="Save current matrix">
+        <i class="fas fa-save"></i> Save
       </button>
     `;
     calcBtn.parentElement.appendChild(historyContainer);
   }
 
-  // Inicializar UI del historial
+  // Initialize history UI
   updateHistoryUI();
 });
 
-//Cargar matriz ejemplo
+//Load example matrix
 document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem(MATRIX_HISTORY_KEY,'[{"id":1763342023377,"timestamp":"16/11/2025, 20:13:43","matrixA":[["4","-1","0","3"],["1","15.5","3","8"],["0","-1.3","-4","1.1"],["14","5","-2","30"]],"vectorB":["1","1","1","1"],"vectorX":["0","0","0","0"]}]')
 })

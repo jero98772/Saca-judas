@@ -7,7 +7,12 @@ const MAX_HISTORY_ITEMS = 10;
 function saveMatrixToHistory() {
   const A = getMatrixValues("matrixA");
   const b = getVectorValues("matrixB");
-  const x0 = getVectorValues("matrixX");
+  let x0 = []
+  try{
+    x0 = getVectorValues("matrixX");
+  }catch(e){
+    x0 = new Array(b.length).fill(0)
+  }
 
   const timestamp = new Date().toLocaleString();
   const historyItem = {
@@ -504,5 +509,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 //Load example matrix
 document.addEventListener("DOMContentLoaded", () => {
-  localStorage.setItem(MATRIX_HISTORY_KEY,'[{"id":1763342023377,"timestamp":"16/11/2025, 20:13:43","matrixA":[["4","-1","0","3"],["1","15.5","3","8"],["0","-1.3","-4","1.1"],["14","5","-2","30"]],"vectorB":["1","1","1","1"],"vectorX":["0","0","0","0"]}]')
-})
+  const newEntry = {
+    id: 1763342023377,
+    timestamp: "16/11/2025, 20:13:43",
+    matrixA: [["4", "-1", "0", "3"], ["1", "15.5", "3", "8"], ["0", "-1.3", "-4", "1.1"], ["14", "5", "-2", "30"]],
+    vectorB: ["1", "1", "1", "1"],
+    vectorX: ["0", "0", "0", "0"]
+  };
+
+  const existing = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || "[]");
+
+  const exists = existing.some(item => item.id === newEntry.id);
+
+  if (!exists) {
+    existing.push(newEntry);
+    localStorage.setItem(MATRIX_HISTORY_KEY, JSON.stringify(existing));
+  } 
+});

@@ -1006,7 +1006,7 @@ async def cubic_spline_post(request: Request):
                 content={"error": "Invalid JSON body."},
                 status_code=400
             )
-
+        print(data)
         # Extract parameters
         x = data.get("x")
         y = data.get("y")

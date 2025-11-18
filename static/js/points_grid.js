@@ -201,3 +201,59 @@ function getPointsValues(containerId) {
 document.addEventListener("DOMContentLoaded", () => {
   createPointsGrid("pointsGrid", 3);
 });
+
+function getVectorsFromGrid() {
+  const container = document.getElementById("pointsGrid");
+  if (!container) return { x: [], y: [] };
+
+  const rows = Array.from(container.querySelectorAll("tr"));
+  const xs = [];
+  const ys = [];
+
+  rows.forEach((row) => {
+    const inputs = row.querySelectorAll("input");
+    if (inputs.length < 2) return;
+
+    const xStr = inputs[0].value.trim();
+    const yStr = inputs[1].value.trim();
+
+    // ignorar fila completamente vacía
+    if (xStr === "" && yStr === "") return;
+
+    // convertir a número (si está vacío → NaN)
+    const xv = xStr === "" ? NaN : Number(xStr);
+    const yv = yStr === "" ? NaN : Number(yStr);
+
+    xs.push(xv);
+    ys.push(yv);
+  });
+
+  return { x: xs, y: ys };
+}
+
+function getPointsFromGrid() {
+  const container = document.getElementById("pointsGrid");
+  if (!container) return [];
+
+  const rows = Array.from(container.querySelectorAll("tr"));
+  const points = [];
+
+  rows.forEach((row) => {
+    const inputs = row.querySelectorAll("input");
+    if (inputs.length < 2) return;
+
+    const xStr = inputs[0].value.trim();
+    const yStr = inputs[1].value.trim();
+
+    // Si ambos están vacíos → ignorar fila
+    if (xStr === "" && yStr === "") return;
+
+    // Convertir a número (si está vacío → NaN)
+    const xv = xStr === "" ? NaN : Number(xStr);
+    const yv = yStr === "" ? NaN : Number(yStr);
+
+    points.push([xv, yv]);
+  });
+
+  return points;
+}

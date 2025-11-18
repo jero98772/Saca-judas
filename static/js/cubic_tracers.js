@@ -84,7 +84,7 @@ function renderPlot(plotData) {
     });
   } catch (e) {
     console.error("Error al renderizar:", e);
-    container.innerHTML = `<div class="text-danger">Error al renderizar gráfica.</div>`;
+    container.innerHTML = `<div class="text-danger">render error.</div>`;
   }
 }
 
@@ -173,8 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Validaciones y normalizaciones: convertir a números finitos
     x = x.map(v => Number(v));
     y = y.map(v => Number(v));
-    if (x.length < 2) return showMessage("Debes ingresar al menos dos puntos.", "danger");
-    if (x.some(v => !isFinite(v)) || y.some(v => !isFinite(v))) return showMessage("Hay valores inválidos.", "danger");
+    if (x.length < 2) return showMessage("You must enter at least two points. .", "danger");
+    if (x.some(v => !isFinite(v)) || y.some(v => !isFinite(v))) return showMessage("Invalid values.", "danger");
 
     // Ordenar por x (crear pares y ordenar) — evita intervalos invertidos y h==0
     const pairs = x.map((xi, i) => ({ x: xi, y: y[i] }));
@@ -204,19 +204,19 @@ document.addEventListener("DOMContentLoaded", () => {
         result = await response.json();
       } catch (e) {
         console.error("No se pudo parsear JSON de la respuesta:", e);
-        showMessage("Respuesta inválida del servidor.", "danger");
+        showMessage("Invalid answer from the server.", "danger");
         return;
       }
-      console.log("Respuesta del servidor:", response.status, result);
+      console.log("Answer from the server:", response.status, result);
 
       if (!response.ok) {
-        const err = result && result.error ? result.error : `Error del servidor (status ${response.status})`;
+        const err = result && result.error ? result.error : `Server Error (status ${response.status})`;
         return showMessage(err, "danger");
       }
 
       const logsFromServer = Array.isArray(result.logs) ? result.logs : (Array.isArray(result.data && result.data.logs) ? result.data.logs : null);
       if (!Array.isArray(logsFromServer) || logsFromServer.length === 0) {
-        console.warn("No se hallaron 'logs' válidos en la respuesta:", result);
+        console.warn("Can't find 'logs' valids on the answer:", result);
         return showMessage("El servidor no devolvió trazadores válidos.", "danger");
       }
 
@@ -236,8 +236,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     } catch (err) {
-      console.error("Error en fetch /eval/cubic_spline:", err);
-      showMessage("Error de conexión con el servidor.", "danger");
+      console.error("Error on fetch /eval/cubic_spline:", err);
+      showMessage("Conection error.", "danger");
     }
   });
 
@@ -254,12 +254,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const raw = input.value;
       const xEval = Number(raw);
       if (!raw || isNaN(xEval)) {
-        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">Ingrese un número válido.</span>`;
+        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">Input a valid number.</span>`;
         return;
       }
 
       if (!Array.isArray(lastLogs) || lastLogs.length === 0) {
-        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">Primero calcule los trazadores.</span>`;
+        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">First you have to calcute the tracers.</span>`;
         return;
       }
 
@@ -275,8 +275,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!found) {
-        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">x=${xEval} está fuera del dominio de los trazadores.</span>`;
-        console.warn("Evaluación: no se encontró segmento para x=", xEval, "dominios:", lastLogs.map(l=>l.interval));
+        if (resultDiv) resultDiv.innerHTML = `<span class="text-danger">x=${xEval} it's outside the domain.</span>`;
+        console.warn("Evaluation: no tracer was found for x=", xEval, "domains:", lastLogs.map(l=>l.interval));
         return;
       }
 
@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       highlightLog(found.segment);
-      console.log(`Evaluación: x=${xEval} → y=${yEval} (segmento s_${found.segment})`);
+      console.log(`Evaluation: x=${xEval} → y=${yEval} (tracer s_${found.segment})`);
     });
   }
 

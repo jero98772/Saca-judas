@@ -423,10 +423,11 @@ runBtn.addEventListener('click', async ()=>{
       setHTML(coeficientes, renderTable('Coefficients (a₀, a₁, …, aₙ₋₁)', coeffs));
     }
 
-    // Vandermonde matrix
+    // Vandermonde matrix (NOW decreasing powers: highest → lowest)
     const V = data.V || data.vandermonde || data.matriz;
     if (V){
-      setHTML(matrizV, renderTable('Vandermonde matrix (increasing powers)', V));
+      const Vdesc = V.map(row => row.slice().reverse());
+      setHTML(matrizV, renderTable('Vandermonde matrix (decreasing powers)', Vdesc));
     }
 
     // Draw graph with function-plot

@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="content">
+  <div class="container text-center">
+    <div class="row justify-content-center">
+
+      <!-- ==== MAIN CARD: GRID + GRAPH ==== -->
+      <div class="col-12 col-lg-10 mb-3">
+        <div class="card p-4">
+
+          <h2>Linear Tracers</h2>
+
+          <div class="row mt-4 d-flex">
+
+            <!-- POINTS GRID -->
+            <div class="col">
+              <label class="form-label fw-bold"
+                     style="width: 200px; display: block; text-align: center;">
+                Enter your points (X , Y)
+              </label>
+              <div id="pointsGrid" class="matrix-grid" style="width: 200px;"></div>
+            </div>
+
+            <!-- GRAPH -->
+            <div class="col">
+              <label class="form-label fw-bold">Tracers on the graph</label>
+
+              <div id="graph-container"
+                   class="border rounded p-4 text-muted"
+                   style="height: 350px; width: 100%; background: #fafafa; position: relative;">
+                <!-- function-plot draws here -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- MAIN BUTTON -->
+          <div class="mt-4">
+            <button id="solve-btn" class="btn btn-outline-success" type="button">
+              Compute Linear Tracers
+            </button>
+          </div>
+
+          <!-- EVALUATE A POINT -->
+          <div id="eval-section" class="mt-3 gap-2" style="display: none;">
+            <label for="eval-x" class="form-label mb-0 fw-bold">Evaluate at x =</label>
+            <input id="eval-x" type="number" step="any"
+                   class="form-control form-control-sm"
+                   style="width:140px" placeholder="e.g. 1.23">
+            <button id="eval-btn" class="btn btn-outline-primary btn-sm" type="button">
+              Compute
+            </button>
+
+            <div id="eval-result" class="ms-3" style="min-width:220px;">
+              <span class="text-muted">Enter a value and press compute</span>
+            </div>
+          </div>
+
+          <!-- MESSAGE -->
+          <div id="result-message" class="alert mt-3" style="display:none;"></div>
+
+        </div>
+      </div>
+
+      <!-- LOGS / SEGMENTS -->
+      <div class="col-12 col-lg-10 mb-3">
+        <div class="card p-3" style="height: 60vh; overflow-y: auto;">
+          <h4>Tracers</h4>
+          <div id="logs-container"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- POINTS GRID (same one used in Cubic) -->
+<script src="/static/js/points_grid.js"></script>
+
+<!-- function-plot for the graph -->
+<script src="https://unpkg.com/function-plot@1.23.1/dist/function-plot.js"></script>
+
+<script>
+// ==================== UTILITIES ====================
+function randomColor() {
+  return `hsl(${Math.floor(Math.random() * 360)}, 80%, 45%)`;
+}
+
+function clearLogs() {
+  const lc = document.getElementById("logs-container");
+  if (lc) lc.innerHTML = "";
+}
+
+function addLog(entry) {
+  const logs = document.getElementById("logs-container");
+  if (!logs) return;
+
+  const div = document.createElement("div");
+  div.className = "card mb-2 p-2 border";
+
+  if (entry.segment !== undefined) {
+    div.dataset.segment = entry.segment;
+  }
+
+  const { m, b } = entry.coefficients || {};
+  const interval = entry.interval || [];
+
+  div.innerHTML = `
+    <strong>s_${entry.segment}:</strong>
+      m = ${m}, b = ${b}
+    <br>
+    <strong>interval:</strong> [${interval[0]}, ${interval[1]}]
+  `;
+  logs.appendChild(div);
+}
+
+function buildPlotData(logs) {
+  const data = [];
+  if (!Array.isArray(logs)) return data;
+
+  logs.forEach(log => {
+    if (!log || !log.coefficients || !Array.isArray(log.interval)) return;
+
+    const { m, b } = log.coefficients;
+    const [xi, xi1] = log.interval.map(Number);
+
+    const expr = `${Number(m)}*x + ${Number(b)}`;
+
+    data.push({
+      fn: expr,
+      color: randomColor(),
+      range: [xi, xi1],
+      graphType: "polyline"
+    });
+  });
+
+  return data;
+}
+
+function renderPlot(plotData) {
+  const container = document.getElementById("graph-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (typeof functionPlot !== "function") {
+    const msg = document.createElement("div");
+    msg.className = "text-warning";
+    msg.textContent = "The functionPlot library is not loaded.";
+    container.appendChild(msg);
+    return;
+  }
+
+  try {
+    functionPlot({
+      target: "#graph-container",
+      width: container.clientWidth,
+      height: container.clientHeight,
+      grid: true,
+      data: plotData,
+      xAxis: { label: "X" },
+      yAxis: { label: "Y" },
+      tip: { xLine: true, yLine: true }
+    });
+  } catch (e) {
+    console.error("Render error:", e);
+    container.innerHTML = `<div class="text-danger">Render error.</div>`;
+  }
+}
+
+function showMessage(msg, level = "info") {
+  const div = document.getElementById("result-message");
+  if (!div) {
+    console.log(msg);
+    return;
+  }
+
+  div.textContent = msg;
+  div.className = `alert alert-${level}`;
+  div.style.display = "block";
+}
+
+function highlightLog(segmentId) {
+  const logs = document.getElementById("logs-container");
+  if (!logs) return;
+
+  Array.from(logs.children).forEach(el => {
+    if (String(el.dataset.segment) === String(segmentId)) {
+      el.classList.add("border-success");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      el.classList.remove("border-success");
+    }
+  });
+}
+
+// ==================== GLOBAL STATE ====================
+let lastLogs = [];
+let xVal = null;
+
+// ==================== MAIN LOGIC ====================
+document.addEventListener("DOMContentLoaded", () => {
+  const solveBtn = document.getElementById("solve-btn");
+  const evalSection = document.getElementById("eval-section");
+  const evalBtn = document.getElementById("eval-btn");
+  const logsContainer = document.getElementById("logs-container");
+
+  if (!solveBtn) {
+    console.error("#solve-btn was not found");
+    return;
+  }
+  if (!logsContainer) {
+    console.warn("#logs-container not found; eval location will be in main.");
+  }
+
+  if (evalSection) {
+    evalSection.style.display = "none";
+  }
+
+  function moveEvalSectionToEndOfTracers() {
+    if (!evalSection) return;
+
+    const logsCard = logsContainer ? logsContainer.closest(".card") : null;
+    if (logsCard) {
+      if (!logsCard.contains(evalSection)) {
+        logsCard.appendChild(evalSection);
+      }
+    } else {
+      const content = document.getElementById("content");
+      if (content && !content.contains(evalSection)) {
+        content.appendChild(evalSection);
+      }
+    }
+  }
+
+  // ---------- COMPUTE BUTTON ----------
+  solveBtn.addEventListener("click", async () => {
+    clearLogs();
+    const msgDiv = document.getElementById("result-message");
+    if (msgDiv) msgDiv.style.display = "none";
+
+    const pts = (typeof getPointsValues === "function") ? getPointsValues("pointsGrid") : null;
+    if (!pts) {
+      showMessage("The function getPointsValues is not available.", "danger");
+      console.error("getPointsValues is not defined");
+      return;
+    }
+
+    let { x, y } = pts;
+
+    x = x.map(v => Number(v));
+    y = y.map(v => Number(v));
+
+    if (x.length < 2) {
+      showMessage("You must enter at least two points.", "danger");
+      return;
+    }
+
+    if (x.some(v => !isFinite(v)) || y.some(v => !isFinite(v))) {
+      showMessage("There are invalid values in the points.", "danger");
+      return;
+    }
+
+    // Sort by X
+    const pairs = x.map((xi, i) => ({ x: xi, y: y[i] }));
+    pairs.sort((p1, p2) => p1.x - p2.x);
+
+    for (let i = 1; i < pairs.length; ++i) {
+      if (Math.abs(pairs[i].x - pairs[i - 1].x) < 1e-14) {
+        showMessage(`Repeated or very close X values: ${pairs[i].x}.`, "danger");
+        return;
+      }
+    }
+
+    const x_sorted = pairs.map(p => p.x);
+    const y_sorted = pairs.map(p => p.y);
+
+    try {
+      console.log("Sending to /eval/lineal_tracers:", { x: x_sorted, y: y_sorted });
+
+      const response = await fetch("/eval/lineal_tracers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ x: x_sorted, y: y_sorted })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Could not parse JSON response:", e);
+        showMessage("Invalid server response.", "danger");
+        return;
+      }
+
+      console.log("Response from /eval/lineal_tracers:", response.status, data);
+
+      if (!response.ok || data.error) {
+        const errMsg = data && data.error ? data.error : `Server error (status ${response.status})`;
+        showMessage(errMsg, "danger");
+        return;
+      }
+
+      // Typical backend: { ecuaciones: [...], tramos: [{intervalo:[xi,xi1], pendiente, intercepto}, ...] }
+      const tramos = Array.isArray(data.tramos) ? data.tramos : [];
+
+      if (!tramos.length) {
+        showMessage("The server did not return valid segments.", "danger");
+        return;
+      }
+
+      // Convert segments to internal “logs” like in cubic tracers
+      const preparedLogs = tramos.map((t, idx) => ({
+        segment: idx + 1,
+        coefficients: {
+          m: Number(t.pendiente ?? t.m ?? 0),
+          b: Number(t.intercepto ?? t.b ?? 0),
+        },
+        interval: [
+          Number(t.intervalo?.[0] ?? t.x0 ?? 0),
+          Number(t.intervalo?.[1] ?? t.x1 ?? 0),
+        ],
+      }));
+
+      lastLogs = preparedLogs;
+      lastLogs.forEach(addLog);
+
+      const plotData = buildPlotData(lastLogs);
+      renderPlot(plotData);
+
+      showMessage("Linear tracers computed successfully.", "success");
+
+      // Show evaluation section
+      moveEvalSectionToEndOfTracers();
+      if (evalSection) {
+        evalSection.style.display = "flex";
+        evalSection.classList.add("d-flex", "align-items-center", "justify-content-center");
+      }
+
+    } catch (err) {
+      console.error("Error in fetch /eval/lineal_tracers:", err);
+      showMessage("Connection error with the server.", "danger");
+    }
+  });
+
+  // ---------- EVALUATE BUTTON ----------
+  if (evalBtn) {
+    evalBtn.addEventListener("click", () => {
+      const resultDiv = document.getElementById("eval-result");
+      const input = document.getElementById("eval-x");
+      if (!input) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">Input field not found.</span>`;
+        }
+        return;
+      }
+
+      const raw = input.value;
+      const xEval = Number(raw);
+      if (!raw || isNaN(xEval)) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">Enter a valid number.</span>`;
+        }
+        return;
+      }
+
+      if (!Array.isArray(lastLogs) || lastLogs.length === 0) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">You must compute the tracers first.</span>`;
+        }
+        return;
+      }
+
+      xVal = xEval;
+      console.log("xVal =", xVal);
+
+      let found = null;
+      for (const seg of lastLogs) {
+        if (!seg || !Array.isArray(seg.interval)) continue;
+        const [x0, x1] = seg.interval.map(Number);
+        const xi = Math.min(x0, x1), xf = Math.max(x0, x1);
+        if (xEval >= xi - 1e-12 && xEval <= xf + 1e-12) {
+          found = seg;
+          break;
+        }
+      }
+
+      if (!found) {
+        if (resultDiv) {
+          resultDiv.innerHTML = `<span class="text-danger">x = ${xEval} is outside the domain of the tracers.</span>`;
+        }
+        console.warn(
+          "Evaluation: no tracer found for x =",
+          xEval,
+          "domains:",
+          lastLogs.map(l => l.interval)
+        );
+        return;
+      }
+
+      const coeff = found.coefficients || {};
+      const m = Number(coeff.m || 0);
+      const b = Number(coeff.b || 0);
+      const yEval = m * xEval + b;
+
+      if (resultDiv) {
+        resultDiv.innerHTML = `
+          <div>
+            <strong>input x:</strong> ${xEval}<br>
+            <strong>f(${xEval}) =</strong> ${yEval.toFixed(8)}
+            <br><small>Segment s_${found.segment} in [${found.interval[0]}, ${found.interval[1]}]</small>
+          </div>
+        `;
+      }
+
+      highlightLog(found.segment);
+      console.log(`Evaluation: x=${xEval} → y=${yEval} (tracer s_${found.segment})`);
+    });
+  }
+
+});
+</script>
+{% endblock %}

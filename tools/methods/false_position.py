@@ -26,7 +26,7 @@ def false_position(f: str, a: float, b: float, nmax: int, last_n_rows: int, tole
     for i in range(nmax):
         fa, fb = f_math(a), f_math(b)
 
-        # Compute the false position (linear interpolation)
+        # Compute the false position
         root = b - fb * (b - a) / (fb - fa)
         f_root = f_math(root)
         abs_error = abs(root - x0)

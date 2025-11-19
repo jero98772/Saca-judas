@@ -303,7 +303,7 @@ async def gauss_simple_post(request: Request):
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
     
-@app.post("/eval/gauss_total", response_class=JSONResponse)
+@app.post("/eval/gauss_partial", response_class=JSONResponse)
 async def gauss_total_post(request: Request):
     try:
     
@@ -397,7 +397,7 @@ async def gauss_total_post(request: Request):
     except Exception as e:
         return JSONResponse(content={"error": f"Internal server error: {str(e)}"}, status_code=500)
     
-@app.post("/eval/gauss_partial", response_class=JSONResponse)
+@app.post("/eval/gauss_total", response_class=JSONResponse)
 async def gauss_partial_post(request: Request):
     try:
     
@@ -694,15 +694,70 @@ async def false_position_post(request: Request, function: str = Form(...), a: fl
     answer = false_position_controller(function=function, a=a, b=b, nmax=nmax, tolerance=tolerance, last_n_rows=last_n_rows)
     return JSONResponse(content=answer)
 
+
+
 @app.post("/eval/fixed_point", response_class=HTMLResponse)
-async def eval_fixed_point(request: Request, g: str = Form(""), f: str = Form(""), x0: float = Form(...), tol: float = Form(1e-6), max_iter: int = Form(100), use_relative_error: str = Form(None)):
-    result = run_fixed_point_web(g_text=g, f_text=f, x0=x0, tol=tol, max_iter=max_iter, use_relative_error=bool(use_relative_error))
-    return templates.TemplateResponse(
-        "methods/fixed_point.html",
-        {"request": request,
-         "form": {"g": g, "f": f, "x0": x0, "tol": tol, "max_iter": max_iter, "use_relative_error": bool(use_relative_error)},
-         "result": result}
-    )
+async def eval_fixed_point(request: Request):
+    
+    form = await request.form()
+
+    g_text = (form.get("g") or "").strip()
+    f_text = (form.get("f") or "").strip()
+    x0_str = form.get("x0") or "0"
+    tol_str = form.get("tol") or "1e-6"
+    max_iter_str = form.get("max_iter") or "100"
+    use_rel = form.get("use_relative_error") is not None
+
+    
+    try:
+        x0 = float(x0_str)
+    except ValueError:
+        x0 = 0.0
+    try:
+        tol = float(tol_str)
+    except ValueError:
+        tol = 1e-6
+    try:
+        max_iter = int(max_iter_str)
+    except ValueError:
+        max_iter = 100
+
+    
+    form_data = {
+        "g": g_text,
+        "f": f_text,
+        "x0": x0,
+        "tol": tol,
+        "max_iter": max_iter,
+        "use_relative_error": use_rel,
+    }
+
+    try:
+        
+        result = run_fixed_point_web(
+            g_text=g_text,
+            f_text=f_text,
+            x0=x0,
+            tol=tol,
+            max_iter=max_iter,
+            use_relative_error=use_rel,
+        )
+
+        context = {
+            "request": request,
+            "form": form_data,
+            "result": result,
+        }
+    except Exception as e:
+        
+        context = {
+            "request": request,
+            "form": form_data,
+            "result": None,
+            "error": f"Error: {e}",
+        }
+
+    return templates.TemplateResponse("methods/fixed_point.html", context)
 
 @app.post("/eval/secant", response_class=HTMLResponse)
 async def secant_method_post(request: Request, function: str = Form(...), x0: float = Form(...), x1: float = Form(...), Nmax: int = Form(...), tol: float = Form(...), nrows: int = Form(...)):

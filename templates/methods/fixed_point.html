@@ -132,7 +132,16 @@
 
     <!-- Right column: plot + summary + table -->
     <div class="col-12 col-lg-8">
-      {% if result is defined and result %}
+
+      {# ==== MENSAJE DE ERROR (ESPAÑOL, VIENE DEL PY) ==== #}
+      {% if result is defined and result.error is defined %}
+        <div class="alert alert-danger mb-3">
+          {{ result.error }}
+        </div>
+      {% endif %}
+
+      {# ==== SOLO MOSTRAR PLOT Y TABLA SI NO HAY ERROR ==== #}
+      {% if result is defined and result.error is not defined and result.plot_data_url is defined %}
       <div class="row g-4">
         <div class="col-12">
           <div class="plot-frame">
@@ -144,9 +153,15 @@
           <div class="panel-white p-3">
             <h5 class="mb-3">Summary</h5>
             <div class="row">
-              <div class="col-6 col-md-3"><strong>Converged:</strong> {{ 'Yes' if result.converged else 'No' }}</div>
-              <div class="col-6 col-md-3"><strong>Final x:</strong> {{ '%.10f'|format(result.x_final) }}</div>
-              <div class="col-12 col-md-6 mt-2 mt-md-0"><strong>Reason:</strong> {{ result.reason }}</div>
+              <div class="col-6 col-md-3">
+                <strong>Converged:</strong> {{ 'Yes' if result.converged else 'No' }}
+              </div>
+              <div class="col-6 col-md-3">
+                <strong>Final x:</strong> {{ '%.10f'|format(result.x_final) }}
+              </div>
+              <div class="col-12 col-md-6 mt-2 mt-md-0">
+                <strong>Reason:</strong> {{ result.reason }}
+              </div>
             </div>
           </div>
         </div>
@@ -171,7 +186,13 @@
                     <td>{{ s.i }}</td>
                     <td>{{ '%.10f'|format(s.x) }}</td>
                     <td>{{ '%.10f'|format(s.gx) }}</td>
-                    <td>{% if s.fx is not none %}{{ '%.10f'|format(s.fx) }}{% else %}—{% endif %}</td>
+                    <td>
+                      {% if s.fx is not none %}
+                        {{ '%.10f'|format(s.fx) }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
                     <td>{{ '%.10e'|format(s.err) }}</td>
                   </tr>
                   {% endfor %}

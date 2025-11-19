@@ -10,30 +10,26 @@ def cubic_spline_method(x, y):
     n = len(x)
     h = np.diff(x)
 
-    # Matriz del sistema
+
     A = np.zeros((n, n))
     b_vec = np.zeros(n)
 
-    # Condiciones naturales: c0 = 0, cn = 0
-    A[0,0] = 1
-    A[-1,-1] = 1
-    b_vec[0] = 0
-    b_vec[-1] = 0
 
-    # Llenar el sistema del PDF
+    A[0, 0] = 1
+    A[-1, -1] = 1
+
+
     for i in range(1, n - 1):
         A[i, i - 1] = h[i - 1]
-        A[i, i]     = 2 * (h[i - 1] + h[i])
+        A[i, i] = 2 * (h[i - 1] + h[i])
         A[i, i + 1] = h[i]
-        b_vec[i] = 3 * (
-            (y[i + 1] - y[i]) / h[i] -
-            (y[i] - y[i - 1]) / h[i - 1]
-        )
+        b_vec[i] = 3 * ((y[i + 1] - y[i]) / h[i] -
+                        (y[i] - y[i - 1]) / h[i - 1])
 
-    # Resolver para c_i
+
     c = np.linalg.solve(A, b_vec)
 
-    # Calcular los coeficientes a_i, b_i, d_i
+  
     coefficients = []
     for i in range(n - 1):
         a_i = y[i]
@@ -42,7 +38,6 @@ def cubic_spline_method(x, y):
         coefficients.append((a_i, b_i, c[i], d_i))
 
     return coefficients
-
 
 
 logging.basicConfig(

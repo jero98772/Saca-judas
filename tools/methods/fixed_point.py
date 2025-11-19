@@ -1,3 +1,13 @@
+# tools/methods/fixed_point.py
+# ---------------------------------------------------------------
+# Fixed-Point method for the web with a small visual refresh:
+# - Same public API: compile_expr, d_numeric, make_newton_g_from_f,
+#   fixed_point_full, run_fixed_point_web
+# - Logic is unchanged; only the plot styling is improved
+#   (dotted grid, subtle “cobweb” of iterations, clean labels).
+#   AHORA: manejo de errores en ESPAÑOL y sin lanzar 500.
+# ---------------------------------------------------------------
+
 from __future__ import annotations
 from typing import Callable, Tuple, Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -38,7 +48,8 @@ def compile_expr(expr_str: str) -> Tuple[Callable[[float], float], str]:
     try:
         code = compile(s, "<expr>", "eval")
     except Exception as e:
-        raise ValueError(f"Invalid expression: {expr_str!r} -> {e}")
+        # Mensaje en español
+        raise ValueError(f"Expresión inválida: {expr_str!r} → {e}")
 
     def f(x: float) -> float:
         env = dict(_ALLOWED)
@@ -47,14 +58,14 @@ def compile_expr(expr_str: str) -> Tuple[Callable[[float], float], str]:
 
     return f, s
 
-
+# === Central numerical derivative: f'(x) ≈ (f(x+h)-f(x-h))/(2h) ===
 def d_numeric(f: Callable[[float], float], h: float = 1e-6) -> Callable[[float], float]:
     """Simple and robust numerical derivative (central difference)."""
     def df(x: float) -> float:
         return (f(x + h) - f(x - h)) / (2.0 * h)
     return df
 
-
+# === Build g(x) from f(x) via one Newton step ===
 def make_newton_g_from_f(f: Callable[[float], float], h: float = 1e-6) -> Callable[[float], float]:
     """
     If user provides f(x) but not g(x), generate:
@@ -66,11 +77,15 @@ def make_newton_g_from_f(f: Callable[[float], float], h: float = 1e-6) -> Callab
     def g(x: float) -> float:
         dfx = df(x)
         if abs(dfx) < 1e-14:
-            raise ZeroDivisionError("f'(x) ≈ 0 in make_newton_g_from_f; cannot build g(x).")
+            # Mensaje en español
+            raise ZeroDivisionError(
+                "f'(x) es aproximadamente 0 en make_newton_g_from_f; "
+                "no se puede construir g(x)."
+            )
         return x - f(x) / dfx
     return g
 
-# === Core fixed-point iteration (logic unchanged) ===
+# === Core fixed-point iteration (logic mostly unchanged, pero con try/except) ===
 def fixed_point_full(
     g: Callable[[float], float],
     x0: float,
@@ -90,8 +105,20 @@ def fixed_point_full(
     xi = float(x0)
 
     for i in range(nmax):
-        gxi = float(g(xi))
-        fxi = float(f(xi)) if f is not None else None
+        # g(x_i)
+        try:
+            gxi = float(g(xi))
+        except Exception as e:
+            raise ValueError(f"Error al evaluar g(x) en x={xi}: {e}")
+
+        # f(x_i) opcional
+        if f is not None:
+            try:
+                fxi = float(f(xi))
+            except Exception as e:
+                raise ValueError(f"Error al evaluar f(x) en x={xi}: {e}")
+        else:
+            fxi = None
 
         if use_relative_error:
             denom = max(1.0, abs(gxi))
@@ -108,6 +135,7 @@ def fixed_point_full(
 
     return rows, xi
 
+# === Web layer: prepare data for the template (same contract) ===
 @dataclass
 class PFStep:
     """Lightweight container per iteration to feed the view."""
@@ -146,6 +174,14 @@ def _plot_base64(
       - cobweb lines to illustrate the iteration path
     Returns a data URL (base64) ready for <img src="...">.
     """
+
+    # función auxiliar segura (evita errores de dominio)
+    def _safe_eval(fun: Callable[[float], float], v: float) -> float:
+        try:
+            return float(fun(v))
+        except Exception:
+            return float("nan")
+
     xmin, xmax = x_star - span, x_star + span
     xs = np.linspace(xmin, xmax, 500)
 
@@ -154,7 +190,7 @@ def _plot_base64(
     if f_str:
         f_fun, _ = compile_expr(f_str)
 
-    g_vals = np.array([g_fun(v) for v in xs])
+    g_vals = np.array([_safe_eval(g_fun, v) for v in xs])
     y_eq_x = xs.copy()
 
     fig, ax = plt.subplots(figsize=(6.6, 4.2), dpi=160)
@@ -164,7 +200,7 @@ def _plot_base64(
     ax.plot(xs, g_vals, linewidth=2.4, label="g(x)")
     ax.plot(xs, y_eq_x, linestyle="--", linewidth=1.6, label="y = x")
     if f_fun is not None:
-        f_vals = np.array([f_fun(v) for v in xs])
+        f_vals = np.array([_safe_eval(f_fun, v) for v in xs])
         ax.plot(xs, f_vals, linestyle=":", linewidth=1.8, label="f(x)")
 
     # Cobweb (if steps provided)
@@ -177,7 +213,7 @@ def _plot_base64(
 
     # Styling
     ax.grid(True, linewidth=0.4, linestyle=":")
-    ax.set_title("Fixed-Point — g(x) vs y=x", fontweight="bold")
+    ax.set_title("Punto fijo — g(x) vs y=x", fontweight="bold")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     leg = ax.legend(frameon=True)
@@ -189,7 +225,8 @@ def _plot_base64(
     plt.close(fig)
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
-def run_fixed_point_web(
+# ---- núcleo original de run_fixed_point_web (sin manejo de errores) ----
+def _run_fixed_point_web_core(
     g_text: Optional[str],
     f_text: Optional[str],
     x0: float,
@@ -198,12 +235,6 @@ def run_fixed_point_web(
     use_relative_error: bool = False,
     plot_span: float = 5.0
 ) -> Dict[str, Any]:
-    """
-    Entry point for the view. Inputs:
-      g_text, f_text, x0, tol, max_iter, use_relative_error, plot_span
-    Output dict (same keys as before):
-      plot_data_url, steps, converged, reason, x_final, form_echo
-    """
     g_fun = None
     f_fun = None
     g_str = (g_text or "").strip()
@@ -219,7 +250,8 @@ def run_fixed_point_web(
         g_fun = make_newton_g_from_f(f_fun)
 
     if g_fun is None:
-        raise ValueError("You must provide g(x) or f(x).")
+        # Mensaje en español
+        raise ValueError("Debes proporcionar g(x) o f(x).")
 
     rows, x_last = fixed_point_full(
         g_fun, x0, tol=tol, nmax=max_iter, f=f_fun, use_relative_error=use_relative_error
@@ -239,9 +271,9 @@ def run_fixed_point_web(
 
     converged = bool(rows) and (rows[-1][4] <= tol)
     reason = (
-        "Converged by tolerance (|x_{n+1} - x_n| ≤ tol)."
+        "Convergió por tolerancia (|x_{n+1} - x_n| ≤ tol)."
         if converged else
-        "Reached max_iter without meeting tolerance."
+        "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
     )
 
     return {
@@ -257,3 +289,34 @@ def run_fixed_point_web(
             "use_relative_error": use_relative_error
         }
     }
+
+# === Web entry point with error handling (lo que debe usar tu endpoint) ===
+def run_fixed_point_web(
+    g_text: Optional[str],
+    f_text: Optional[str],
+    x0: float,
+    tol: float = 1e-6,
+    max_iter: int = 100,
+    use_relative_error: bool = False,
+    plot_span: float = 5.0
+) -> Dict[str, Any]:
+    """
+    Igual que antes, pero ya NO lanza excepciones hacia afuera.
+    Devuelve un dict:
+      - en caso OK: las mismas llaves de siempre (plot_data_url, steps, ...)
+      - en caso de error: {"error": "...mensaje en español..."}
+    """
+    try:
+        return _run_fixed_point_web_core(
+            g_text, f_text, x0,
+            tol=tol,
+            max_iter=max_iter,
+            use_relative_error=use_relative_error,
+            plot_span=plot_span,
+        )
+    except ValueError as ve:
+        # Errores de usuario (expresión mala, dominio, etc.) en ESPAÑOL
+        return {"error": str(ve)}
+    except Exception as e:
+        # Cualquier otra cosa → error genérico
+        return {"error": f"Error interno en método de punto fijo: {e}"}
